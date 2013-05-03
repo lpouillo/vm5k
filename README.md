@@ -34,7 +34,6 @@ Installation
 ------------
 - install all dependencies listed above
 - clone the repository
--
 
 
 Laurent Pouilloux, Hemera Engineer - 2013

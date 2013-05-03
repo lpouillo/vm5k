@@ -42,7 +42,7 @@ class LiveMigration( Engine ):
         self.options_parser.add_option("-e", dest = "env_name", help = "name of the environment to be deployed", type = "string", default = "squeeze-x64-prod")
         self.options_parser.add_option("-f", dest = "env_file", help = "path to the environment file", type = "string", default = None)
         self.options_parser.add_option("-n", dest = "n_nodes", help = "number of nodes to be deployed", type = "int", default = 2)
-        self.options_parser.add_option("-w", dest = "walltime", help = "walltime for the submission", type ="string", default = "4:00:00")
+        self.options_parser.add_option("-w", dest = "walltime", help = "walltime for the submission", type ="string", default = "4:30:00")
         self.options_parser.add_argument("clusters", "comma separated list of clusters")
         logger.info( set_style('Initializing Live Migration engine', 'step') )
         
@@ -72,15 +72,15 @@ class LiveMigration( Engine ):
                         logger.info('Cluster %s has been done, removing it from the list.', cluster)
                         self.clusters.remove(cluster)
                         break
+                    
                     state = self.workflow( comb )
-                    print state
-                    if state:
-                        self.sweeper.done(comb)
+                    
+                    get = self.get_results( comb )
+                    
+                    if state and get:
+                        self.sweeper.done( comb )
                     else:
-                        self.sweeper.cancel(comb)
-                    
-                    logger.debug('%s', pformat(self.job_info))
-                    
+                        self.sweeper.cancel( comb )
                     
                     if (int(self.job_info['start_date'])+self.job_info['walltime']) < int(time()):                        
                         logger.info('G5K reservation has been terminated, doing a new deployment')
@@ -173,7 +173,7 @@ class LiveMigration( Engine ):
             logger.debug('cpufreq mode set to %s', mode)
             return True
     
-    def get_results(self, cluster, hosts, vms_params, comb):
+    def get_results(self,comb):
         logger.info('%s \n', set_style(' Getting results from nodes and frontend ', 'step'))
         comb_dir = self.result_dir +'/'+ slugify(comb)+'/'
         
@@ -182,10 +182,11 @@ class LiveMigration( Engine ):
         except:
             logger.warning('%s already exists', comb_dir)
             pass
+        cluster = comb['cluster']
         site = get_cluster_site(cluster)
         get_ping_files = []
         
-        for vm_params in vms_params:
+        for vm_params in self.vms_params:
             get_ping_file = Get([site+'.grid5000.fr'], self.ping_dir+'/ping_'+cluster+'_'+vm_params['vm_id']+'.out', 
                 local_location = comb_dir, connexion_params = default_frontend_connexion_params)            
             get_ping_files.append( get_ping_file) 
@@ -193,8 +194,8 @@ class LiveMigration( Engine ):
                         connexion_params = default_frontend_connexion_params)
         ping_actions = SequentialActions( [ParallelActions(get_ping_files), rm_ping_dir] )
         
-        get_mig_file = Get(hosts, '*.out', local_location = comb_dir)
-        rm_mig_file = Remote('rm *.out', hosts)
+        get_mig_file = Get(self.hosts, '*.out', local_location = comb_dir)
+        rm_mig_file = Remote('rm *.out', self.hosts)
         mig_actions = SequentialActions([get_mig_file, rm_mig_file])
         
         logger.info('Saving files into %s', comb_dir)
