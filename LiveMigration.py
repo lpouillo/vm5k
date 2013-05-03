@@ -54,7 +54,8 @@ class LiveMigration( Engine ):
         logger.debug('%s', pformat(self.options) )
         self.clusters = self.args[0].split(",")
         logger.debug('%s', pformat(self.clusters) )
-        self.create_parameters()
+        self.create_paramsweeper()
+        
         while len(self.sweeper.get_remaining()) > 0:
             logger.info('%s', set_style('Finding the first cluster available ', 'step'))
             (cluster, _) = get_first_cluster_available(self.clusters, self.options.walltime, self.options.n_nodes)
@@ -96,7 +97,22 @@ class LiveMigration( Engine ):
         for option in self.options.__dict__.keys():
             if self.__dict__.has_key(option):
                 self.options.__dict__[option] = self.__dict__[option]
-            
+    
+    def create_paramsweeper(self):
+        """ Definining the ParamSweeper for the engine """
+        
+        if not hasattr(self, 'define_parameters'):
+            logger.error('No define_parameters method defined in your engine, aborting')
+            exit()
+        else:
+            parameters = self.define_parameters()
+        sweeps = sweep( parameters )
+        self.sweeper = ParamSweeper( path.join(self.result_dir, "sweeps"), sweeps)
+        log = set_style('Parameters combinations: ', 'step')+ str(len(sweeps))
+        for param, values in parameters.iteritems():
+            log+='\n'+set_style(str(param), 'emph')+': '+', '.join([str(value) for value in values])
+        logger.info(log)
+          
       
     def get_resources(self, cluster):
         """ Perform a reservation and return all the required job parameters """

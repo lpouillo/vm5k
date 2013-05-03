@@ -7,7 +7,7 @@ class NoCompressionMigration( LiveMigration ):
     def __init__(self):
         super(NoCompressionMigration, self).__init__()
         self.env_file = '~/synced/environments/cloudperf/cloudperf.env'
-        self.walltime = '6:00:00'
+        self.walltime = '5:00:00'
                 
     def workflow(self, comb):
         exit_string = set_style('\nABORTING WORKFLOW\n', 'report_error')
@@ -107,23 +107,15 @@ class NoCompressionMigration( LiveMigration ):
         return Remote('./memtouch-with-busyloop3 --cmd-makeload '+args+' '+str(size)+' '+str(speed), vms)       
     
         
-    def create_parameters(self):
+    def define_parameters(self):
         """ Definining the ParamSweeper for the engine """
-        parameters = {
+        return {
           'cluster':            self.clusters,
           'mem_size':           [ 2048, 4096, 8192 ],
           'mig_bw':             [ 32, 125 ],
           'cpu_load':           [ 0, 1, 2, 3 ],
           'mem_update_rate':    [ 0, 10, 25, 50, 75 ]
           }
-        sweeps = sweep( parameters )
         
-        self.sweeper = ParamSweeper( path.join(self.result_dir, "sweeps"), sweeps)
-        
-        log = ''
-        for param, values in parameters.iteritems():
-            log+='\n'+set_style(str(param), 'emph')+': '+', '.join([str(value) for value in values])
-   
     
-    def host_string(self, host):
-        return set_style(host.address.split('.')[0], 'host')
+    
