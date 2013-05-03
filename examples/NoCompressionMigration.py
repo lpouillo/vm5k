@@ -42,7 +42,7 @@ class NoCompressionMigration( LiveMigration ):
                 return False
         
         logger.info('%s', set_style('Launching ping probes from frontend', 'parameter'))
-        pingprobes = self.ping_probes( [mig_vm], comb['cluster'] )
+        pingprobes = self.ping_probes( self.vms_params, comb['cluster'] )
         pingprobes.start()
                 
         stress = self.mem_update( self.vms_params, size = comb['mem_size'] * 0.9, 
