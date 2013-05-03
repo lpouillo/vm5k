@@ -16,9 +16,9 @@ class NoCompressionMigration( LiveMigration ):
         logger.info('%s', set_style('Defining VM parameters', 'parameter'))
         cpusets = {'vm-'+str(i_vm): '0' for i_vm in range(1 + 2*comb['cpu_load'])}
 
-        vms_params = define_vms_params( 1 + 2*comb['cpu_load'], self.ip_mac, 
+        vms_params = define_vms_params( 1 + 2*comb['cpu_load'], self.ip_mac, vms_params = [],
                                         mem_size = comb['mem_size'], cpusets = cpusets)
-        pprint(vms_params)
+        
         logger.info('%s', set_style('Creating VM disks', 'parameter'))
         if not create_disks( self.hosts, vms_params):
             logger.error('Unable to create the disks, %s', exit_string)
@@ -41,17 +41,14 @@ class NoCompressionMigration( LiveMigration ):
                 logger.error('Unable to install the colocated VM, %s', exit_string)
                 return False
         
-        
-        
-        logger.info('%s', set_style(' Launching ping probes from frontend', 'parameter'))
+        logger.info('%s', set_style('Launching ping probes from frontend', 'parameter'))
         pingprobes = self.ping_probes( [mig_vm], comb['cluster'] )
         pingprobes.start()
-        
                 
         stress = self.mem_update( split_vms[0]+[mig_vm], size = comb['mem_size'] * 0.9, 
                                   speed = comb['mig_bw']*comb['mem_update_rate']/100 )
         
-        logger.info('%s %s', set_style('Starting stress on ', 'parameter'),
+        logger.info('%s %s', set_style('Starting stress on', 'parameter'),
                     ' '.join([set_style(param['vm_id'], 'object_repr') for param in split_vms[0]+[mig_vm]]))
         stress.start()
         sleep( comb['mem_size'] * comb['mem_update_rate']/ 10000 )
@@ -59,7 +56,6 @@ class NoCompressionMigration( LiveMigration ):
         measurements_loop(self.options.n_measure, [mig_vm], self.hosts, twonodes_migrations, 
                       'sequential', label = 'ONE', mig_speed = comb['mig_bw'] )
         stress.kill()
-        
         
         logger.info('%s', set_style('Performing migration with other VM on BOTH nodes ', 'user2'))
         destroy_all( self.hosts )
@@ -75,7 +71,6 @@ class NoCompressionMigration( LiveMigration ):
             if not install( split_vms[1], self.hosts[1]):
                 logger.error('Unable to install the colocated VM on DST, %s', exit_string)
                 return False        
-        
             
         stress = self.mem_update( vms_params+[mig_vm], size = comb['mem_size'] * 0.9, 
                                   speed = comb['mig_bw']*comb['mem_update_rate']/100 )

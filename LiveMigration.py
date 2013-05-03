@@ -25,7 +25,7 @@ from execo_g5k.planning import get_first_cluster_available
 from execo_g5k.config import default_frontend_connexion_params
 from execo_engine import Engine, ParamSweeper, sweep, slugify, logger
 
-class LiveMigration(Engine):
+class LiveMigration( Engine ):
     """ The main engine class, that need to be run with 
     execo-run LiveMigration -ML """
     
@@ -78,8 +78,13 @@ class LiveMigration(Engine):
                     else:
                         self.sweeper.cancel(comb)
                     
-                    if (int(self.job_info['start_date'])+self.job_info['walltime']) > int(time()):
+                    logger.debug('%s', pformat(self.job_info))
+                    
+                    
+                    if (int(self.job_info['start_date'])+self.job_info['walltime']) < int(time()):                        
+                        logger.info('G5K reservation has been terminated, doing a new deployment')
                         break
+                    
             finally:
                 if self.job_info['job_id'] is not None:
                     logger.info('Deleting job')
@@ -191,12 +196,10 @@ class LiveMigration(Engine):
         
         pingactions=[]
         for vm_params in vms_params:
-            
-            
             cmd='ping -i 0.2 '+vm_params['ip']+ \
             ' | while read pong; do pong=`echo $pong | cut -f4 -d "=" | cut -f1 -d \' \' `;'+\
             'if [ -z "$pong" ]; then pong=0.0; fi;'+\
-            'echo "$(date +%s) $pong"; done > '+self.result_dir+'/ping_'+cluster+'_'+vm_params['vm_id']+'.out'
+            'echo "$(date +%s) $pong"; done > '+self.ping_dir+'/ping_'+cluster+'_'+vm_params['vm_id']+'.out'
             pingactions.append(Remote(cmd, [site+'.grid5000.fr'], log_exit_code=False, 
                                     connexion_params={'user': default_frontend_connexion_params['user']}))
         logger.debug('%s', pformat(pingactions))    
