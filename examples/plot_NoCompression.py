@@ -16,7 +16,7 @@ with open('single-mig.out-raw') as f:
     simulation = np.loadtxt(f, dtype = dt_theory, comments = "#", skiprows = 0)
 
 result_dir = 'NoCompressionMigration_20130417_152218_+0200/'
-
+result_dir = 'NoCompressionMigration_20130503_114229_+0200/'
 
 try:
     os.mkdir(result_dir+'graphs')

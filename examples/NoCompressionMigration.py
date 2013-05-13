@@ -41,16 +41,22 @@ class NoCompressionMigration( LiveMigration ):
                 logger.error('Unable to install the colocated VM, %s', exit_string)
                 return False
         
+        
         logger.info('%s', set_style('Launching ping probes from frontend', 'parameter'))
         pingprobes = self.ping_probes( self.vms_params, comb['cluster'] )
         pingprobes.start()
-                
-        stress = self.mem_update( self.vms_params, size = comb['mem_size'] * 0.9, 
+              
+          
+        stress = self.mem_update( [mig_vm]+split_vms[0], size = comb['mem_size'] * 0.9, 
                                   speed = comb['mig_bw']*comb['mem_update_rate']/100 )
+        
+        if stress == 'ERROR':
+            return False
         
         logger.info('%s %s', set_style('Starting stress on', 'parameter'),
                     ' '.join([set_style(param['vm_id'], 'object_repr') for param in split_vms[0]+[mig_vm]]))
         stress.start()
+        
         sleep( comb['mem_size'] * comb['mem_update_rate']/ 10000 )
         
         measurements_loop(self.options.n_measure, [mig_vm], self.hosts, twonodes_migrations, 
@@ -74,6 +80,9 @@ class NoCompressionMigration( LiveMigration ):
             
         stress = self.mem_update( self.vms_params , size = comb['mem_size'] * 0.9, 
                                   speed = comb['mig_bw']*comb['mem_update_rate']/100 )
+        if stress == 'ERROR':
+            return False
+        
         logger.info('%s %s', set_style('Starting stress on ', 'parameter'),
                     ' '.join([set_style(param['vm_id'], 'object_repr') for param in self.vms_params ]))
         stress.start()
@@ -92,9 +101,18 @@ class NoCompressionMigration( LiveMigration ):
     def mem_update(self, vms_params, size, speed):
         """Copy, compile memtouch, calibrate and return memtouch action """
         vms = [ Host(vm_param['ip']+'.g5k') for vm_param in vms_params ]
-        pprint (vms_params)
+        logger.info('VMS: %s', pformat (vms) )
+        
         files = [ 'memtouch/memtouch-with-busyloop3.c' ] 
-        Put(vms, files).run()
+        putfiles = Put(vms, files).run()
+        puttries = 1
+        while (not putfiles.ok()) and puttries < 5:
+            puttries += 1
+            sleep(5)            
+            files = [ 'memtouch/memtouch-with-busyloop3.c' ] 
+            putfiles = Put(vms, files).run()
+        if not putfiles.ok():
+            return 'ERROR'
         Remote('gcc -O2 -lm -std=gnu99 -Wall memtouch-with-busyloop3.c -o memtouch-with-busyloop3', vms ).run()
         calibration = Remote('./memtouch-with-busyloop3 --cmd-calibrate '+str(size), [vms[0]] ).run()
         args = ''
