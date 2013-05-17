@@ -8,9 +8,9 @@ from execo.log import set_style
 from execo_g5k.oar import format_oar_date
 from execo_g5k import OarSubmission, oargridsub, get_oargrid_job_nodes, wait_oargrid_job_start, get_oargrid_job_oar_jobs, get_oar_job_kavlan, oargriddel
 from execo_g5k.api_utils import get_cluster_site, get_g5k_sites, get_g5k_clusters, get_resource_attributes, get_host_attributes, get_cluster_attributes, get_site_clusters
-from execo_g5k.planning import *
-from execo_g5k.vmutils import *
-from execo_g5k.vmutils.setup_cluster import G5K_Virsh_Deployment
+#from execo_g5k.planning import *
+#from execo_g5k.vmutils import *
+#from execo_g5k.vmutils.setup_cluster import G5K_Virsh_Deployment
 
 logger.setLevel('INFO')
 
