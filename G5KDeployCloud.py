@@ -6,8 +6,10 @@ from pprint import pprint, pformat
 from netaddr import IPNetwork
 from execo import configuration, logger, Remote, Put, Get, Host
 from execo.log import set_style
-from execo_g5k import get_oargrid_job_nodes, get_oargrid_job_info, wait_oargrid_job_start, get_oargrid_job_oar_jobs, get_oar_job_kavlan, get_host_attributes
+from execo_g5k import get_oargrid_job_nodes, get_oargrid_job_info, wait_oargrid_job_start, get_oargrid_job_oar_jobs, get_oar_job_kavlan
 from execo_g5k.oar import format_oar_date        
+from execo_g5k.config import g5k_configuration
+from execo_g5k.api_utils import  get_host_attributes, get_g5k_sites
 
 from setup_cluster import Virsh_Deployment
 from state import *
@@ -142,7 +144,7 @@ if n_vm > max_vms:
                  set_style(str(max_vms), 'report_error'), set_style(str(total_attr['ram_size']/10**6)+'MB', 'emph'),
                  set_style(str(vm_ram_size)+'MB', 'emph'))
     n_vm = max_vms 
-logger.info('You can run %s VM on the hosts you have')
+logger.info('You can run %s VM on the hosts you have', max_vms)
 
 
 
@@ -151,6 +153,10 @@ if jobinfo['start_date'] > time.time():
     logger.info('Job %s is scheduled for %s, waiting ... ', set_style(oargrid_job_id, 'emph'), 
             set_style(format_oar_date(jobinfo['start_date']), 'emph') )
     wait_oargrid_job_start(oargrid_job_id)
+    if time.time() > jobinfo['start_date'] +jobinfo['walltime']:
+        logger.error('Job %s is already finished, aborting', set_style(oargrid_job_id, 'emph'))
+        exit()
+        
 logger.info(set_style('Job has started !\n', 'report_error'))    
 
     
@@ -199,8 +205,15 @@ for ip in vm_ip[0:n_vm]:
 part_host = fastest_host.address.partition('.')
 service_node = part_host[0]+'-kavlan-'+str(kavlan_id)+part_host[1]+ part_host[2]
 
+get_ip = SshProcess('host paradent-19-kavlan-18.rennes.grid5000.fr |cut -d \' \' -f 4', 
+                    service_node).run()
+
+
 
 logger.info('Writing configurations files')
+f = open('resolv.conf', 'w')
+f.write('domain grid5000.fr\nsearch '+' '.join( [ site+'.grid5000.fr' for site in get_g5k_sites() ])+'\nnameserver '+get_ip.stdout().strip())
+f.close()
 f = open('dnsmasq.conf', 'w')
 f.write(dhcp_range+dhcp_router+dhcp_hosts)
 f.close()
@@ -208,6 +221,8 @@ f = open('vms.list', 'w')
 for idx, val in enumerate(ip_mac):
     f.write(val[0]+'     vm-'+str(idx)+'\n')
 f.close()
+
+
 
 logger.info(set_style('Network has been configured !\n', 'report_error'))
 
@@ -230,7 +245,8 @@ setup_hosts.rename_hosts()
 hosts = list(setup_hosts.hosts)
 
 logger.info('%s', ", ".join( [set_style(host.address.split('.')[0], 'host') for host in hosts] ))
-setup_hosts.setup_packages()
+setup_hosts.upgrade_hosts()
+setup_hosts.install_packages()
 setup_hosts.configure_libvirt()
 setup_hosts.create_disk_image(clean = True)
 setup_hosts.copy_ssh_keys()
@@ -244,7 +260,6 @@ f.close()
 logger.info('Configuring %s as a %s server for the virtual machines', 
             set_style(service_node.split('.')[0], 'host'), set_style('DNS/DCHP', 'emph'))
 
-
 Remote('export DEBIAN_MASTER=noninteractive ; apt-get install -y dnsmasq taktuk', [service_node]).run()
 Put([service_node], 'dnsmasq.conf', remote_location='/etc/').run()
 
@@ -254,6 +269,11 @@ Remote('cat /root/vms.list >> /etc/hosts', [service_node]).run()
 
 logger.info('Restarting service ...')
 Remote('service dnsmasq restart', [service_node]).run()
+
+logger.info('Configuring ')
+clients = hosts[:]
+clients.remove(Host(service_node))
+Put(clients, 'resolv.conf', remote_location = '/etc/').run()
 
 #logger.info('Copying the % s images on % s')
 #Remote('scp /grid5000/images/KVM/squeeze-x64-base.qcow2 root@'+service_node+':', [Host('lyon.g5k')],
@@ -290,6 +310,6 @@ wait_vms_have_started(vms, service_node)
 listing = ''
 for host in hosts:
     host_vm = list_vm(host)
-    listing += '\n- '+host.address+', '.join( [ vm['vm_id'] for vm in host_vm ])
+    listing += '\n'+host.address+': '+', '.join( [ vm['vm_id'] for vm in host_vm ])
 logger.info('Listing VM %s', listing)
 
