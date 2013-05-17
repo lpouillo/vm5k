@@ -104,6 +104,19 @@ hosts = get_oargrid_job_nodes( args.oargrid_job_id )
 hosts.sort()
 logger.info('%s', ", ".join( [set_style(host.address.split('.')[0], 'host') for host in hosts] ))
 
+max_flops = 0
+fastest_host = ''
+for host in hosts:
+    try:
+        host_flops = get_host_attributes(host)['performance']['node_flops']
+        if host_flops > max_flops:
+            max_flops = host_flops
+            fastest_host = host
+    except:
+        logger.warning('No performance entry in API for host %s', set_style(host.address, 'host'))
+        pass 
+
+
 logger.info('Checking the number of VMs')
 n_vm = int(args.n_vm)
 total_attr = {'ram_size': 0, 'n_cpu': 0}
@@ -182,18 +195,7 @@ for ip in vm_ip[0:n_vm]:
     ip_mac.append( ( str(ip), ':'.join( map(lambda x: "%02x" % x, mac) ) ) )
     dhcp_hosts += 'dhcp-host='+':'.join( map(lambda x: "%02x" % x, mac))+','+str(ip)+'\n'
 
-logger.info('Determing fasteste host for the DNS/DHCP server')
-max_flops = 0
-fastest_host = ''
-for host in hosts:
-    try:
-        host_flops = get_host_attributes(host)['performance']['node_flops']
-        if host_flops > max_flops:
-            max_flops = host_flops
-            fastest_host = host
-    except:
-        logger.warning('No performance entry in API for host %s', set_style(host.address, 'host'))
-        pass 
+
 part_host = fastest_host.address.partition('.')
 service_node = part_host[0]+'-kavlan-'+str(kavlan_id)+part_host[1]+ part_host[2]
 
@@ -288,6 +290,6 @@ wait_vms_have_started(vms, service_node)
 listing = ''
 for host in hosts:
     host_vm = list_vm(host)
-    listing += '- '+host.address+', '.join( [ vm['vm_id'] for vm in host_vm ])
-logger.info('Listing VM\n %s', listing)
+    listing += '\n- '+host.address+', '.join( [ vm['vm_id'] for vm in host_vm ])
+logger.info('Listing VM %s', listing)
 
