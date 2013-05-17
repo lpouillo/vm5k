@@ -29,7 +29,6 @@ parser = argparse.ArgumentParser(
         
         )
 parser.add_argument('n_vm', 
-                    default = 100,
                     help = 'number of virtual machines')
 hosts_groups = parser.add_mutually_exclusive_group()
 hosts_groups.add_argument('-n', '--nodes', type = int, 
@@ -134,6 +133,7 @@ logger.info('You can run %s VM on the hosts you have')
 
 
 
+
 if jobinfo['start_date'] > time.time():
     logger.info('Job %s is scheduled for %s, waiting ... ', set_style(oargrid_job_id, 'emph'), 
             set_style(format_oar_date(jobinfo['start_date']), 'emph') )
@@ -182,7 +182,23 @@ for ip in vm_ip[0:n_vm]:
     ip_mac.append( ( str(ip), ':'.join( map(lambda x: "%02x" % x, mac) ) ) )
     dhcp_hosts += 'dhcp-host='+':'.join( map(lambda x: "%02x" % x, mac))+','+str(ip)+'\n'
 
-logger.info('Writing configurations files for the DNS/DHCP server')
+logger.info('Determing fasteste host for the DNS/DHCP server')
+max_flops = 0
+fastest_host = ''
+for host in hosts:
+    try:
+        host_flops = get_host_attributes(host)['performance']['node_flops']
+        if host_flops > max_flops:
+            max_flops = host_flops
+            fastest_host = host
+    except:
+        logger.warning('No performance entry in API for host %s', set_style(host.address, 'host'))
+        pass 
+part_host = fastest_host.address.partition('.')
+service_node = part_host[0]+'-kavlan-'+str(kavlan_id)+part_host[1]+ part_host[2]
+
+
+logger.info('Writing configurations files')
 f = open('dnsmasq.conf', 'w')
 f.write(dhcp_range+dhcp_router+dhcp_hosts)
 f.close()
@@ -223,19 +239,6 @@ for host in hosts:
 f.close()
 
 
-max_flops = 0
-fastest_host = ''
-for host in hosts:
-    try:
-        host_flops = get_host_attributes(kavname_to_shortname(host))['performance']['node_flops']
-        if host_flops > max_flops:
-            max_flops = host_flops
-            fastest_host = host
-    except:
-        logger.warning('No performance entry in API for host %s', set_style(host.address, 'host'))
-        pass 
-part_host = fastest_host.address.partition('.')
-service_node = part_host[0]+'-kavlan-'+str(kavlan_id)+part_host[1]+ part_host[2]
 logger.info('Configuring %s as a %s server for the virtual machines', 
             set_style(service_node.split('.')[0], 'host'), set_style('DNS/DCHP', 'emph'))
 
