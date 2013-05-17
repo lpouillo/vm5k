@@ -16,9 +16,6 @@ logger.setLevel('INFO')
 
 walltime = '3:00:00'
 n_nodes = 2
-n_vm = 20
-env_name = 'toto'
-backing_file = 'titi'
 oargridsub_opts = '-t deploy'
 
 clusters = [ 'pastel', 'sol', 'suno', 'graphene',  'paradent', 'granduc' ]
