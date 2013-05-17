@@ -63,34 +63,34 @@ class NoCompressionMigration( LiveMigration ):
                       'sequential', label = 'ONE', mig_speed = comb['mig_bw'] )
         stress.kill()
         
-        logger.info('%s', set_style('Performing migration with other VM on BOTH nodes ', 'user2'))
-        destroy_all( self.hosts )
-        
-        if not install([mig_vm], self.hosts[0]):
-            logger.error('Unable to install the migrating VM, %s', exit_string)
-            return False
-         
-        if len(split_vms[0]) > 0:
-            if not install( split_vms[0], self.hosts[0]):
-                logger.error('Unable to install the colocated VM on SRC, %s', exit_string)
-                return False
-            if not install( split_vms[1], self.hosts[1]):
-                logger.error('Unable to install the colocated VM on DST, %s', exit_string)
-                return False        
-            
-        stress = self.mem_update( self.vms_params , size = comb['mem_size'] * 0.9, 
-                                  speed = comb['mig_bw']*comb['mem_update_rate']/100 )
-        if stress == 'ERROR':
-            return False
-        
-        logger.info('%s %s', set_style('Starting stress on ', 'parameter'),
-                    ' '.join([set_style(param['vm_id'], 'object_repr') for param in self.vms_params ]))
-        stress.start()
-        sleep( comb['mem_size'] * comb['mem_update_rate']/ 10000 )
-                    
-        measurements_loop(self.options.n_measure, [mig_vm], self.hosts, twonodes_migrations, 
-                      'sequential', label = 'BOTH', mig_speed = comb['mig_bw'] )
-        stress.kill()
+#        logger.info('%s', set_style('Performing migration with other VM on BOTH nodes ', 'user2'))
+#        destroy_all( self.hosts )
+#        
+#        if not install([mig_vm], self.hosts[0]):
+#            logger.error('Unable to install the migrating VM, %s', exit_string)
+#            return False
+#         
+#        if len(split_vms[0]) > 0:
+#            if not install( split_vms[0], self.hosts[0]):
+#                logger.error('Unable to install the colocated VM on SRC, %s', exit_string)
+#                return False
+#            if not install( split_vms[1], self.hosts[1]):
+#                logger.error('Unable to install the colocated VM on DST, %s', exit_string)
+#                return False        
+#            
+#        stress = self.mem_update( self.vms_params , size = comb['mem_size'] * 0.9, 
+#                                  speed = comb['mig_bw']*comb['mem_update_rate']/100 )
+#        if stress == 'ERROR':
+#            return False
+#        
+#        logger.info('%s %s', set_style('Starting stress on ', 'parameter'),
+#                    ' '.join([set_style(param['vm_id'], 'object_repr') for param in self.vms_params ]))
+#        stress.start()
+#        sleep( comb['mem_size'] * comb['mem_update_rate']/ 10000 )
+#                    
+#        measurements_loop(self.options.n_measure, [mig_vm], self.hosts, twonodes_migrations, 
+#                      'sequential', label = 'BOTH', mig_speed = comb['mig_bw'] )
+#        stress.kill()
         destroy_all( self.hosts )
          
         pingprobes.kill()
