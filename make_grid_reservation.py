@@ -17,6 +17,7 @@ logger.setLevel('INFO')
 walltime = '3:00:00'
 n_nodes = 2
 oargridsub_opts = '-t deploy'
+kavlan_site = 'sophia'
 
 clusters = [ 'pastel', 'sol', 'suno', 'graphene',  'paradent', 'granduc' ]
 print clusters
@@ -30,7 +31,7 @@ resources = { cluster: n_nodes for cluster in clusters }
 subs = []
 for site in sites:
     sub_resources=''
-    if site == 'sophia':
+    if site == kavlan_site:
         sub_resources="{type=\\'kavlan-global\\'}/vlan=1+"
         getkavlan = False
     for cluster in get_site_clusters(site):
