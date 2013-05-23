@@ -264,7 +264,8 @@ if args.oargrid_job_id is None:
         for cluster in get_site_clusters(site):
             if cluster_nodes.has_key(cluster) and cluster_nodes[cluster]:
                 sub_resources += "{cluster=\\'"+cluster+"\\'}/nodes="+str(cluster_nodes[cluster])+'+'
-        subs.append((OarSubmission(resources=sub_resources[:-1]),site))
+        if sub_resources != '':
+            subs.append((OarSubmission(resources=sub_resources[:-1]),site))
     logger.info('Performing the reservation')
     (oargrid_job_id, _) = oargridsub(subs, walltime = walltime, additional_options = oargridsub_opts,
                                      reservation_date = format_oar_date(slots_ok[0][0]))
