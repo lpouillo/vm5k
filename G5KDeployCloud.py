@@ -12,8 +12,9 @@ from execo.log import set_style
 from execo_g5k import get_oargrid_job_nodes, get_oargrid_job_info, wait_oargrid_job_start, get_oargrid_job_oar_jobs, get_oar_job_kavlan, oargridsub
 from execo_g5k.oar import format_oar_date, oar_duration_to_seconds, OarSubmission       
 from execo_g5k.config import g5k_configuration, default_frontend_connexion_params
-from execo_g5k.api_utils import  get_host_attributes, get_g5k_sites, get_site_clusters, get_cluster_attributes
+from execo_g5k.api_utils import  get_host_attributes, get_g5k_sites, get_site_clusters, get_cluster_attributes, get_cluster_site
 from execo_g5k.planning import Planning
+from execo_g5k.oargrid import get_oargridsub_commandline
 
 from setup_cluster import Virsh_Deployment, get_clusters
 from state import *
@@ -53,6 +54,7 @@ g1.add_argument('-i', '--infile',
 g2 = resources.add_mutually_exclusive_group()
 g2.add_argument('-j', '--oargrid_job_id',
                     dest = 'oargrid_job_id',
+                    type = int,
                     help = 'use the hosts from a oargrid_job' )
 g2.add_argument('-w', '--walltime',
                     dest = 'walltime',
@@ -126,20 +128,22 @@ if args.infile is None:
         vm_ram_size = int(vm_template.get('mem'))
         required_ram = n_vm * vm_ram_size
     
-    if args.sites is None:
-        if args.clusters is not None:
-            clusters = args.clusters
+    
+    if args.oargrid_job_id is None:
+        if args.sites is None:
+            if args.clusters is not None:
+                clusters = args.clusters
+            else: 
+                logger.info('Getting clusters with virtualization technology and kavlan')
+                clusters = get_clusters(virt = True, kavlan = True)
+            
+            for cluster in clusters:
+                site_cluster = get_cluster_site(cluster)
+                if site_cluster not in sites :
+                    sites.append(site_cluster)
         else: 
-            logger.info('Getting clusters with virtualization technology and kavlan')
-            clusters = get_clusters(virt = True, kavlan = True)
-        
-        for cluster in clusters:
-            site_cluster = get_cluster_site(cluster)
-            if site_cluster not in sites :
-                sites.append(site_cluster)
-    else: 
-        sites = args.sites
-        clusters = get_clusters(sites, virt = True, kavlan = True)
+            sites = args.sites
+            clusters = get_clusters(sites, virt = True, kavlan = True)
     
 else:
     logger.info('Using an input file for the placement: %s', set_style(args.infile, 'emph'))
@@ -153,12 +157,12 @@ else:
         clusters.append(cluster.get('id'))
 
 ## MANUAL CORRECTION DUE TO G5K BUGS
-error_clusters = ['stremi']#, 'chinqchint', 'chimint', 'chirloute']
+error_clusters = ['stremi', 'chimint']#, 'chinqchint', 'chimint', 'chirloute']
 for cluster in error_clusters:
     if cluster in clusters:
         clusters.remove(cluster)
         logger.warn('DUE TO G5K BUGS, %s HAS BEEN REMOVED ', cluster)
-if len(clusters) == 0:
+if len(clusters) == 0 and args.oargrid_job_id is None:
     logger.error('No cluster defined, aborting')
     exit()
 error_sites = [ 'reims', 'bordeaux', 'grenoble' ]#, 'lille' ]
@@ -166,7 +170,7 @@ for site in error_sites:
     if site in sites:
         sites.remove(site)
         logger.warn('DUE TO KAVLAN-GLOBAL PROBLEMS, %s HAS BEEN REMOVED ', site)
-if len(sites) == 0:
+if len(sites) == 0 and args.oargrid_job_id is None:
     logger.error('No sites defined, aborting')
     exit()
 
@@ -255,6 +259,7 @@ if args.oargrid_job_id is None:
     logger.info('kavlan_site %s', set_style(str(kavlan_site), 'emph'))
     
     
+    
     subs = []
     for site in sites:
         sub_resources=''
@@ -267,6 +272,11 @@ if args.oargrid_job_id is None:
         if sub_resources != '':
             subs.append((OarSubmission(resources=sub_resources[:-1]),site))
     logger.info('Performing the reservation')
+    
+    logger.debug( get_oargridsub_commandline(subs, walltime = walltime, additional_options = oargridsub_opts,
+                                 reservation_date = format_oar_date(slots_ok[0][0])) )
+    
+    
     (oargrid_job_id, _) = oargridsub(subs, walltime = walltime, additional_options = oargridsub_opts,
                                      reservation_date = format_oar_date(slots_ok[0][0]))
 else:
@@ -411,11 +421,11 @@ logger.info(set_style('Physical hosts configuration', 'log_header'))
 
 
 
-setup_hosts = Virsh_Deployment( hosts, kavlan = kavlan_id)
+
 if args.env_file is not None:
-    setup_hosts.env_file = args.env_file 
+    setup_hosts = Virsh_Deployment( hosts, kavlan = kavlan_id, env_file = args.env_file) 
 else:
-    setup_hosts.env_name = args.env_name
+    setup_hosts = Virsh_Deployment( hosts, kavlan = kavlan_id, env_name = args.env_name)
 setup_hosts.deploy_hosts( num_tries = 1)
 setup_hosts.rename_hosts()
 
@@ -461,13 +471,16 @@ Put(clients, 'resolv.conf', remote_location = '/etc/').run()
 logger.info(set_style('Hosts configuration complete !\n', 'report_error'))
 
 
-logger.info(set_style('Virtual machines configuration', 'log_header'))    
-logger.info('Defining the virtual machines')
-vms = define_vms(n_vm, ip_mac, mem_size = vm_ram_size)
-
-
-logger.info('Distributing the virtual machines on all physical hosts')
-vms = distribute_vms_on_hosts(vms, hosts)
+logger.info(set_style('Virtual machines configuration', 'log_header'))
+if placement is None:    
+    logger.info('Defining the virtual machines')
+    vms = define_vms(n_vm, ip_mac, mem_size = vm_ram_size)
+    
+    
+    logger.info('Distributing the virtual machines on all physical hosts')
+    vms = distribute_vms_on_hosts(vms, hosts)
+else:
+    print placement
 
 logger.info('Creating the qcow2 disks on hosts')
 disk_creation = create_disks_hosts(vms).run()
@@ -484,9 +497,12 @@ logger.info('Starting the virtual machines')
 start_vms(vms).run()
 wait_vms_have_started(vms, service_node)
 
+
+
 listing = ''
 for host in hosts:
     host_vm = list_vm(host)
     listing += '\n'+host.address+': '+', '.join( [ vm['vm_id'] for vm in host_vm ])
 logger.info('Listing VM %s', listing)
+
 
