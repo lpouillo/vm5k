@@ -18,12 +18,11 @@
 
 
 
-from pprint import pformat, pprint
+from pprint import pformat
 from itertools import cycle
 from execo import Host, SshProcess, Remote, SequentialActions, ParallelActions, logger, TaktukRemote
 from execo.log import set_style
-from execo_g5k.config import default_frontend_connexion_params
-from execo_g5k.api_utils import get_cluster_site, get_host_attributes
+from execo_g5k.api_utils import get_host_attributes
 
 
 
@@ -228,7 +227,7 @@ def wait_vms_have_started(vms, host):
     while (not ssh_open) and nmap_tries < 50:
         logger.debug('nmap_tries %s', nmap_tries)
         nmap_tries += 1            
-        nmap = SshProcess('nmap '+ip_range+' -p 22', host)
+        nmap = SshProcess('nmap -PN '+ip_range+' -p 22', host)
         nmap.run()
         logger.debug('%s', nmap.cmd())
         stdout = nmap.stdout().split('\n')

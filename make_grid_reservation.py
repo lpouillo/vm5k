@@ -1,33 +1,117 @@
 #!/usr/bin/env python
 #-*- coding: utf-8 -*-
 
+import time as T, datetime as DT, execo.time_utils as EXT
 from pprint import pprint, pformat
 from operator import itemgetter
 from execo import configuration, logger
+from itertools import cycle
 from execo.log import set_style
-from execo_g5k.oar import format_oar_date
-from execo_g5k import OarSubmission, oargridsub, get_oargrid_job_nodes, wait_oargrid_job_start, get_oargrid_job_oar_jobs, get_oar_job_kavlan, oargriddel
+import xml.etree.ElementTree as ET
+from execo_g5k.oar import format_oar_date, oar_duration_to_seconds
+from execo_g5k import OarSubmission, oargridsub, get_oargrid_job_nodes, wait_oargrid_job_start, get_oargrid_job_oar_jobs, get_oar_job_kavlan, oargriddel 
+from execo_g5k.oargrid import get_oargridsub_commandline
 from execo_g5k.api_utils import get_cluster_site, get_g5k_sites, get_g5k_clusters, get_resource_attributes, get_host_attributes, get_cluster_attributes, get_site_clusters
-#from execo_g5k.planning import *
+from execo_g5k.planning import Planning
 #from execo_g5k.vmutils import *
-#from execo_g5k.vmutils.setup_cluster import G5K_Virsh_Deployment
+from setup_cluster import get_clusters
 
 logger.setLevel('INFO')
 
+n_vm = 1000
 walltime = '3:00:00'
-n_nodes = 2
 oargridsub_opts = '-t deploy'
-kavlan_site = 'sophia'
+kavlan_site = 'toulouse'
 
-clusters = [ 'pastel', 'sol', 'suno', 'graphene',  'paradent', 'granduc' ]
-print clusters
+tree = ET.parse('vm_default_template.xml')
+root = tree.getroot()
+
+vm_ram_size = int(root.get('mem'))
+
+required_ram = n_vm * vm_ram_size
+
+logger.info('Gathering the list of clusters with virtualization technology and kavlan')
+clusters = get_clusters(virt = True, kavlan = True)
+logger.warn('REMOVNG STREMI BECAUSE KAVLAN GLOBAL DOESN\'T WORK, see https://intranet.grid5000.fr/bugzilla/show_bug.cgi?id=4634')
+clusters.remove('stremi')
+logger.warn('REMOVNG LILLE CLUSTERS BECAUSE DEPLOYMENT DOESN\'T WORK IN KAVLAN')
+clusters.remove('chinqchint')
+clusters.remove('chimint')
+clusters.remove('chirloute')
+
+logger.info('Gathering the RAM size of a node for each cluster')
+clusters_ram = { cluster: get_host_attributes(cluster+'-1')['main_memory']['ram_size']/10**6 for cluster in clusters  }
+logger.info(' '.join( [ cluster+': '+str(ram)+'MB' for cluster, ram in clusters_ram.iteritems() ] ))
+
+logger.info('Finding the free resources for the clusters %s', ', '.join([cluster for cluster in clusters]))
+starttime = T.time()
+endtime = starttime + EXT.timedelta_to_seconds(DT.timedelta(days = 2))
+
+planning = Planning( clusters, starttime, endtime )
+
+planning.compute_slots()
+planning.draw_max_nodes(save = True)
+
+slots_ok = []
+for slot, resources in planning.slots.iteritems():
+    slot_ram = 0
+    slot_node = 0 
+    for resource, n_node in resources.iteritems():
+        if resource in clusters:
+            slot_ram += n_node * clusters_ram[resource]
+            slot_node += n_node    
+    if required_ram < slot_ram and slot[1]-slot[0] > oar_duration_to_seconds(walltime):
+        slots_ok.append(slot)
+
+slots_ok.sort()
+
+slot = {}
+tmp_slot = planning.slots[slots_ok[0]]
+for res, n_nodes in tmp_slot.iteritems():
+    if res in clusters and n_nodes > 0:
+        slot[res] = n_nodes
+
+
+
+cluster_nodes = { cluster:0 for cluster in slot.iterkeys()}
+
+iter_cluster = cycle(slot.iterkeys())
+
+cluster = iter_cluster.next()
+node_ram = 0
+for i_vm in range(n_vm):
+    node_ram += vm_ram_size
+    if node_ram + vm_ram_size > clusters_ram[cluster]:            
+        node_ram = 0
+        cluster_nodes[cluster] += 1
+        cluster = iter_cluster.next()
+        while cluster_nodes[cluster] >= slot[cluster]:
+            cluster = iter_cluster.next()
+        
+
+
+print 'slot', slot    
+print 'ram', clusters_ram
+
+slot_ram = 0
+for cluster, n_nodes in cluster_nodes.iteritems():
+    slot_ram += n_nodes * clusters_ram[cluster]
+print required_ram, slot_ram
+
+print cluster_nodes
+
 sites =[]
-for cluster in clusters:
-    cl_site = get_cluster_site(cluster)
-    if cl_site not in sites:
-        sites.append(cl_site)
+total_nodes = 0
+for cluster, n_node in cluster_nodes.iteritems():
+    total_nodes += n_node
+    site = get_cluster_site(cluster)
+    if site not in sites:
+        sites.append(get_cluster_site(cluster))
+print total_nodes
 print sites
-resources = { cluster: n_nodes for cluster in clusters }
+
+
+
 subs = []
 for site in sites:
     sub_resources=''
@@ -35,11 +119,21 @@ for site in sites:
         sub_resources="{type=\\'kavlan-global\\'}/vlan=1+"
         getkavlan = False
     for cluster in get_site_clusters(site):
-        if resources.has_key(cluster):
-            sub_resources += "{cluster=\\'"+cluster+"\\'}/nodes="+str(resources[cluster])+'+'
-    subs.append((OarSubmission(resources=sub_resources[:-1]),site))
+        if cluster_nodes.has_key(cluster):
+            sub_resources += "{cluster=\\'"+cluster+"\\'}/nodes="+str(cluster_nodes[cluster])+'+'
+    if sub_resources != '':
+        subs.append((OarSubmission(resources=sub_resources[:-1]),site))
 
-(oargrid_job_id, _) = oargridsub(subs, walltime = walltime, additional_options = oargridsub_opts)
+print format_oar_date(slots_ok[0][0])
+#print subs
+
+
+print get_oargridsub_commandline(subs, walltime = walltime, additional_options = oargridsub_opts,
+                                 reservation_date = format_oar_date(slots_ok[0][0]))
+
+
+(oargrid_job_id, _) = oargridsub(subs, walltime = walltime, additional_options = oargridsub_opts,
+                                 reservation_date = format_oar_date(slots_ok[0][0]))
 
 
 print oargrid_job_id
