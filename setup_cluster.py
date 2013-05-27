@@ -103,10 +103,15 @@ class Virsh_Deployment(object):
         
     def install_packages(self, packages_list = None):
         """ Installation of packages on the nodes """
+        logger.info('Installing packages')
         if packages_list is None:
             packages_list = self.default_packages
         cmd = 'apt-get update && apt-get install  -y --force-yes '+packages_list
-            
+        install = EX.Remote(cmd, self.hosts).run()
+        if install.ok():
+            logger.debug('Packages installed')
+        else:
+            logger.error('Unable to install packages on the nodes ..')
 
     def reboot(self):
         """ Reboot the nodes """
@@ -147,7 +152,7 @@ class Virsh_Deployment(object):
             EX.Remote('rm -f/tmp/*.img; rm -f /tmp/*.qcow2', self.hosts).run()
         
         logger.info("Creating disk image on /tmp/vm-base.img")
-        cmd = 'qemu-img convert -O raw /grid5000/images/KVM/squeeze-x64-base.qcow2 /tmp/vm-base.img'
+        cmd = 'qemu-img convert -O raw '+disk_image+' /tmp/vm-base.img'
         EX.Remote(cmd, self.hosts).run()
         self.state.append('disk_created')
 
@@ -198,8 +203,6 @@ class Virsh_Deployment(object):
             
         self.tree = ET.ElementTree(element=root)
         self.tree.write('default.xml')
-        logger.info('Pushing default.xml on all nodes ...')
-
         EX.Remote('virsh net-destroy default; virsh net-undefine default', self.hosts).run()
         EX.Put(self.hosts, 'default.xml', remote_location = '/etc/libvirt/qemu/networks/').run()
         EX.Remote('virsh net-define /etc/libvirt/qemu/networks/default.xml ; virsh net-start default; virsh net-autostart default; ', self.hosts).run()

@@ -40,7 +40,7 @@ def list_vm( host, all = False ):
                 std = line.split()
                 vms_id.append(std[1])
     logger.debug('List of VM on host %s\n%s', set_style(host.address, 'host'),
-                 ' '.join([set_style(vm_id, 'object_repr') for vm_id in vms_id]))
+                 ' '.join([set_style(vm_id, 'emph') for vm_id in vms_id]))
     return [ {'vm_id': vm_id} for vm_id in vms_id ]
 
 def kavname_to_shortname( host):
@@ -64,7 +64,7 @@ def define_vms( n_vm, ip_mac, mem_size = 256, hdd_size = 2, n_cpu = 1, cpusets =
                 'mem_size': mem_size, 'vcpus': n_cpu, 'cpuset': cpusets['vm-'+str(i_vm)],
                 'ip': ip_mac[i_vm+offset][0], 'mac': ip_mac[i_vm+offset][1], 'host': None})
     logger.debug('VM parameters have been defined:\n%s',
-                 ' '.join([set_style(param['vm_id'], 'object_repr') for param in vms]))
+                 ' '.join([set_style(param['vm_id'], 'emph') for param in vms]))
     return vms
 
 
@@ -110,7 +110,8 @@ def distribute_vms_on_hosts( vms, hosts, mode = 'distributed'):
             vm['host'] = host
             hosts_vm[host.address].append(vm['vm_id'])
     
-    logger.info( '\n%s', '\n'.join( [set_style(host, 'host')+': '+', '.join( [set_style(vm,'object_repr')  for vm in host_vms]) for host, host_vms in hosts_vm.iteritems() ] ))
+    logger.debug( '\n%s', '\n'.join( [set_style(host, 'host')+': '+\
+                                      ', '.join( [set_style(vm,'emph')  for vm in host_vms]) for host, host_vms in hosts_vm.iteritems() ] ))
     
     return vms
 
@@ -121,8 +122,7 @@ def create_disk_host(vm, host = None,  backing_file = '/tmp/vm-base.img', backin
     
     cmd = 'qemu-img create -f qcow2 -o backing_file='+backing_file+',backing_fmt='+backing_file_fmt+' /tmp/'+\
             vm['vm_id']+'.qcow2 '+str(vm['hdd_size'])+'G';
-    logger.info('Creating the disk of %s on host %s', set_style(vm['vm_id'],'object_repr'),
-                                                            set_style(vm['host'].address, 'host'))
+
     return Remote(cmd, [host])
     #return cmd
 
@@ -149,27 +149,30 @@ def create_disks_hosts(vms, hosts = None, backing_file = '/tmp/vm-base.img', bac
     """ """
     
     hosts_vms = {}
+    
     for vm in vms:
         if not hosts_vms.has_key(vm['host']):
             hosts_vms[vm['host']] = []
         hosts_vms[vm['host']].append(vm)
-        
+    
+    log = ''    
     all_actions = []
     for host, vms in hosts_vms.iteritems():
         host_actions = []
         for vm in vms:
             host_actions.append(create_disk_host(vm))
-            
+        log += '\n'+set_style(host.address.split('.')[0], 'host')+': '+\
+                              ', '.join([set_style(vm['vm_id'], 'emph') for vm in vms])
         all_actions.append(SequentialActions(host_actions))
-    
+    logger.info(log)
     return ParallelActions(all_actions)
    
-def create_disks_hosts_taktuk(vms, hosts, backing_file = '/tmp/vm-base.img', backing_file_fmt = 'raw'):
-    """ """
-    cmds = [ 'qemu-img create -f qcow2 -o backing_file='+backing_file+',backing_fmt='+backing_file_fmt+' /tmp/'+\
-            vm['vm_id']+'.qcow2 '+str(vm['hdd_size'])+'G' for vm in vms ]
-    
-    return TaktukRemote( "{{cmds}}", sorted(hosts*len(cmds)) ) 
+#def create_disks_hosts_taktuk(vms, hosts, backing_file = '/tmp/vm-base.img', backing_file_fmt = 'raw'):
+#    """ """
+#    cmds = [ 'qemu-img create -f qcow2 -o backing_file='+backing_file+',backing_fmt='+backing_file_fmt+' /tmp/'+\
+#            vm['vm_id']+'.qcow2 '+str(vm['hdd_size'])+'G' for vm in vms ]
+#    
+#    return TaktukRemote( "{{cmds}}", sorted(hosts*len(cmds)) ) 
     
 def install_vm(vm, host = None):
     """ """
@@ -198,7 +201,7 @@ def install_vms(vms):
         hosts_actions[vm['host']].append( install_vm( vm) )
     install_actions = []
     for host, actions in hosts_actions.iteritems():
-        logger.info('Installing %s on %s', set_style( str(len(actions))+' VM', 'object_repr'), set_style(host, 'host'))
+        logger.info('- %s on %s', set_style( str(len(actions))+' VM', 'emph'), set_style(host.address.split('.')[0], 'host'))
         install_actions.append(SequentialActions(actions))
     
     return ParallelActions( install_actions)    
@@ -247,7 +250,7 @@ def create_disks( hosts, vms_params, backing_file = '/tmp/vm-base.img', backing_
     logger.debug('%s', pformat(hosts))
     disk_actions = []
     for vm_params in vms_params:
-        logger.info('Creating disk for %s (%s)', set_style(vm_params['vm_id'], 'object_repr'), vm_params['ip'] )
+        logger.info('Creating disk for %s (%s)', set_style(vm_params['vm_id'], 'emph'), vm_params['ip'] )
         cmd = 'qemu-img create -f qcow2 -o backing_file='+backing_file+',backing_fmt='+backing_file_fmt+' /tmp/'+\
             vm_params['vm_id']+'.qcow2 '+str(vm_params['hdd_size'])+'G';
         disk_actions.append( Remote(cmd, hosts))
@@ -264,7 +267,7 @@ def create_disks( hosts, vms_params, backing_file = '/tmp/vm-base.img', backing_
 def install( vms_params, host, autostart = True, packages = None):
     """Perform virt-install using the dict vm_params"""
     install_actions = []
-    log_vm = ' '.join([set_style(param['vm_id'], 'object_repr') for param in vms_params])
+    log_vm = ' '.join([set_style(param['vm_id'], 'emph') for param in vms_params])
     for param in vms_params:
         cmd = 'virt-install -d --import --connect qemu:///system --nographics --noautoconsole --noreboot'+ \
         ' --name=' + param['vm_id'] + ' --network network=default,mac='+param['mac']+' --ram='+str(param['mem_size'])+ \
@@ -310,7 +313,7 @@ def install( vms_params, host, autostart = True, packages = None):
 
 def start( vms_params, host):
     """Start vm on hosts """
-    log_vm = ' '.join([set_style(param['vm_id'], 'object_repr') for param in vms_params])
+    log_vm = ' '.join([set_style(param['vm_id'], 'emph') for param in vms_params])
     start_tries = 0
     vm_started = False
     while (not vm_started) and start_tries < 5:
@@ -354,7 +357,7 @@ def start( vms_params, host):
 def destroy( vms_params, host, autoundefine = True ):
     """Destroy vm on hosts """
     if len(vms_params) > 0:
-        logger.info('Destroying %s VM on hosts %s', ' '.join([set_style(param['vm_id'], 'object_repr') for param in vms_params]),
+        logger.info('Destroying %s VM on hosts %s', ' '.join([set_style(param['vm_id'], 'emph') for param in vms_params]),
                     set_style(host.address, 'host') )
         destroy_actions = []
         for param in vms_params:
@@ -377,7 +380,7 @@ def undefine(vms_params, host):
     for param in vms_params:
         cmd = "virsh undefine "+param['vm_id']
         undefine_actions.append(Remote(cmd, [host], ignore_exit_code = True))
-    logger.info('Undefining %s VM on hosts %s', ' '.join([set_style(param['vm_id'], 'object_repr') for param in vms_params]),
+    logger.info('Undefining %s VM on hosts %s', ' '.join([set_style(param['vm_id'], 'emph') for param in vms_params]),
                         set_style(host.address, 'host') )
     
 
