@@ -3,12 +3,15 @@
 
 import time as T, datetime as DT, execo.time_utils as EXT
 import argparse, time, random, os
+
 from json import loads
 from copy import copy
 from pprint import pprint, pformat
 from netaddr import IPNetwork
 from operator import itemgetter
 import xml.etree.ElementTree as ET
+import xml.dom.minidom
+import xml
 from execo import configuration, logger, Remote, Put, Get, Host, Timer
 from execo.log import set_style
 from execo_g5k import get_oargrid_job_nodes, get_oargrid_job_info, wait_oargrid_job_start, get_oargrid_job_oar_jobs, get_oar_job_kavlan, oargridsub
@@ -164,6 +167,7 @@ else:
             clusters.append(cluster.get('id'))
             log += cluster.get('id')+' ('+str(len(cluster.findall('.//host')))+' hosts - '+str(len(cluster.findall('.//vm')))+' vms) '
     logger.info(log)                       
+    
 
 
 ## MANUAL CORRECTION DUE TO G5K BUGS
@@ -201,6 +205,7 @@ else:
         clusters_ram = { cluster.get('id'): get_host_attributes(cluster.get('id')+'-1')['main_memory']['ram_size']/2**20 for cluster in placement.findall('.//cluster')  }
         required_ram = sum([ int(vm.get('mem')) for vm in placement.findall('.//vm')])
         
+        
         for host in placement.findall('.//host'):
             if clusters_ram[host.get('id').split('-')[0]] < sum([ int(vm.get('mem')) for vm in host.findall('./vm')]):
                 logger.warning('Host '+host.get('id')+' has not enough RAM')        
@@ -210,54 +215,54 @@ else:
         required_ram = n_vm * vm_ram_size
         clusters_ram = { cluster: get_host_attributes(cluster+'-1')['main_memory']['ram_size']/2**20 for cluster in clusters  } 
         
-    logger.info('No oargrid_job_id given, finding a slot with %s MB', set_style(str(required_ram), 'emph'))
-    
-    walltime = args.walltime
-    
-    starttime = T.time()
-    endtime = starttime + EXT.timedelta_to_seconds(DT.timedelta(days = 2))
-    planning = Planning( clusters, starttime, endtime )
-    planning.compute_slots()
-    
-    slots_ok = []
-    for slot in planning.slots:
-        slot_ram = 0
-        slot_node = 0 
-        for resource, n_node in slot[2].iteritems():
-            if resource in clusters:
-                slot_ram += n_node * clusters_ram[resource]
-                slot_node += n_node    
-    
-        if required_ram < slot_ram:
-            slots_ok.append(slot)
-            
-    
-    
-    slots_ok.sort(key = itemgetter(0))
-    
-    
-    chosen_slot = slots_ok[0]
-    
-    tmp_res = chosen_slot[2].copy() 
-    for res in tmp_res.iterkeys():
-        if res not in clusters:
-            del chosen_slot[2][res]
-    cluster_nodes = { cluster:0 for cluster in chosen_slot[2].iterkeys()}
+        logger.info('No oargrid_job_id given, finding a slot with %s MB', set_style(str(required_ram), 'emph'))
         
-    iter_cluster = cycle(chosen_slot[2].iterkeys())
-    cluster = iter_cluster.next()
-    node_ram = 0
-    for i_vm in range(n_vm):
-        node_ram += vm_ram_size
-        if node_ram + vm_ram_size > clusters_ram[cluster]:            
-            node_ram = 0
-            if cluster_nodes[cluster] + 1 > chosen_slot[2][cluster]:
+        walltime = args.walltime
+        
+        starttime = T.time()
+        endtime = starttime + EXT.timedelta_to_seconds(DT.timedelta(days = 2))
+        planning = Planning( clusters, starttime, endtime )
+        planning.compute_slots()
+        
+        slots_ok = []
+        for slot in planning.slots:
+            slot_ram = 0
+            slot_node = 0 
+            for resource, n_node in slot[2].iteritems():
+                if resource in clusters:
+                    slot_ram += n_node * clusters_ram[resource]
+                    slot_node += n_node    
+        
+            if required_ram < slot_ram:
+                slots_ok.append(slot)
+                
+        
+        
+        slots_ok.sort(key = itemgetter(0))
+        
+        
+        chosen_slot = slots_ok[0]
+        
+        tmp_res = chosen_slot[2].copy() 
+        for res in tmp_res.iterkeys():
+            if res not in clusters:
+                del chosen_slot[2][res]
+        cluster_nodes = { cluster:0 for cluster in chosen_slot[2].iterkeys()}
+            
+        iter_cluster = cycle(chosen_slot[2].iterkeys())
+        cluster = iter_cluster.next()
+        node_ram = 0
+        for i_vm in range(n_vm):
+            node_ram += vm_ram_size
+            if node_ram + vm_ram_size > clusters_ram[cluster]:            
+                node_ram = 0
+                if cluster_nodes[cluster] + 1 > chosen_slot[2][cluster]:
+                    cluster = iter_cluster.next()
+                cluster_nodes[cluster] += 1
                 cluster = iter_cluster.next()
-            cluster_nodes[cluster] += 1
-            cluster = iter_cluster.next()
-            while cluster_nodes[cluster] >= chosen_slot[2][cluster]:
-                cluster = iter_cluster.next()
-    cluster_nodes[cluster] += 1
+                while cluster_nodes[cluster] >= chosen_slot[2][cluster]:
+                    cluster = iter_cluster.next()
+        cluster_nodes[cluster] += 1
     
     logger.info('Finding a free kavlan global')
     get_jobs = Remote('oarstat -J -f', [ Host(site+'.grid5000.fr') for site in sites], 
@@ -531,8 +536,13 @@ for vm in vms:
         host = cluster.find("./host/[@id='"+host_uid+"']")
     el_vm = ET.SubElement(host, 'vm', attrib = vm)
         
-ET.dump(deployment)
+xml_string = ET.tostring(deployment)
 
+
+xml.dom.minidom.parseString(xml_string)
+pretty_xml_as_string = xml.toprettyxml()
+tree = ET.ElementTree(deployment)
+tree.write("filename.xml")
 
 
 execution_time['6-outfiles'] = timer.elapsed() - sum(execution_time.values())
