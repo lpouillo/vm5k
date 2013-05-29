@@ -31,9 +31,11 @@ with *libvirt* installed and configured
 ## Usage
 To deploy 100 VM on squeeze-x64-prod and with the squeeze-x64-base.qcow2 KVM image
 on any Grid5000 cluster with KaVLAN and hardware virtualization
+
   G5KDeployCloud.py -n 100 
 
 To deploy 50 VM on a specific environnement for 2 hours on cluster hercule, griffon, graphene 
+
 
   G5KDeployCloud.py -n 50 -c hercule griffon graphene -w 2:0:0 -h_enf /home/lpouilloux/synced/environments/wheezy-nfs-libvirt/wheezy-nfs-libvirt.env 
 
