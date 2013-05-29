@@ -92,6 +92,7 @@ def distribute_vms_on_hosts( vms, hosts, mode = 'distributed'):
                 hosts_vm[host.address] = []
             hosts_vm[host.address].append(vm['vm_id'])
             host = iter_hosts.next()
+            print host, vm
             
     elif mode is 'concentrated':
         
