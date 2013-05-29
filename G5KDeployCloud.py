@@ -9,14 +9,14 @@ from copy import copy
 from pprint import pprint, pformat
 from netaddr import IPNetwork
 from operator import itemgetter
-#try:
-#    import lxml.etree as ET
-#    with_lxml = True
-#except ImportError:
-#    pass
-#    print 'No lxml python module found, XML file will not be indented'
-#    with_lxml = False
-#    import xml.etree.ElementTree as ET
+try:
+    import lxml.etree as ET
+    with_lxml = True
+except ImportError:
+    pass
+    print 'No lxml python module found, XML file will not be indented'
+    with_lxml = False
+    import xml.etree.ElementTree as ET
 with_lxml = False
 import xml.etree.ElementTree as ET
 
@@ -322,6 +322,8 @@ hosts = get_oargrid_job_nodes( oargrid_job_id )
 hosts.sort()
 if placement is not None:
     logger.info('Checking the correspondance between topology and reservation')
+    
+    
 else:
     logger.info('No topology given, VMs will be distributed')
 logger.info('Getting the attributes of \n%s', ", ".join( [set_style(host.address.split('.')[0], 'host') for host in hosts] ))
