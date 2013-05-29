@@ -9,9 +9,17 @@ from copy import copy
 from pprint import pprint, pformat
 from netaddr import IPNetwork
 from operator import itemgetter
+#try:
+#    import lxml.etree as ET
+#    with_lxml = True
+#except ImportError:
+#    pass
+#    print 'No lxml python module found, XML file will not be indented'
+#    with_lxml = False
+#    import xml.etree.ElementTree as ET
+with_lxml = False
 import xml.etree.ElementTree as ET
-import xml.dom.minidom
-import xml
+
 from execo import configuration, logger, Remote, Put, Get, Host, Timer
 from execo.log import set_style
 from execo_g5k import get_oargrid_job_nodes, get_oargrid_job_info, wait_oargrid_job_start, get_oargrid_job_oar_jobs, get_oar_job_kavlan, oargridsub
@@ -21,7 +29,7 @@ from execo_g5k.api_utils import  get_host_attributes, get_g5k_sites, get_site_cl
 from execo_g5k.planning import Planning
 from execo_g5k.oargrid import get_oargridsub_commandline
 
-from setup_cluster import Virsh_Deployment, get_clusters
+from deployment import Virsh_Deployment, get_clusters
 from state import *
 
 
@@ -352,7 +360,6 @@ subjobs = get_oargrid_job_oar_jobs(oargrid_job_id)
 if kavlan_site is None:
     for subjob in subjobs:
         vlan = get_oar_job_kavlan(subjob[0], subjob[1])
-        
         if vlan is not None: 
             kavlan_id = vlan
             kavlan_site = subjob[1]
@@ -435,28 +442,28 @@ if args.env_file is not None:
     setup_hosts = Virsh_Deployment( hosts, kavlan = kavlan_id, env_file = args.env_file) 
 else:
     setup_hosts = Virsh_Deployment( hosts, kavlan = kavlan_id, env_name = args.env_name)
-setup_hosts.deploy_hosts( num_tries = 1)
+setup_hosts.deploy_hosts( num_tries = 1 )
 setup_hosts.rename_hosts()
 
 hosts = list(setup_hosts.hosts)
 
-logger.info('%s', ", ".join( [set_style(host.address.split('.')[0], 'host') for host in hosts] ))
-setup_hosts.upgrade_hosts()
-setup_hosts.install_packages()
-setup_hosts.configure_libvirt()
+#logger.info('%s', ", ".join( [set_style(host.address.split('.')[0], 'host') for host in hosts] ))
+#setup_hosts.upgrade_hosts()
+#setup_hosts.install_packages()
+#setup_hosts.configure_libvirt()
 
-if args.vm_backing_file is None:
-    setup_hosts.create_disk_image(clean = True)
-else:
-    logger.info('Copying %s on hosts', args.vm_backing_file)
-    copy_actions = []
-    for host in hosts:
-        copy_actions.append( Remote('scp '+args.vm_backing_file+' root@'+host.address+':',  [get_host_site(host)+'.grid5000.fr'],
-                                     connexion_params = default_frontend_connexion_params))
-    copy_backing_file = ParallelActions(copy_actions).run()
-    
-    setup_hosts.create_disk_image( disk_image = '/root/'+args.vm_backing_file.split('/')[-1], clean = True)
-setup_hosts.copy_ssh_keys()
+#if args.vm_backing_file is None:
+#    setup_hosts.create_disk_image(clean = True)
+#else:
+#    logger.info('Copying %s on hosts', args.vm_backing_file)
+#    copy_actions = []
+#    for host in hosts:
+#        copy_actions.append( Remote('scp '+args.vm_backing_file+' root@'+host.address+':',  [get_host_site(host)+'.grid5000.fr'],
+#                                     connexion_params = default_frontend_connexion_params))
+#    copy_backing_file = ParallelActions(copy_actions).run()
+#    
+#    setup_hosts.create_disk_image( disk_image = '/root/'+args.vm_backing_file.split('/')[-1], clean = True)
+#setup_hosts.copy_ssh_keys()
 
 logger.info('Configuring %s as a %s server', 
             set_style(service_node.split('.')[0], 'host'), set_style('DNS/DCHP', 'emph'))
@@ -534,15 +541,17 @@ for vm in vms:
         host = ET.SubElement(cluster, 'host', attrib = {'id': host_uid})
     else:
         host = cluster.find("./host/[@id='"+host_uid+"']")
-    el_vm = ET.SubElement(host, 'vm', attrib = vm)
+    el_vm = ET.SubElement(host, 'vm', attrib = {'id': vm['vm_id'], 'ip': vm['ip'], 'mac': vm['mac'], 
+                'mem': str(vm['mem_size']), 'cpu': str(vm['vcpus']), 'hdd': str(vm['hdd_size'])})
         
-xml_string = ET.tostring(deployment)
 
 
-xml.dom.minidom.parseString(xml_string)
-pretty_xml_as_string = xml.toprettyxml()
+file = outdir+'/initial_state.xml'
 tree = ET.ElementTree(deployment)
-tree.write("filename.xml")
+if with_lxml:
+    tree.write(file, pretty_print=True)
+else:
+    tree.write(file)
 
 
 execution_time['6-outfiles'] = timer.elapsed() - sum(execution_time.values())
@@ -559,7 +568,7 @@ log = 'G5KCloudDeploy successfully executed:'
 for step, exec_time in execution_time.iteritems():
     step_size = int(exec_time*int(columns)/total_time)
     print step, step_size
-    log += '\n 1'+''.join([' ' for i in range(total_space)])+''.join([' ' for i in range(step_size)])
+    log += '\n '+''.join([' ' for i in range(total_space)])+''.join([' ' for i in range(step_size)])
     total_space += int(exec_time*int(columns)/total_time)
 logger.info(log)     
 
