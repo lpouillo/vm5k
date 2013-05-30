@@ -24,18 +24,21 @@ from execo.log import set_style
 from execo_g5k import get_oargrid_job_nodes, get_oargrid_job_info, wait_oargrid_job_start, get_oargrid_job_oar_jobs, get_oar_job_kavlan, oargridsub
 from execo_g5k.oar import format_oar_date, oar_duration_to_seconds, OarSubmission       
 from execo_g5k.config import g5k_configuration, default_frontend_connexion_params
-from execo_g5k.api_utils import  get_host_attributes, get_g5k_sites, get_site_clusters, get_cluster_attributes, get_cluster_site, get_host_site
+from execo_g5k.api_utils import group_hosts, get_host_attributes, get_g5k_sites, get_site_clusters, get_cluster_attributes, get_cluster_site, get_host_site
 from execo_g5k.planning import Planning
 from execo_g5k.oargrid import get_oargridsub_commandline
 
 from deployment import Virsh_Deployment, get_clusters
-from state import *
+from actions import *
 
 
 # Constants
+deployment_tries = 1
 max_vms = 10230 # Limitations due to the number of IP address 
 oargridsub_opts = '-t deploy'
-default_vm_template = '<vm mem="1024" hdd="2" cpu="1" cpuset="auto" />'
+default_vm_template = '<vm mem="512" hdd="2" cpu="1" cpuset="auto" />'
+error_sites = [ 'reims', 'bordeaux', 'sophia', 'grenoble' ]#, 'lille' ]
+error_clusters = [item for sublist in map(lambda site: get_site_clusters(site), error_sites) for item in sublist]+[ 'parapide' , 'paradent' ]
 
 # Defining the options 
 parser = argparse.ArgumentParser(
@@ -78,7 +81,7 @@ hosts = parser.add_argument_group('Physical hosts')
 host_env = hosts.add_mutually_exclusive_group()
 host_env.add_argument('-h_env', '--host_env_name', 
                     dest = 'env_name',
-                    default = 'squeeze-x64-prod',
+                    default = 'squeeze-x64-base',
                     help = 'Kadeploy environment NAME for the physical host')
 host_env.add_argument('-h_enf', '--host_env_file', 
                     dest = 'env_file',
@@ -181,22 +184,19 @@ else:
     
 
 ## MANUAL CORRECTION DUE TO G5K BUGS
-error_sites = [ 'rennes', 'reims', 'bordeaux', 'grenoble', 'sophia' ]#, 'lille' ]
 for site in error_sites:
     if site in sites:
         sites.remove(site)
-        logger.warn('DUE TO KAVLAN-GLOBAL PROBLEMS, %s HAS BEEN REMOVED ', site)
+#        logger.warn('DUE TO G5K BUGS, %s HAS BEEN REMOVED ', site)
 if len(sites) == 0 and args.oargrid_job_id is None:
     logger.error('No sites defined, aborting')
     exit()
-    
-    
-error_clusters = map(lambda site: get_site_clusters(site), error_sites)
 
 for cluster in error_clusters:
     if cluster in clusters:
         clusters.remove(cluster)
-        logger.warn('DUE TO G5K BUGS, %s HAS BEEN REMOVED ', cluster)
+logger.warn('DUE TO G5K BUGS, %s HAS BEEN REMOVED ', ', '.join([ set_style(cluster, 'emph') for cluster in error_clusters]))
+
 if len(clusters) == 0 and args.oargrid_job_id is None:
     logger.error('No cluster defined, aborting')
     exit()
@@ -212,17 +212,20 @@ logger.info(set_style('GRID RESERVATION', 'log_header'))
 if args.oargrid_job_id is not None:
     logger.info('Using '+set_style(str(args.oargrid_job_id), 'emph')+' job')
     oargrid_job_id = args.oargrid_job_id
+    
+    
 else:
     logger.info('No oargrid_job_id given, finding a slot that suit your need')
+    clusters_ram = { cluster: get_host_attributes(cluster+'-1')['main_memory']['ram_size']/10**6 for cluster in clusters  }
     walltime = args.walltime
     starttime = T.time()
     endtime = starttime + EXT.timedelta_to_seconds(DT.timedelta(days = 2))
     planning = Planning( clusters, starttime, endtime )
     planning.compute_slots()
     
+    
     if placement is not None:
         logger.info('Checking that the hosts have enough RAM')
-        clusters_ram = { cluster.get('id'): get_host_attributes(cluster.get('id')+'-1')['main_memory']['ram_size']/2**20 for cluster in placement.findall('.//cluster')  }
         required_ram = sum([ int(vm.get('mem')) for vm in placement.findall('.//vm')])
         
         for host in placement.findall('.//host'):
@@ -230,7 +233,6 @@ else:
                 logger.warning('Host '+host.get('id')+' has not enough RAM')  
         
         cluster_nodes ={ cluster.get('id'):len(cluster.findall('./host')) for cluster in placement.findall('.//cluster')}
-        
         
         for slot in planning.slots:
             for cluster, n_nodes in cluster_nodes.iteritems():
@@ -241,13 +243,12 @@ else:
             if slot_ok:
                 chosen_slot = slot
                 break
-
-              
+        
     
     else:        
         vm_ram_size = int(vm_template.get('mem'))
         required_ram = n_vm * vm_ram_size
-        clusters_ram = { cluster: get_host_attributes(cluster+'-1')['main_memory']['ram_size']/2**20 for cluster in clusters  }
+        
         slots_ok = []
         for slot in planning.slots:
             slot_ram = 0
@@ -256,10 +257,11 @@ else:
                 if resource in clusters:
                     slot_ram += n_node * clusters_ram[resource]
                     slot_node += n_node    
-        
+            
             if required_ram < slot_ram:
                 slots_ok.append(slot)
-
+        
+        
         
         slots_ok.sort(key = itemgetter(0))
         chosen_slot = slots_ok[0]
@@ -272,6 +274,7 @@ else:
             
         iter_cluster = cycle(chosen_slot[2].iterkeys())
         cluster = iter_cluster.next()
+        
         node_ram = 0
         for i_vm in range(n_vm):
             node_ram += vm_ram_size
@@ -284,6 +287,8 @@ else:
                 while cluster_nodes[cluster] >= chosen_slot[2][cluster]:
                     cluster = iter_cluster.next()
         cluster_nodes[cluster] += 1
+        
+        
     
     logger.info('Finding a free kavlan global')
     get_jobs = Remote('oarstat -J -f', [ Host(site+'.grid5000.fr') for site in sites], 
@@ -329,10 +334,15 @@ if jobinfo['start_date'] > time.time():
         exit()
 else:
     logger.info('Start date = %s', format_oar_date(jobinfo['start_date']))
+
 wait_oargrid_job_start(oargrid_job_id)
 logger.info('Job '+set_style(str(oargrid_job_id), 'emph')+' has started, retrieving the list of hosts ...')    
+
+
         
 hosts = get_oargrid_job_nodes( oargrid_job_id )
+grouped_hosts = group_hosts(hosts)
+
 hosts.sort()
 logger.info('Getting the attributes of \n%s', ", ".join( [set_style(host.address.split('.')[0], 'host') for host in hosts] ))
 hosts_attr = {}
@@ -340,11 +350,10 @@ total_attr = {'ram_size': 0, 'n_cpu': 0}
 for host in hosts:
     attr = get_host_attributes(host)
     hosts_attr[host.address] = {'node_flops': attr['performance']['node_flops'] if attr.has_key('performance') else 0, 
-                               'ram_size': attr['main_memory']['ram_size'],
+                               'ram_size': attr['main_memory']['ram_size']/10**6,
                                'n_cpu': attr['architecture']['smt_size'] }
-    total_attr['ram_size'] += attr['main_memory']['ram_size']
+    total_attr['ram_size'] += attr['main_memory']['ram_size']/10**6
     total_attr['n_cpu'] += attr['architecture']['smt_size']
-
 
 if placement is not None:
     logger.info('Checking the correspondance between topology and reservation')
@@ -356,8 +365,7 @@ if placement is not None:
             tmp = [h for h in tmp_hosts if host_el.get('id').split('-')[0] in h]
             host_el.attrib['id'] = tmp[0]
             tmp_hosts.remove(tmp[0])   
-    
-    
+
 else:
     logger.info('No topology given, VMs will be distributed')
     if n_vm > max_vms:
@@ -365,7 +373,7 @@ else:
                      ' number of available IP in the KaVLAN global', set_style(max_vms, 'report_error') )
         n_vm = max_vms
     
-    max_vms = min (max_vms, total_attr['ram_size']/2**20/vm_ram_size)
+    max_vms = min (max_vms, total_attr['ram_size']/vm_ram_size)
     
     if n_vm > max_vms:
         logger.warning('Reducing the number of virtual machines to %s, due to the'+\
@@ -467,13 +475,14 @@ if args.env_file is not None:
     setup_hosts = Virsh_Deployment( hosts, kavlan = kavlan_id, env_file = args.env_file) 
 else:
     setup_hosts = Virsh_Deployment( hosts, kavlan = kavlan_id, env_name = args.env_name)
-setup_hosts.deploy_hosts( num_tries = 1 )
-setup_hosts.rename_hosts()
+setup_hosts.deploy_hosts( num_tries = deployment_tries )
 
+setup_hosts.rename_hosts()
 hosts = list(setup_hosts.hosts)
 
 logger.info('%s', ", ".join( [set_style(host.address.split('.')[0], 'host') for host in hosts] ))
 setup_hosts.upgrade_hosts()
+
 setup_hosts.install_packages()
 setup_hosts.configure_libvirt()
 
@@ -483,12 +492,12 @@ else:
     logger.info('Copying %s on hosts', args.vm_backing_file)
     copy_actions = []
     for host in hosts:
-        copy_actions.append( Remote('scp '+args.vm_backing_file+' root@'+host.address+':',  [get_host_site(host)+'.grid5000.fr'],
+        copy_actions.append( TaktukRemote('scp '+args.vm_backing_file+' root@'+host.address+':',  [get_host_site(host)+'.grid5000.fr'],
                                      connexion_params = default_frontend_connexion_params))
     copy_backing_file = ParallelActions(copy_actions).run()
     
     setup_hosts.create_disk_image( disk_image = '/root/'+args.vm_backing_file.split('/')[-1], clean = True)
-setup_hosts.copy_ssh_keys()
+
 
 logger.info('Configuring %s as a %s server', 
             set_style(service_node.split('.')[0], 'host'), set_style('DNS/DCHP', 'emph'))
@@ -508,6 +517,10 @@ clients = hosts[:]
 clients.remove(Host(service_node))
 Put(clients, outdir+'/resolv.conf', remote_location = '/etc/').run()
 
+#
+#for host in hosts:
+#    if clusters_ram[host.address.split('-')[0]] < sum([ int(vm.get('mem')) for vm in host.findall('./vm')]):
+#        logger.warning('Host '+host.get('id')+' has not enough RAM')
 
 execution_time['4-hosts'] = timer.elapsed() - sum(execution_time.values())
 logger.info(set_style('Done in '+str(round(execution_time['4-hosts'],2))+' s\n', 'log_header'))
@@ -579,7 +592,7 @@ for vm in vms:
     host_uid =   host_info[0].split('-')[0]+'-'+host_info[0].split('-')[1]
     cluster_uid = host_info[0].split('-')[0]
     site_uid = host_info[1]
-    print host_uid, cluster_uid, site_uid
+#    print host_uid, cluster_uid, site_uid
     if deployment.find("./site[@id='"+site_uid+"']") is None:
         site = ET.SubElement(deployment, 'site', attrib = {'id': site_uid})
     else:

@@ -20,7 +20,7 @@
 technology
 """
 from pprint import pprint, pformat
-import time as T, xml.etree.ElementTree as ET
+import time as T, xml.etree.ElementTree as ET, re
 import execo as EX, execo_g5k as EX5
 from execo import logger
 from execo.log import set_style
@@ -46,7 +46,7 @@ class Virsh_Deployment(object):
         self.hosts_attr = None
         self.default_packages = ' command-not-found bash-completion nmap qemu-kvm  virtinst libvirt-bin taktuk '
         self.state =['initialized']
-        
+       
         #self.packages_list = ' command-not-found bash-completion nmap qemu-kvm  virtinst libvirt-bin'
         #self.bridge = 'br0'
         #self.hack_cmd = "source /etc/profile; "
@@ -86,9 +86,31 @@ class Virsh_Deployment(object):
                                                     env_file = self.env_file,
                                                     vlan = self.kavlan)
         Hosts = EX5.deploy(deployment, out = out, num_tries = num_tries)
-        self.hosts = Hosts[0]
+        
+        self.setup_hosts.rename_hosts()
+        self.hosts = list(Hosts[0])
+        pprint (self.hosts)
+        self.enable_taktuk()
         logger.info('%s deployed',' '.join([node.address for node in self.hosts]))
         self.state.append('deployed')
+
+    def enable_taktuk(self, ssh_key = None):
+        """Copying your ssh_keys on hosts for automatic connexion"""
+        logger.info('Copying ssh key on hosts ...')
+        ssh_key = '~/.ssh/id_rsa' if ssh_key is None else ssh_key
+        
+        for hosts_slice in [self.hosts[i:i+10] for i in range(0, len(self.hosts), 10)]:
+            EX.Put(hosts_slice,[ssh_key, ssh_key+'.pub'],remote_location='.ssh/').run()
+        
+        EX.SequentialActions( [EX.Remote('cat '+ssh_key+'.pub >> .ssh/authorized_keys; '+ \
+                          'echo "Host * \n StrictHostKeyChecking no" >> .ssh/config; ', [host]) 
+                               for host in self.hosts]).run()
+     
+        EX.Remote('apt-get install -y taktuk', [self.hosts[0]]).run()
+        self.taktuk_params = {     'user': 'root',
+                'host_rewrite_func': lambda host: re.sub("\.g5k$", ".grid5000.fr", host),        
+                'taktuk_gateway': self.hosts[0].address,}
+
 
     def upgrade_hosts(self):
         """ Perform apt-get update && apt-get dist-upgrade in noninteractive mode """
@@ -97,7 +119,7 @@ class Virsh_Deployment(object):
                 echo 'debconf debconf/priority select critical' | debconf-set-selections ;      \
                 apt-get update ; export DEBIAN_MASTER=noninteractive ; apt-get dist-upgrade -y;"
         logger.debug(' Upgrade command:\n%s', cmd)
-        upgrade = EX.Remote(cmd, self.hosts).run()
+        upgrade = EX.TaktukRemote(cmd, self.hosts, connexion_params = self.taktuk_params).run()
         if upgrade.ok():
             logger.debug('Upgrade finished')
         else:
@@ -109,24 +131,34 @@ class Virsh_Deployment(object):
         if packages_list is None:
             packages_list = self.default_packages
         cmd = 'apt-get update && apt-get install  -y --force-yes '+packages_list
-        install = EX.Remote(cmd, self.hosts).run()
+        install = EX.TaktukRemote(cmd, self.hosts, connexion_params = self.taktuk_params).run()
         if install.ok():
             logger.debug('Packages installed')
         else:
             logger.error('Unable to install packages on the nodes ..')
 
+    def create_bridge(self, bridge_name = 'br0'):
+        """ Creation of a bridge to be used for the virtual network """
+        bridge_exists = EX.TaktukRemote('brctl show |grep '+bridge_name+' |wc',
+                         connexion_params = self.taktuk_params)
+        
+        
+        
+        
+        
     def reboot(self):
         """ Reboot the nodes """
         logger.info('Rebooting nodes ...')
-        reboot=EX.Remote('reboot',self.hosts).run()
+        reboot=EX.TaktukRemote('reboot', self.hosts , connexion_params = self.taktuk_params).run()
         if reboot.ok():
             while True:
                 T.sleep(5)
                 ping=[]
                 for host in self.hosts:
                     logger.info('Waiting for node %s',host.address)
-                    ping.append(EX.Remote('ping -c 4 '+host.address,[self.frontend],connexion_params={'user':'lpouilloux'}, log_exit_code=False))
-                all_ping=EX.ParallelActions(ping).run()
+                    ping.append(EX.Remote('ping -c 4 '+host.address, [self.frontend],
+                                connexion_params={'user':'lpouilloux'}, log_exit_code=False))
+                all_ping = EX.ParallelActions(ping).run()
 
                 if all_ping.ok():
                     break;
@@ -150,26 +182,19 @@ class Virsh_Deployment(object):
         
         if clean:
             logger.info('Removing existing disks')
-            EX.Remote('rm -f/tmp/*.img; rm -f /tmp/*.qcow2', self.hosts).run()
+            EX.TaktukRemote('rm -f /tmp/*.img; rm -f /tmp/*.qcow2', self.hosts, 
+                            connexion_params = self.taktuk_params).run()
         
         logger.info("Creating disk image on /tmp/vm-base.img")
         cmd = 'qemu-img convert -O raw '+disk_image+' /tmp/vm-base.img'
-        EX.Remote(cmd, self.hosts).run()
+        EX.TaktukRemote(cmd, self.hosts, connexion_params = self.taktuk_params).run()
         self.state.append('disk_created')
 
-    def copy_ssh_keys(self, ssh_key = None):
-        """Copying your ssh_keys on hosts and vms for automatic connexion"""
-        logger.info('Copying ssh key on hosts ...')
-        ssh_key = '~/.ssh/id_rsa' if ssh_key is None else ssh_key
-        EX.Put(self.hosts,[ssh_key, ssh_key+'.pub'],remote_location='.ssh/').run()
-        EX.Remote('cat '+ssh_key+'.pub >> .ssh/authorized_keys; '+ \
-                          'echo "Host * \n StrictHostKeyChecking no" >> .ssh/config; ', self.hosts).run()
 
+    def ssh_keys_on_vmbase(self, ssh_key = None):
+        logger.info('Copying ssh key on vm-base ...')
         if 'disk_created' not in self.state:
             self.create_disk_image()
-
-        logger.info('Copying ssh key on vm-base ...')
-
 
         cmd = 'modprobe nbd max_part=1; '+ \
                 'qemu-nbd --connect=/dev/nbd0 /tmp/vm-base.img; sleep 5; '+ \
@@ -178,7 +203,7 @@ class Virsh_Deployment(object):
                 'echo "Host * \n StrictHostKeyChecking no" >> /mnt/root/.ssh/config; '+ \
                 'umount /mnt'
         logger.debug(cmd)
-        copy_on_vm_base = EX.Remote(cmd, self.hosts).run()
+        copy_on_vm_base = EX.TaktukRemote(cmd, self.hosts, connexion_params = self.taktuk_params).run()
         logger.debug('%s', copy_on_vm_base.ok())
         self.state.append('ssh_keys')
 
@@ -189,7 +214,7 @@ class Virsh_Deployment(object):
         logger.info('Making libvirt host unique ...')
         cmd = 'uuid=`uuidgen` && sed -i "s/00000000-0000-0000-0000-000000000000/${uuid}/g" /etc/libvirt/libvirtd.conf '\
                 +'&& sed -i "s/#host_uuid/host_uuid/g" /etc/libvirt/libvirtd.conf && service libvirt-bin restart'
-        EX.Remote(cmd, self.hosts).run()
+        EX.TaktukRemote(cmd, self.hosts, connexion_params = self.taktuk_params).run()
         
         logger.info('Configuring libvirt network ...')
         if network_xml is None:
@@ -204,13 +229,16 @@ class Virsh_Deployment(object):
             
         self.tree = ET.ElementTree(element=root)
         self.tree.write('default.xml')
-        EX.Remote('virsh net-destroy default; virsh net-undefine default', self.hosts).run()
-        EX.Put(self.hosts, 'default.xml', remote_location = '/etc/libvirt/qemu/networks/').run()
-        EX.Remote('virsh net-define /etc/libvirt/qemu/networks/default.xml ; virsh net-start default; virsh net-autostart default; ', self.hosts).run()
+        EX.TaktukRemote('virsh net-destroy default; virsh net-undefine default', self.hosts,
+                    connexion_params = self.taktuk_params).run()
+        EX.TaktukPut(self.hosts, 'default.xml', remote_location = '/etc/libvirt/qemu/networks/',
+                      connexion_params = self.taktuk_params).run()
+        EX.TaktukRemote('virsh net-define /etc/libvirt/qemu/networks/default.xml ; virsh net-start default; virsh net-autostart default; ', 
+                        self.hosts, connexion_params = self.taktuk_params).run()
         self.state.append('virsh_network')
         
         logger.info('Restarting libvirt ...')        
-        EX.Remote('service libvirt-bin restart', self.hosts).run()
+        EX.TaktukRemote('service libvirt-bin restart', self.hosts, connexion_params = self.taktuk_params).run()
 
     def get_hosts_attr(self):
         """ Get the node_flops, ram_size and smt_size from g5k API"""

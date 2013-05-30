@@ -76,10 +76,12 @@ def distribute_vms_on_hosts( vms, hosts, mode = 'distributed'):
     
     host = iter_hosts.next()
     hosts_vm = {}
+    max_mem = {}
+    total_mem = {}
     if mode is 'distributed':
-        max_mem = { h.address: get_host_attributes(kavname_to_shortname(h))['main_memory']['ram_size']/10**6 
-                   for h in hosts}
-        total_mem = { h.address: 0 for h in hosts}
+        for h in hosts:
+            max_mem[h.address] = get_host_attributes(kavname_to_shortname(h))['main_memory']['ram_size']/10**6 
+            total_mem[h.address] =  0 
                 
         for vm in vms:
             if total_mem[host.address] + vm['mem_size'] > max_mem[host.address]:
@@ -92,7 +94,7 @@ def distribute_vms_on_hosts( vms, hosts, mode = 'distributed'):
                 hosts_vm[host.address] = []
             hosts_vm[host.address].append(vm['vm_id'])
             host = iter_hosts.next()
-            print host, vm
+            
             
     elif mode is 'concentrated':
         
@@ -216,16 +218,28 @@ def start_vm(vm, host = None):
         host = Host(vm['host'])
     cmd = 'virsh --connect qemu:///system start '+vm['vm_id']
     return Remote(cmd, [host])
+    
 
-def start_vms(vms,):
-    start_actions = []
+def start_vms(vms):   
+    hosts_actions = {}
     for vm in vms:
-        start_actions.append(start_vm(vm))
-    return SequentialActions(start_actions)
+        if not hosts_actions.has_key(vm['host']):
+            hosts_actions[vm['host']] = []
+        hosts_actions[vm['host']].append( start_vm( vm) )
+    start_actions = []
+    for host, actions in hosts_actions.iteritems():
+        logger.info('- %s on %s', set_style( str(len(actions))+' VM', 'emph'), set_style(host.address.split('.')[0], 'host'))
+        start_actions.append(SequentialActions(actions))
+    
+    return ParallelActions( start_actions)  
+    
+#    for vm in vms:
+#        start_actions.append(start_vm(vm))
+#    return SequentialActions(start_actions)
 
 def wait_vms_have_started(vms, host):
     
-    ip_range = vms[0]['ip'].rsplit('.', 1)[0]+'.'+','.join([vm['ip'].split('.')[3] for vm in vms])
+    ip_range = vms[0]['ip']+'.'+'-'.vms[-1]['ip']
     nmap_tries = 0
     ssh_open = False
     while (not ssh_open) and nmap_tries < 50:
