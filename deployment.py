@@ -134,11 +134,18 @@ class Virsh_Deployment(object):
         """ Installation of packages on the nodes """
         logger.info('Installing packages')
         
-        cmd='echo deb http://backports.debian.org/debian-backports/ squeeze-backports main contrib non-free >> /etc/apt/sources.list'    
-        EX.TaktukRemote(cmd, self.hosts, connexion_params = self.taktuk_params).run()        
         if packages_list is None:
             packages_list = self.default_packages
-        cmd = 'export DEBIAN_MASTER=noninteractive ; apt-get update && apt-get install -t squeeze-backports -y --force-yes '+packages_list
+        cmd = 'export DEBIAN_MASTER=noninteractive ; apt-get update && apt-get install -y --force-yes '
+        check_version = EX.Remote('cat /etc/issue|cut -d " " -f3', [self.hosts[0]]).run()
+        for p in check_version.processes():
+            if p.stdout().strip() == '6.0':
+                cmd='echo deb http://backports.debian.org/debian-backports/ squeeze-backports main contrib non-free >> /etc/apt/sources.list'    
+                EX.TaktukRemote(cmd, self.hosts, connexion_params = self.taktuk_params).run()        
+                cmd += '-t squeeze-backports '+packages_list
+            else:
+                cmd += packages_list
+        
         install = EX.TaktukRemote(cmd, self.hosts, connexion_params = self.taktuk_params).run()
         if install.ok():
             logger.debug('Packages installed')
@@ -155,8 +162,8 @@ class Virsh_Deployment(object):
             if len(p.stdout()) == 0:
                 nobr_hosts.append(p.host())
         
-        cmd = 'echo "auto br0 \niface br0 inet dhcp \n bridge_ports eth0 \n bridge_stp off \n '+\
-            'bridge_maxwait 0 \n bridge_fd 0" >> /etc/network/interfaces ; ifup br0'
+        cmd = 'echo -e "auto '+bridge_name+' \niface '+bridge_name+' inet dhcp \n bridge_ports eth0 \n bridge_stp off \n '+\
+            'bridge_maxwait 0 \n bridge_fd 0" >> /etc/network/interfaces ; ifup '+bridge_name+''
         create_br = EX.TaktukRemote(cmd, nobr_hosts, connexion_params = self.taktuk_params).run()
         
         
@@ -228,6 +235,7 @@ class Virsh_Deployment(object):
 
     def ssh_keys_on_vmbase(self, ssh_key = None):
         logger.info('Copying ssh key on vm-base ...')
+        ssh_key = '~/.ssh/id_rsa' if ssh_key is None else ssh_key
         if 'disk_created' not in self.state:
             self.create_disk_image()
 

@@ -239,13 +239,13 @@ def start_vms(vms):
 
 def wait_vms_have_started(vms, host):
     
-    ip_range = vms[0]['ip']+'.'+'-'.vms[-1]['ip']
+    ip_list = ','.join( [vm['ip'] for vm in vms ] )
     nmap_tries = 0
     ssh_open = False
     while (not ssh_open) and nmap_tries < 50:
         logger.debug('nmap_tries %s', nmap_tries)
         nmap_tries += 1            
-        nmap = SshProcess('nmap -PN '+ip_range+' -p 22', host)
+        nmap = SshProcess('nmap -PN '+ip_list+' -p 22', host)
         nmap.run()
         logger.debug('%s', nmap.cmd())
         stdout = nmap.stdout().split('\n')

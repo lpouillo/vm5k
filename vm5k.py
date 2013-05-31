@@ -37,9 +37,8 @@ deployment_tries = 1
 max_vms = 10230 # Limitations due to the number of IP address 
 oargridsub_opts = '-t deploy'
 default_vm_template = '<vm mem="512" hdd="2" cpu="1" cpuset="auto" />'
-error_sites = [ 'reims', 'bordeaux', 'sophia', 'grenoble' ]#, 'lille' ]
-error_clusters = [item for sublist in map(lambda site: get_site_clusters(site), error_sites) for item in sublist]\
-    +[ 'parapide' , 'paradent' ]
+error_sites = [ 'reims', 'bordeaux', 'sophia', 'grenoble', 'lille', 'rennes' ]
+error_clusters = [item for sublist in map(lambda site: get_site_clusters(site), error_sites) for item in sublist]
 
 # Defining the options 
 parser = argparse.ArgumentParser(
@@ -493,16 +492,18 @@ hosts = list(setup_hosts.hosts)
 if len(hosts) == 0:
     logger.error('No hosts have been successfully deployed, aborting')
     exit()
+logger.info('%s', ", ".join( [set_style(host.address.split('.')[0], 'host') for host in hosts] ))
+
 setup_hosts.enable_taktuk()
 
-logger.info('%s', ", ".join( [set_style(host.address.split('.')[0], 'host') for host in hosts] ))
+
 setup_hosts.upgrade_hosts()
 
 setup_hosts.install_packages()
 setup_hosts.create_bridge()
 setup_hosts.configure_libvirt()
 setup_hosts.create_disk_image( disk_image = args.vm_backing_file, clean = True)
-
+setup_hosts.ssh_keys_on_vmbase()
 
 logger.info('Configuring %s as a %s server', 
             set_style(service_node.split('.')[0], 'host'), set_style('DNS/DCHP', 'emph'))
@@ -568,13 +569,10 @@ else:
                 i_vm += 1
 
 
-pprint(vms)
-exit()
 log = ''   
 logger.info('Creating the qcow2 disks on hosts')
 ## Delayed, discussion avec Matthieu ?
 disk_creation = create_disks_hosts(vms).run()
-
 
 logger.info('Destroying existing VMs')
 destroy_all(hosts)
@@ -582,9 +580,9 @@ destroy_all(hosts)
 
 logger.info('Installing the VMs')
 install_vms(vms).run()
-
 logger.info('Starting VMs and waiting for complete boot')
 start_vms(vms).run()
+pprint(vms)
 wait_vms_have_started(vms, service_node)
 
 log = ''
@@ -599,7 +597,7 @@ execution_time['5-vms'] = timer.elapsed() - sum(execution_time.values())
 logger.info(set_style('Done in '+str(round(execution_time['5-vms'],2))+' s\n', 'log_header'))
 
 logger.info(set_style('FINALIZATION', 'log_header'))
-deployment = ET.Element('deployment')  
+deployment = ET.Element('vm5k')  
 for vm in vms:
     host_info = vm['host'].address.split('.')[0:-2]
     host_uid =   host_info[0].split('-')[0]+'-'+host_info[0].split('-')[1]
