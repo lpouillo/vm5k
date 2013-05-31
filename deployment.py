@@ -206,7 +206,7 @@ class Virsh_Deployment(object):
                             connexion_params = self.taktuk_params).run()
         
         logger.info("Creating disk image on /tmp/vm-base.img")
-        cmd = 'qemu-img convert -O raw '+disk_image+' /tmp/vm-base.img'
+        cmd = 'qemu-img convert -O raw /root/'+disk_image.split('/')[-1]+' /tmp/vm-base.img'
         EX.TaktukRemote(cmd, self.hosts, connexion_params = self.taktuk_params).run()
         self.state.append('disk_created')
 

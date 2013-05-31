@@ -343,20 +343,28 @@ logger.info('Job '+set_style(str(oargrid_job_id), 'emph')+' has started, retriev
 
         
 hosts = get_oargrid_job_nodes( oargrid_job_id )
-
 hosts.sort()
+
 logger.info('Getting the attributes of \n%s', ", ".join( [set_style(host.address.split('.')[0], 'host') for host in hosts] ))
+
+clusters = []
+for host in hosts:
+    cluster = get_host_cluster(host)
+    if cluster not in clusters:
+        clusters.append(cluster)
 clusters_attr = {}
-total_attr = {'ram_size': 0, 'n_cpu': 0}
-clusters = [ get_host_cluster(host.address ) for host in hosts if cluster not in clusters ]
+
 for cluster in clusters:
     attr = get_host_attributes(cluster+'-1')
     clusters_attr[cluster] = {'node_flops': attr['performance']['node_flops'] if attr.has_key('performance') else 0, 
                                'ram_size': attr['main_memory']['ram_size']/10**6,
                                'n_cpu': attr['architecture']['smt_size'] }
-    total_attr['ram_size'] += attr['main_memory']['ram_size']/10**6
-    total_attr['n_cpu'] += attr['architecture']['smt_size']
-
+total_attr = {'ram_size': 0, 'n_cpu': 0}
+for host in hosts:
+    attr = clusters_attr[get_host_cluster(host)]
+    
+    total_attr['ram_size'] += attr['ram_size']
+    total_attr['n_cpu'] += attr['n_cpu']
 
 
 if placement is not None:
@@ -493,9 +501,7 @@ setup_hosts.upgrade_hosts()
 
 setup_hosts.install_packages()
 setup_hosts.create_bridge()
-
 setup_hosts.configure_libvirt()
-
 setup_hosts.create_disk_image( disk_image = args.vm_backing_file, clean = True)
 
 
@@ -558,6 +564,9 @@ else:
                             'mac': ip_mac[i_vm][1] })
                 i_vm += 1
 
+
+pprint(vms)
+exit()
 log = ''   
 logger.info('Creating the qcow2 disks on hosts')
 disk_creation = create_disks_hosts(vms).run()
