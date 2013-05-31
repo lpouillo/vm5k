@@ -514,7 +514,7 @@ Put([service_node], outdir+'/dnsmasq.conf', remote_location='/etc/').run()
 
 
 logger.info('Adding the VM in /etc/hosts ...')
-Remote('if [ -f /etc/hosts.bak ] ', [service_node])
+Remote('[ -f /etc/hosts.bak ] && cp /etc/hosts.bak /etc/hosts || cp /etc/hosts /etc/hosts.bak', [service_node]).run()
 Put([service_node], outdir+'/vms.list', remote_location= '/root/').run()
 Remote('cat /root/vms.list >> /etc/hosts', [service_node]).run()
 
@@ -572,6 +572,7 @@ pprint(vms)
 exit()
 log = ''   
 logger.info('Creating the qcow2 disks on hosts')
+## Delayed, discussion avec Matthieu ?
 disk_creation = create_disks_hosts(vms).run()
 
 
