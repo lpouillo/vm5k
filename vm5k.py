@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 import time as T, datetime as DT, execo.time_utils as EXT
-import argparse, time, random, os
+import argparse, time, random, os, sys
 
 from json import loads
 from copy import copy
@@ -43,14 +43,13 @@ error_clusters = [item for sublist in map(lambda site: get_site_clusters(site), 
 
 # Defining the options 
 parser = argparse.ArgumentParser(
-        prog = set_style('G5KDeployCloud.py', 'log_header'),
+        prog = set_style( sys.argv[0], 'log_header'),
         description = 'A tool to deploy and configure nodes and virtual machines '
         +'with '+set_style('Debian', 'object_repr')+' and '+set_style('libvirt', 'object_repr')+\
         '\non the '+set_style('Grid5000', 'log_header')+' platform in a global '+set_style('KaVLAN','object_repr')+\
         '.\n\nRequire '+set_style('execo-2.2', 'log_header')+'.',
-        epilog = """Example : G5KCloudDeploy -n 100 will install 100 VM with the default 
-        environnements for 3h """,
-        formatter_class=argparse.RawTextHelpFormatter
+        epilog = 'Example : '+sys.argv[0]+' -n 100 will install 100 VM with the default environnements for 3h ',
+        formatter_class = argparse.RawTextHelpFormatter
         )
 
 resources = parser.add_argument_group('Ressources',
@@ -123,7 +122,7 @@ elif args.quiet:
     logger.setLevel('WARN')
 else:
     logger.setLevel('INFO')
-logger.info('\n\n    Starting %s for the creation of virtual machines on Grid5000\n', set_style('G5KCloudDeploy.py', 'log_header'))
+logger.info('\n\n    Starting %s for the creation of virtual machines on Grid5000\n', set_style(sys.argv[0], 'log_header'))
 n_vm = 0
 sites = []
 clusters = []
@@ -511,7 +510,11 @@ logger.info('Configuring %s as a %s server',
 Remote('export DEBIAN_MASTER=noninteractive ; apt-get install -y dnsmasq taktuk', [service_node]).run()
 Put([service_node], outdir+'/dnsmasq.conf', remote_location='/etc/').run()
 
+
+
+
 logger.info('Adding the VM in /etc/hosts ...')
+Remote('if [ -f /etc/hosts.bak ] ', [service_node])
 Put([service_node], outdir+'/vms.list', remote_location= '/root/').run()
 Remote('cat /root/vms.list >> /etc/hosts', [service_node]).run()
 
