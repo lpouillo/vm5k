@@ -10,7 +10,7 @@ with *libvirt* installed and configured.
 
 Required python modules:
 * execo
-* netadr
+* netadrr
 
 ## Workflow
 * define a deployment **topology**:
