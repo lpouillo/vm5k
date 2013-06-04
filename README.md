@@ -6,7 +6,11 @@ Automate virtual machines deployment on Grid5000 in a global KaVLAN.
 
 ## Prerequisites
 This script is based on *execo* to control the deployment process of *debian*-based physical hosts
-with *libvirt* installed and configured
+with *libvirt* installed and configured.
+
+Required python modules:
+* execo
+* netadr
 
 ## Workflow
 * define a deployment **topology**:
