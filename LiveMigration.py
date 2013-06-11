@@ -49,6 +49,8 @@ class LiveMigration( Engine ):
         self.options_parser.add_option("-f", dest = "env_file", help = "path to the environment file", type = "string", default = None)
         self.options_parser.add_option("-n", dest = "n_nodes", help = "number of nodes to be deployed", type = "int", default = 2)
         self.options_parser.add_option("-w", dest = "walltime", help = "walltime for the submission", type ="string", default = "6:00:00")
+        self.options_parser.add_option("-j", dest = "oar_job_id", help = "oar_job_id to relaunch an engine", type = int)
+        self.options_parser.add_option("-k", dest = "keep_alive", help = "keep reservation alive ..", action = "store_true")
         self.options_parser.add_argument("clusters", "comma separated list of clusters")
         logger.info( set_style('Initializing Live Migration engine', 'step') )
         self.ping_dir_created = False
@@ -73,8 +75,6 @@ class LiveMigration( Engine ):
                 if not self.setup_cluster():
                     break
                 
-                 
-                
                 while True:
                     logger.info('%s', pformat( self.sweeper.stats()['done_ratio']['cluster'] ))
                     comb = self.sweeper.get_next(filtr = lambda r: filter(lambda subcomb: subcomb['cluster'] == cluster, r))
@@ -98,8 +98,9 @@ class LiveMigration( Engine ):
                     
             finally:
                 if self.job_info['job_id'] is not None:
-                    logger.info('Deleting job')
-                    oardel( [(self.job_info['job_id'], self.job_info['site'])] )
+                    if not self.options.keep_alive:
+                        logger.info('Deleting job')
+                        oardel( [(self.job_info['job_id'], self.job_info['site'])] )
                     logger.info('Killing remaining ping_probes')
                     self.kill_ping(self.job_info['site'])
                     
@@ -131,12 +132,15 @@ class LiveMigration( Engine ):
         """ Perform a reservation and return all the required job parameters """
         logger.info('%s %s', set_style('Getting the resources on Grid5000 for cluster', 'step'), cluster)
         site = get_cluster_site(cluster)
-        submission = OarSubmission(resources = "slash_22=1+{'cluster=\"%s\"'}/nodes=%i" % (cluster, self.options.n_nodes),
-                                             walltime = self.options.walltime,
-                                             name = self.run_name,
-                                             job_type = "deploy")
-        logger.debug('%s', submission)
-        ((job_id, _), ) = oarsub([(submission, site)])
+        if self.options.oar_job_id is None:
+            submission = OarSubmission(resources = "slash_22=1+{'cluster=\"%s\"'}/nodes=%i" % (cluster, self.options.n_nodes),
+                                                 walltime = self.options.walltime,
+                                                 name = self.run_name,
+                                                 job_type = "deploy")
+            logger.debug('%s', submission)
+            ((job_id, _), ) = oarsub([(submission, site)])
+        else:
+            job_id = self.options.oar_job_id
         wait_oar_job_start( job_id, site )
         logger.info('Job %s has started!', set_style(job_id, 'emph'))
         self.job_info = {'job_id': job_id, 'site': site}
@@ -156,10 +160,23 @@ class LiveMigration( Engine ):
     def setup_cluster(self):
         logger.info('%s', set_style('Installing and configuring hosts ', 'step'))                
         if self.options.env_file is None:
-            virsh_setup = VirshCluster( self.hosts, env_name = self.options.env_name )
+            virsh_setup = Virsh_Deployment( self.hosts, env_name = self.options.env_name )
         else:
-            virsh_setup = VirshCluster( self.hosts, env_file = self.options.env_file )
-        virsh_setup.run()
+            virsh_setup = Virsh_Deployment( self.hosts, env_file = self.options.env_file )
+        
+        logger.info('Deploying hosts')   
+        virsh_setup.deploy_hosts()
+        logger.info('Copying ssh keys on hosts for taktuk connexion')   
+        virsh_setup.enable_taktuk()
+        logger.info('Upgrading hosts')
+        virsh_setup.upgrade_hosts()
+        logger.info('Installing packages')
+        virsh_setup.install_packages('command-not-found bash-completion nmap qemu-kvm  virtinst libvirt-bin')
+        logger.info('Configuring libvirt')
+        virsh_setup.configure_libvirt()
+        logger.info('Creating backing file')
+        virsh_setup.create_disk_image()
+        virsh_setup.ssh_keys_on_vmbase()
         self.set_cpufreq('performance')
         logger.info('Hosts %s have been setup!', ', '.join([self.host_string(host) for host in self.hosts]) )
         
