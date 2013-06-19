@@ -95,3 +95,4 @@ class VMMulticore( LiveMigration ):
     
     def get_results(self, host):
         """ """ 
+        return True
