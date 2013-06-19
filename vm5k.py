@@ -19,8 +19,8 @@ import xml.etree.ElementTree as ET
 
 # Constants
 deployment_tries = 1
-max_vms = 10230 # Limitations due to the number of IP address 
-oargridsub_opts = '-t deploy'
+max_vms = 10230                 # Limitations due to the number of IP address 
+oargridsub_opts = '-t deploy'   
 
 # Defining the options 
 ## using argparse is delayed by the frontend wheezy migration 
@@ -61,7 +61,6 @@ parser.add_option_group(resources)
 hosts = optparse.OptionGroup(parser,set_style('Physical hosts', 'log_header'))
 hosts.add_option('-e', '--env_name', 
                     dest = 'env_name',
-                    default = 'wheezy-x64-base',
                     help = 'Kadeploy environment NAME for the physical host')
 hosts.add_option('-a', '--env_file', 
                     dest = 'env_file',
@@ -82,7 +81,7 @@ vms.add_option('-f', '--vm_backing_file',
 vms.add_option('-t', '--vm_template', 
                     dest = 'vm_template',
                     help = 'XML string describing the virtual machine',
-                    default = '<vm mem="2048" hdd="2" cpu="1" cpuset="auto"/>')
+                    default = '<vm mem="512" hdd="2" cpu="1" cpuset="auto"/>')
 parser.add_option_group(vms)
 
 log_level = optparse.OptionGroup(parser, set_style('Execution output', 'log_header'))
@@ -94,7 +93,7 @@ log_level.add_option("-q", "--quiet",
                        help = 'print only warning and error messages')
 log_level.add_option("-o", "--outdir", 
                     dest = "outdir", 
-                    default = 'wm5k'+ time.strftime("%Y%m%d_%H%M%S_%z"),
+                    default = 'vm5k_'+ time.strftime("%Y%m%d_%H%M%S_%z"),
                     help = 'where to store the vm5k files')
 parser.add_option_group(log_level)
 (options, args) = parser.parse_args()
@@ -192,10 +191,10 @@ elif args.quiet:
 else:
     logger.setLevel(INFO)
 logger.info('\n\n    Starting %s for the creation of virtual machines on Grid5000\n', set_style(sys.argv[0], 'log_header'))
-logger.debug
+
 n_vm = args.n_vm
-sites = []
-clusters = []
+sites = [] if args.sites is None else [ site for site in args.sites.split(',') ]
+clusters = [] if args.clusters is None else [ cluster for cluster in args.clusters.split(',') ]
 kavlan_site = None
 placement = None
 outdir = args.outdir
@@ -322,7 +321,7 @@ else:
         for slot in planning.slots:
             for cluster, n_nodes in cluster_nodes.iteritems():
                 slot_ok = True
-                if slot[2][cluster] < cluster_nodes[cluster]:
+                if slot[2][cluster] < cluster_nodes[cluster] and slot[1]-slot[0] > get_seconds(walltime):
                     slot_ok = False    
         
             if slot_ok:
@@ -344,7 +343,7 @@ else:
                     slot_ram += n_node * clusters_ram[resource]
                     slot_node += n_node    
         
-            if required_ram < slot_ram:
+            if required_ram < slot_ram and slot[1]-slot[0] > get_seconds(walltime):
                 chosen_slot = slot
                 break
         
@@ -375,7 +374,7 @@ else:
     
         
     logger.info('Finding a free kavlan global')
-    get_jobs = Remote('oarstat -J -f', [ Host(site+'.grid5000.fr') for site in sites], 
+    get_jobs = Remote('oarstat -J -f', [ Host(site) for site in sites], 
                       connexion_params = default_frontend_connexion_params ).run()
     for p in get_jobs.processes():
         site_jobs = loads(p.stdout())
@@ -553,13 +552,12 @@ else:
                 i_vm += 1
 
 
-create = create_disks(vms, setup.taktuk_params).run()
+create = create_disks(setup.vms, setup.taktuk_params).run()
 logger.info('Installing the VMs')
 install = install_vms(setup.vms, setup.taktuk_params).run()
 logger.info('Starting the VMs')
-
 start = start_vms(setup.vms, setup.taktuk_params).run()
-
+logger.info('Waiting for all VMs to have started')
 wait_vms_have_started(setup.vms, setup.taktuk_params)
 
 setup.write_placement_file()
