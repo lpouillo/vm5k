@@ -2,6 +2,7 @@ from LiveMigration import *
 from execo import sleep
 from random import uniform
 import itertools
+import socket
 
 class VMMulticore( LiveMigration ):
     
@@ -45,7 +46,11 @@ class VMMulticore( LiveMigration ):
             copy_all.append(copy)
         ParallelActions(copy_all).run()
         
-        vms_ip = [vm['ip']+'.g5k' for vm in vms]
+        if 'grid5000.fr' in socket.getfqdn():
+            ip_suffix = ''
+        else:
+            ip_suffix = '.g5k'
+        vms_ip = [vm['ip']+ip_suffix for vm in vms]
         make_all = Remote( 'tar -xzf kflops.tgz; cd kflops; make', vms_ip).run()
         logger.info('Launching kflops')
         stress = Remote('./kflops/kflops > {{vms_ip}}.out', vms_ip).start()
@@ -53,6 +58,10 @@ class VMMulticore( LiveMigration ):
         stress.kill()
         logger.info('Getting the results')
         comb_dir = self.result_dir +'/'+ slugify(comb)+'/'
+        try:
+            mkdir(comb_dir)
+        except:
+            logger.warning('%s already exists', comb_dir)        
         Get(vms_ip, '{{vms_ip}}.out', local_location = comb_dir).run()
         
         destroy_vms(self.hosts)
