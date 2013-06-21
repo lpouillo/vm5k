@@ -18,8 +18,8 @@ from execo_g5k.planning import *
 import xml.etree.ElementTree as ET
 
 # Constants
-deployment_tries = 1
-max_vms = 10230                 # Limitations due to the number of IP address 
+deployment_tries = 2
+max_vms = 10000               # Limitations due to the number of IP address 
 oargridsub_opts = '-t deploy'   
 
 # Defining the options 
@@ -205,7 +205,7 @@ def error_elements(sites, clusters):
     
     error_sites = [ 'reims', 'bordeaux' ] 
     error_clusters = [item for sublist in map(lambda site: get_site_clusters(site), error_sites) 
-                           for item in sublist]
+                           for item in sublist]+[ 'chirloute' ]
     removed_sites = []
     for site in error_sites:
         if site in sites:
@@ -343,7 +343,7 @@ else:
                     slot_ram += n_node * clusters_ram[resource]
                     slot_node += n_node    
         
-            if required_ram < slot_ram and slot[1]-slot[0] > get_seconds(walltime):
+            if required_ram < slot_ram:# and slot[1]-slot[0] > get_seconds(walltime):
                 chosen_slot = slot
                 break
         
@@ -430,7 +430,8 @@ for subjob in subjobs:
     vlan = get_oar_job_kavlan(subjob[0], subjob[1])
     if vlan is not None: 
         kavlan_id = vlan
-        kavlan_site = subjob[1]        
+        kavlan_site = subjob[1]
+        logger.info('%s found     !', subjob[1])        
         break
     else:
         logger.info('%s, not found', subjob[1])
@@ -511,7 +512,7 @@ setup.configure_apt()
 setup.upgrade_hosts()
 setup.install_packages()
 setup.configure_libvirt()
-setup.create_disk_image()
+setup.create_disk_image(disk_image = args.vm_backing_file)
 setup.ssh_keys_on_vmbase()
 
 execution_time['4-hosts'] = timer.elapsed() - sum(execution_time.values())
@@ -550,7 +551,7 @@ else:
                             'ip': setup.ip_mac[i_vm][0], 
                             'mac': setup.ip_mac[i_vm][1] })
                 i_vm += 1
-
+    setup.vms = vms
 
 create = create_disks(setup.vms, setup.taktuk_params).run()
 logger.info('Installing the VMs')
