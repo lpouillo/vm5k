@@ -81,7 +81,7 @@ vms.add_option('-f', '--vm_backing_file',
 vms.add_option('-t', '--vm_template', 
                     dest = 'vm_template',
                     help = 'XML string describing the virtual machine',
-                    default = '<vm mem="512" hdd="2" cpu="1" cpuset="auto"/>')
+                    default = '<vm mem="1024" hdd="2" cpu="1" cpuset="auto"/>')
 parser.add_option_group(vms)
 
 log_level = optparse.OptionGroup(parser, set_style('Execution output', 'log_header'))
@@ -333,7 +333,6 @@ else:
         vm_ram_size = int(ET.fromstring(args.vm_template).get('mem'))
         required_ram = n_vm * vm_ram_size
         
-        
         slots_ok = []
         for slot in planning.slots:
             slot_ram = 0
@@ -487,13 +486,6 @@ else:
     
     max_vms = min (max_vms, total_attr['ram_size']/vm_ram_size)
     
-    if n_vm > max_vms:
-        logger.warning('Reducing the number of virtual machines to %s, due to the'+\
-                     ' total amount of RAM available (%s) and the ram size of the VM (%s)', 
-                     set_style(str(max_vms), 'report_error'), set_style(str(total_attr['ram_size']/10**6)+'MB', 'emph'),
-                     set_style(str(vm_ram_size)+'MB', 'emph'))
-        n_vm = max_vms 
-    logger.info('You can run %s VM on the hosts you have', max_vms)
         
         
 execution_time['2-reservation'] = timer.elapsed() - sum(execution_time.values())
@@ -507,10 +499,12 @@ else:
     setup = Virsh_Deployment( hosts, kavlan = kavlan_id, env_name = args.env_name,  outdir = outdir)
 setup.deploy_hosts()
 setup.get_hosts_attr()
+max_vms = setup.get_max_vms(options.vm_template)
 setup.enable_taktuk()
 setup.configure_apt()
 setup.upgrade_hosts()
 setup.install_packages()
+setup.reboot_nodes()
 setup.configure_libvirt()
 setup.create_disk_image(disk_image = args.vm_backing_file)
 setup.ssh_keys_on_vmbase()
