@@ -424,18 +424,20 @@ wait_oargrid_job_start(oargrid_job_id)
 logger.info('Job '+set_style(str(oargrid_job_id), 'emph')+' has started, retrieving the list of hosts ...')    
 
 logger.info('Retrieving the KaVLAN of ')
+kavlan_id = None
 subjobs = get_oargrid_job_oar_jobs(oargrid_job_id)
 for subjob in subjobs:
     vlan = get_oar_job_kavlan(subjob[0], subjob[1])
     if vlan is not None: 
         kavlan_id = vlan
         kavlan_site = subjob[1]
-        logger.info('%s found     !', subjob[1])        
+        logger.info('%s found !', subjob[1])        
         break
     else:
         logger.info('%s, not found', subjob[1])
 if kavlan_id is None:
     logger.error('No KaVLAN found, aborting ...')
+    oargriddel(oargrid_job_id)
     exit()
 
         
