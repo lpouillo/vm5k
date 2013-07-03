@@ -11,7 +11,7 @@ class VMMulticore( LiveMigration ):
         self.n_nodes = 1
         self.env_name = 'wheezy-x64-base'
         
-    def workflow(self, comb):
+    def workflow(self, comb): 
          
         destroy_vms(self.hosts)
         n_vm = sum( [ int(i) for i in comb['dist'] ])

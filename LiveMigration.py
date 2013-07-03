@@ -159,7 +159,7 @@ class LiveMigration( Engine ):
     
     def setup_cluster(self):
         logger.info('%s', set_style('Installing and configuring hosts ', 'step'))
-        print self.options.env_name
+        
         if self.options.env_file is None:
             virsh_setup = Virsh_Deployment( self.hosts, env_name = self.options.env_name, 
                                 oarjob_id = self.job_info['job_id'] )
