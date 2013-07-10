@@ -1,4 +1,4 @@
-vm5k_engine
+vm5k-engine
 ===========
 
 LiveMigration.py is an experimental engine that helps you to perform migration 
