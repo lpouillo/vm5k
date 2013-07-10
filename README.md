@@ -1,5 +1,5 @@
-LiveMigration
-=============
+vm5k_engine
+===========
 
 LiveMigration.py is an experimental engine that helps you to perform migration 
 measurements of virtual machines on the Grid5000 platform. 
