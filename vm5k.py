@@ -1,21 +1,31 @@
 #!/usr/bin/env python
 #-*- coding: utf-8 -*-
-import time as T, datetime as DT, execo.time_utils as EXT
-#import argparse, time, random, os, sys
-import optparse, time, random, os, sys
+
+
+import os, sys, optparse, time as T, datetime as DT, json, pprint, random
 from logging import INFO, DEBUG, WARN
-from json import loads
 from itertools import cycle
-from pprint import pprint, pformat
 from netaddr import IPNetwork
 from operator import itemgetter
-from execo import *
-from execo_g5k import *
+import xml.etree.ElementTree as ET
+import execo as EX, execo_g5k, execo_engine
+from execo.log import set_style
+from execo.config import configuration, TAKTUK, SSH, SCP
+from execo.action import ActionFactory
+from execo.time_utils import Timer, timedelta_to_seconds
 from execo_g5k.config import g5k_configuration, default_frontend_connexion_params
 from execo_g5k.vmutils import *
 from execo_g5k.api_utils import *
 from execo_g5k.planning import *
-import xml.etree.ElementTree as ET
+
+
+        
+ 
+ 
+fact = ActionFactory(remote_tool = TAKTUK,
+                    fileput_tool = TAKTUK,
+                    fileget_tool = TAKTUK)
+
 
 # Constants
 deployment_tries = 2
@@ -93,7 +103,7 @@ log_level.add_option("-q", "--quiet",
                        help = 'print only warning and error messages')
 log_level.add_option("-o", "--outdir", 
                     dest = "outdir", 
-                    default = 'vm5k_'+ time.strftime("%Y%m%d_%H%M%S_%z"),
+                    default = 'vm5k_'+ T.strftime("%Y%m%d_%H%M%S_%z"),
                     help = 'where to store the vm5k files')
 parser.add_option_group(log_level)
 (options, args) = parser.parse_args()
@@ -190,7 +200,7 @@ elif args.quiet:
     logger.setLevel(WARN)
 else:
     logger.setLevel(INFO)
-logger.info('\n\n    Starting %s for the creation of virtual machines on Grid5000\n', set_style(sys.argv[0], 'log_header'))
+logger.info('\n\n    Starting %s to create of virtual machines on Grid5000\n', set_style(sys.argv[0], 'log_header'))
 
 n_vm = args.n_vm
 sites = [] if args.sites is None else [ site for site in args.sites.split(',') ]
@@ -203,7 +213,7 @@ outdir = args.outdir
 def error_elements(sites, clusters):
     """ Define the sites and clusters to be excluded from the deployment """
     
-    error_sites = [ 'reims', 'bordeaux' ] 
+    error_sites = [ 'reims', 'bordeaux', 'luxembourg' ] 
     error_clusters = [item for sublist in map(lambda site: get_site_clusters(site), error_sites) 
                            for item in sublist]+[ 'chirloute' ]
     removed_sites = []
@@ -291,19 +301,20 @@ logger.info(set_style('GRID RESERVATION', 'log_header'))
 clusters_ram = {}
 for cluster in clusters:  
     clusters_ram[cluster] = get_host_attributes(cluster+'-1')['main_memory']['ram_size']/10**6
+    
+    
 if args.oargrid_job_id is not None:
     logger.info('Using '+set_style(str(args.oargrid_job_id), 'emph')+' job')
     oargrid_job_id = args.oargrid_job_id
-    
     
 else:
     logger.info('No oargrid_job_id given, finding a slot that suit your need')
     
     walltime = args.walltime
     starttime = T.time()
-    endtime = starttime + EXT.timedelta_to_seconds(DT.timedelta(days = 2))
+    endtime = starttime + timedelta_to_seconds(DT.timedelta(days = 2))
     planning = Planning( clusters, starttime, endtime )
-    planning.compute_slots()
+    planning.compute_slots(walltime)
     
     
     if placement is not None:
@@ -411,19 +422,19 @@ else:
 jobinfo = get_oargrid_job_info(oargrid_job_id)
 
 
-if jobinfo['start_date'] > time.time():
+if jobinfo['start_date'] > T.time():
     logger.info('Job %s is scheduled for %s, waiting', set_style(oargrid_job_id, 'emph'), 
             set_style(format_oar_date(jobinfo['start_date']), 'emph') )
-    if time.time() > jobinfo['start_date'] + jobinfo['walltime']:
+    if T.time() > jobinfo['start_date'] + jobinfo['walltime']:
         logger.error('Job %s is already finished, aborting', set_style(oargrid_job_id, 'emph'))
         exit()
 else:
     logger.info('Start date = %s', format_oar_date(jobinfo['start_date']))
 
 wait_oargrid_job_start(oargrid_job_id)
-logger.info('Job '+set_style(str(oargrid_job_id), 'emph')+' has started, retrieving the list of hosts ...')    
+logger.info('Job '+set_style(str(oargrid_job_id), 'emph')+' has started')    
 
-logger.info('Retrieving the KaVLAN of ')
+logger.info('Retrieving the KaVLAN  ')
 kavlan_id = None
 subjobs = get_oargrid_job_oar_jobs(oargrid_job_id)
 for subjob in subjobs:
@@ -440,7 +451,37 @@ if kavlan_id is None:
     oargriddel(oargrid_job_id)
     exit()
 
-        
+
+
+logger.info('Generating the IP-MAC list')
+vm_ip = []
+all_ip = IPNetwork('10.'+str(3+(kavlan_id-10)*4)+'.216.0/18')
+ 
+subnets = list(all_ip.subnet(21))
+for subnet in subnets:
+    if subnet.ip.words[2] >= 216:
+        for ip in subnet.iter_hosts():
+            vm_ip.append(ip)
+min_ip = vm_ip[0]
+
+
+ip_mac = []
+macs = []
+for ip in vm_ip[0:n_vm]:
+    mac = [ 0x00, 0x020, 0x4e,
+        random.randint(0x00, 0xff),
+        random.randint(0x00, 0xff),
+        random.randint(0x00, 0xff) ]
+    while mac in macs:
+        mac = [ 0x00, 0x020, 0x4e,
+        random.randint(0x00, 0xff),
+        random.randint(0x00, 0xff),
+        random.randint(0x00, 0xff) ]
+    macs.append(mac)
+    ip_mac.append( ( str(ip), ':'.join( map(lambda x: "%02x" % x, mac) ) ) )
+
+
+logger.info('Retrieving the list of hosts ...')        
 hosts = get_oargrid_job_nodes( oargrid_job_id )
 hosts.sort()
 
@@ -494,33 +535,58 @@ execution_time['2-reservation'] = timer.elapsed() - sum(execution_time.values())
 logger.info(set_style('Done in '+str(round(execution_time['2-reservation'],2))+' s\n', 'log_header'))
 
 
+
 logger.info(set_style('HOSTS CONFIGURATION', 'log_header'))
 if args.env_file is not None:
     setup = Virsh_Deployment( hosts, kavlan = kavlan_id, env_file = args.env_file, outdir = outdir) 
 else:
     setup = Virsh_Deployment( hosts, kavlan = kavlan_id, env_name = args.env_name,  outdir = outdir)
+
 setup.deploy_hosts()
 setup.get_hosts_attr()
 max_vms = setup.get_max_vms(options.vm_template)
-setup.enable_taktuk()
-setup.configure_apt()
+#setup.enable_taktuk()
+
+logger.info('Copying ssh keys')
+ssh_key = '~/.ssh/id_rsa' 
+Remote('export DEBIAN_MASTER=noninteractive ; apt-get install -y --force-yes '+ '-o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" taktuk', [setup.hosts[0]], connexion_params = {'user': 'root'}).run()
+EX.SequentialActions( [ EX.Put([host], [ssh_key, ssh_key+'.pub'], remote_location='.ssh/', connexion_params = {'user': 'root'}) 
+                    for host in setup.hosts ]).run()
+configure_taktuk = setup.fact.get_remote(
+        'cat '+ssh_key+'.pub >> .ssh/authorized_keys; echo "Host *" >> /root/.ssh/config ; echo " StrictHostKeyChecking no" >> /root/.ssh/config; ',
+                setup.hosts, connexion_params = {'user': 'root'}).run()
+
+
+
+setup.configure_apt( )
 setup.upgrade_hosts()
 setup.install_packages()
-setup.reboot_nodes()
-setup.configure_libvirt()
+#setup.reboot_nodes()
+setup.configure_libvirt(options.n_vm)
 setup.create_disk_image(disk_image = args.vm_backing_file)
 setup.ssh_keys_on_vmbase()
+
+dhcp_hosts = ''
+for ip, mac in ip_mac:    
+    dhcp_hosts += 'dhcp-host='+':'+mac+','+str(ip)+'\n'
+network = str(min(vm_ip))+','+str(max(vm_ip))+','+str(all_ip.netmask)
+dhcp_range = 'dhcp-range='+network+',12h\n'
+
+
+dhcp_router = 'dhcp-option=option:router,'+str(max(vm_ip))+'\n'
+setup.ip_mac = ip_mac
+setup.configure_service_node(dhcp_range, dhcp_router, dhcp_hosts)
 
 execution_time['4-hosts'] = timer.elapsed() - sum(execution_time.values())
 logger.info(set_style('Done in '+str(round(execution_time['4-hosts'],2))+' s\n', 'log_header'))
 
 logger.info(set_style('VIRTUAL MACHINES', 'log_header'))
 logger.info('Destroying VMS')
-destroy_vms(setup.hosts, setup.taktuk_params)
+destroy_vms(setup.hosts)
 
 if placement is None:    
     logger.info('No topology given, defining and distributing the VM')
-    vms = define_vms(n_vm, setup.ip_mac, mem_size = vm_ram_size)
+    vms = define_vms(n_vm, ip_mac, mem_size = vm_ram_size)
     vms = setup.distribute_vms(vms)
 else:
     logger.info('Distributing the virtual machines according to the topology file')
@@ -531,6 +597,7 @@ else:
             clusters.append(cluster.get('id'))
             log += cluster.get('id')+' ('+str(len(cluster.findall('.//host')))+' hosts - '+str(len(cluster.findall('.//vm')))+' vms) '
     logger.info(log)
+    
     
     
     vms = []
@@ -549,13 +616,15 @@ else:
                 i_vm += 1
     setup.vms = vms
 
-create = create_disks(setup.vms, setup.taktuk_params).run()
+
+
+create = create_disks_on_hosts(setup.vms, setup.hosts).run()
 logger.info('Installing the VMs')
-install = install_vms(setup.vms, setup.taktuk_params).run()
+install = install_vms(setup.vms).run()
 logger.info('Starting the VMs')
-start = start_vms(setup.vms, setup.taktuk_params).run()
+start = start_vms(setup.vms).run()
 logger.info('Waiting for all VMs to have started')
-wait_vms_have_started(setup.vms, setup.taktuk_params)
+wait_vms_have_started(setup.vms)
 
 setup.write_placement_file()
 
@@ -570,4 +639,234 @@ for step, exec_time in execution_time.iteritems():
     log += '\n'+''.join([' ' for i in range(total_space)])+''.join(['X' for i in range(step_size)])
     total_space += int(exec_time*int(columns)/total_time)
 logger.info(log)     
+ 
+ # from time import time
+ # from pprint import pformat, pprint
+ # import xml.etree.ElementTree as ET
+ # from collections import deque
+ # from execo import configuration, Put, Get, Remote, SequentialActions, ParallelActions, Host, TaktukPut
+ # from execo_g5k import oarsub, OarSubmission, oardel, wait_oar_job_start, get_oar_job_nodes, get_oar_job_subnets, get_oar_job_info
+ # from execo_g5k.api_utils import get_cluster_site, get_host_attributes
+ # from execo_g5k.vmutils import *
+ # from execo_g5k.planning import get_first_cluster_available
+ # from execo_g5k.config import default_frontend_connexion_params, g5k_configuration
 
+
+#from execo_engine import Engine, ParamSweeper, sweep, slugify, logger
+#
+#class vm5k( Engine ):
+#    """ An execo engine to perform virtual machines experiments on Grid'5000 """
+#    def __init__(self):
+#        """ Add base options for number of nodes
+#        walltime, env_file or env_name, stress, and clusters and initialize the engine """
+#        super(vm5k, self).__init__()
+#        self.options_parser.set_usage("usage: ./vm5k.py for simple deployment, execo-run vm5k for automated experiments,  ")
+#        self.options_parser.set_description("Execo Engine that perform experiments with virtual machines of Grid'5000")
+#        
+#        ## RESERVATION OPTIONS
+#        self.options_parser.add_option("-j", "--job_id", dest = "job_id", type = int, 
+#                help = "oar_job_id or oargrid_job_id to be used by the engine")
+#        self.options_parser.add_option("-w", "--walltime", dest = "walltime", type ="string", 
+#                help = "walltime for the reservation", default = "3:00:00")
+#        self.options_parser.add_option("-r", "--resources", dest = "resources",
+#                help = "comma separated list of cluster:n_nodes, site:n_nodes or grid5000:n_nodes")
+#        self.options_parser.add_option("-n","--n_nodes", dest = "n_nodes", 
+#                help = "number of nodes to be deployed", type = "int", default = 1)
+#        ## DEPLOYMENT OPTIONS
+#        self.options_parser.add_option("-e", "--env_name", dest = "env_name", type = "string", 
+#                help = "name of the environment to be deployed", default = "wheezy-x64-base")
+#        self.options_parser.add_option("-a", "--env_file", dest = "env_file", type = "string",
+#                help = "path to the environment file")
+#        self.options_parser.add_option("-k", dest = "keep_alive", action = "store_true",
+#                help = "keep reservation alive")
+#        # VIRTUAL MACHINES OPTIONS
+#        self.options_parser.add_option("-i", "--infile", dest = "placement_file", 
+#                help = "A XML file describing the initial VM topology")
+#        self.options_parser.add_option("-m", "--n_vm", dest = "n_vm", 
+#                help = "Number of VM to be created")
+#        self.options_parser.add_option("-t", "--vm_template", dest = "vm_template", 
+#                help = "Simplified template for the virtual machines")        
+#        self.options_parser.add_option("-f", "--vm_image_file", dest = "vm_image_file", 
+#                help = "Image to be used for virtual machine creation")
+#        self.options_parser.add_argument("clusters", "comma separated list of clusters")
+#        
+#    def run(self):
+#        """ The main engine method """
+#        pprint(self.args)
+#        pprint(self.options.__dict__)
+#        
+#        if not hasattr(self, 'workflow'):
+#            self.base_workflow()
+#        else:
+#            state = self.sequential_loop()
+#            
+#    def base_workflow(self):
+#        """ A simple workflow allowing to deploy Virtual machines """
+#        
+#        
+#        
+#    def parallel_loop(self):    
+#        """ """
+#        
+#        while len(self.sweeper.get_remaining()) > 0:
+#            # Creation de la listes des paramètres
+#            n_params = min(len(self.hosts), self.sweeper.get_remaining()) 
+#            running_params = [ self.sweeper.get_next() for i in range(n_params)] 
+#            
+#        
+#        
+#            
+#    def sequential_loop(self):    
+#        """ A complex workflow that loop over a range of parameters and for a given workflow """
+#        self.create_paramsweeper()
+#         
+#        while len(self.sweeper.get_remaining()) > 0:
+#            logger.info('%s', set_style('Finding the first cluster available ', 'step'))
+#            
+#            (cluster, _) = get_first_cluster_available(self.args, self.options.walltime, self.options.n_nodes)
+#            logger.info('%s', set_style(cluster, 'user1'))
+#            self.job_info = {'job_id': None, 'start_date': None, 'walltime': None}
+#            
+#            try: 
+#                self.get_resources( cluster )
+#                if not self.setup_cluster():
+#                    break
+#                 
+#                while True:
+#                    logger.info('%s', pformat( self.sweeper.stats()['done_ratio']['cluster'] ))
+#                    comb = self.sweeper.get_next(filtr = lambda r: filter(lambda subcomb: subcomb['cluster'] == cluster, r))
+#                    if not comb: 
+#                        logger.info('Cluster %s has been done, removing it from the list.', cluster)
+#                        self.clusters.remove(cluster)
+#                        break
+#                     
+#                    state = self.workflow( comb )
+#                    if state:
+#                        get = self.get_results( comb )
+#                     
+#                    if state and get:
+#                        self.sweeper.done( comb )
+#                    else:
+#                        self.sweeper.cancel( comb )
+#                     
+#                    if (int(self.job_info['start_date'])+self.job_info['walltime']) < int(time()):                        
+#                        logger.info('G5K reservation has been terminated, doing a new deployment')
+#                        break
+#                     
+#            finally:
+#                if self.job_info['job_id'] is not None:
+#                    if not self.options.keep_alive:
+#                        logger.info('Deleting job')
+#                        oardel( [(self.job_info['job_id'], self.job_info['site'])] )
+#                    logger.info('Killing remaining ping_probes')
+#                    self.kill_ping(self.job_info['site'])
+#        
+#    def create_paramsweeper(self):
+#        """ Defining the ParamSweeper for the engine """
+#        
+#        if not hasattr(self, 'define_parameters'):
+#            logger.error('No define_parameters method defined in your engine, aborting')
+#            exit()
+#        else:
+#            parameters = self.define_parameters()
+#        sweeps = sweep( parameters )
+#        self.sweeper = ParamSweeper( os.path.join(self.result_dir, "sweeps"), sweeps)
+#        log = set_style('Parameters combinations: ', 'step')+ str(len(sweeps))
+#        for param, values in parameters.iteritems():
+#            log+='\n'+set_style(str(param), 'emph')+': '+', '.join([str(value) for value in values])
+#        logger.info(log)    
+#        
+#    def get_resources(self, cluster):
+#        """ Perform a reservation and return all the required job parameters """
+#        logger.info('%s %s', set_style('Getting the resources on Grid5000 for cluster', 'step'), cluster)
+#        site = get_cluster_site(cluster)
+#        if self.options.job_id is None:
+#            submission = OarSubmission(resources = "slash_22=1+{'cluster=\"%s\"'}/nodes=%i" % (cluster, self.options.n_nodes),
+#                                                 walltime = self.options.walltime,
+#                                                 name = self.run_name,
+#                                                 job_type = "deploy")
+#            logger.debug('%s', submission)
+#            ((job_id, _), ) = oarsub([(submission, site)])
+#        else:
+#            job_id = self.options.job_id
+#        wait_oar_job_start( job_id, site )
+#        logger.info('Job %s has started!', set_style(job_id, 'emph'))
+#        self.job_info = {'job_id': job_id, 'site': site}
+#        self.job_info.update(get_oar_job_info( job_id, site ))
+#        logger.debug('%s', pprint(self.job_info))
+#        logger.info( set_style('Done\n', 'step') )
+#        
+#        logger.info('%s', set_style('Getting hosts and VLAN parameters ', 'report_error'))
+#        self.hosts = get_oar_job_nodes( job_id, site )
+#        logger.info('%s %s', set_style('Hosts:', 'parameter'),
+#                        ' '.join( [host.address for host in self.hosts] ))
+#        self.ip_mac = get_oar_job_subnets( job_id, site )[0]         
+#        logger.info('%s %s %s ', set_style('Network:', 'parameter'), self.ip_mac[0][0], self.ip_mac[-1][0])
+#        logger.info( set_style('Done\n', 'step') )  
+#    
+#    def kill_ping(self, site):
+#        get_id = Remote('id | cut -d " " -f 1 | cut -d "=" -f 2 | cut -d "(" -f 1', 
+#                        [g5k_configuration['default_frontend']+'.grid5000.fr'], connexion_params = default_frontend_connexion_params ).run()
+#
+#        for p in get_id.processes():
+#            id = p.stdout().strip()
+#        kill_ping = Remote( 'list_proc=`ps aux |grep ping|grep '+str(id)+'|grep -v grep| cut -d " " -f 5` ; echo $list_proc ; for proc in $list_proc; do kill $proc; done', 
+#                   [site+'.grid5000.fr'], connexion_params = default_frontend_connexion_params ).run()
+#                   
+#                   
+#    def setup_cluster(self):
+#        logger.info('%s', set_style('Installing and configuring hosts ', 'step'))
+#        
+#        if self.options.env_file is None:
+#            virsh_setup = Virsh_Deployment( self.hosts, env_name = self.options.env_name, 
+#                                oarjob_id = self.job_info['job_id'] )
+#        else:
+#            virsh_setup = Virsh_Deployment( self.hosts, env_file = self.options.env_file, 
+#                                oarjob_id = self.job_info['job_id'] )
+#        
+#        logger.info('Deploying hosts')   
+#        virsh_setup.deploy_hosts()
+#        logger.info('Configuring APT')
+#        virsh_setup.configure_apt()
+#        logger.info('Upgrading hosts')
+#        virsh_setup.upgrade_hosts()
+#        logger.info('Installing packages')
+#        virsh_setup.install_packages()
+#        logger.info('Configuring libvirt')
+#        virsh_setup.configure_libvirt()
+#        logger.info('Creating backing file')
+#        virsh_setup.create_disk_image(clean = True)
+#        logger.info('Copying keys on VM_base')
+#        virsh_setup.ssh_keys_on_vmbase()
+#        self.set_cpufreq('performance')
+#        logger.info('Hosts %s have been setup!', ', '.join([host.address for host in self.hosts]) )
+#        
+#        if len(virsh_setup.hosts) == self.options.n_nodes:
+#            return True
+#        else:
+#            return False
+#        
+#        
+#    def set_cpufreq(self, mode = 'performance'):
+#        """ Installing cpu_freq_utils and configuring CPU with given mode """
+#        install = Remote('source /etc/profile; apt-get install -y cpufrequtils', self.hosts).run()
+#        if not install.ok():
+#            logger.debug('Impossible to install cpufrequtils')
+#            return False
+#        setmode = []
+#        nproc_act = Remote('nproc', self.hosts).run()
+#        
+#        for p in nproc_act.processes():
+#            nproc = p.stdout().strip()
+#            cmd = ''
+#            for i_proc in range(int(nproc)):
+#                cmd += 'cpufreq-set -c '+str(i_proc)+' -g '+mode +'; '
+#            setmode.append(Remote(cmd, [p.host()]))
+#        setmode_act = execo.ParallelActions(setmode).run()
+#        
+#        if not setmode_act.ok():
+#            logger.debug('Impossible to change cpufreq mode')            
+#            return False
+#        else:
+#            logger.debug('cpufreq mode set to %s', mode)
+#            return True
