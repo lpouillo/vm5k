@@ -27,7 +27,7 @@ from execo_g5k.planning import *
 ### INITIALIZATION
 
 ## Constants
-deployment_tries = 2      # Hosts failing after two deployments often never deploy
+deployment_tries = 1
 max_vms = 10000               # Limitations due to the number of IP address in a kavlan global 
 fact = ActionFactory(remote_tool = TAKTUK,
                     fileput_tool = CHAINPUT,
@@ -60,6 +60,10 @@ resources.add_option('-j', '--oargrid_job_id',
                     dest = 'oargrid_job_id',
                     type = int,
                     help = 'use the hosts from a oargrid_job (%default)' )
+resources.add_option('-r', '--resources', 
+                    default = 'grid5000',
+                    dest = 'resources',
+                    help = 'list of resources (%default)')
 resources.add_option('-w', '--walltime',
                     default = '3:00:00',
                     dest = 'walltime',
@@ -68,20 +72,21 @@ parser.add_option_group(resources)
 # Hosts configuration
 hosts = optparse.OptionGroup(parser,set_style('Physical hosts', 'log_header'))
 hosts.add_option('-e', '--env_name', 
-                    default = 'wheezy-x64-base',
                     dest = 'env_name',
                     help = 'Kadeploy environment NAME for the physical host (%default)')
 hosts.add_option('-a', '--env_file', 
                     dest = 'env_file',
                     help = 'Kadeploy environment FILE for the physical host (%default)')
-hosts.add_option('-r', '--resources', 
-                    default = 'grid5000',
-                    dest = 'resources',
-                    help = 'list of resources (%default)')
 hosts.add_option('-g', '--oargridsub_opts',
                     default = '-t deploy',
                     dest = 'oargridsub_opts',
                     help = 'oargribsub -t option (%default)')
+hosts.add_option('--forcedeploy',
+                    action = "store_true", 
+                    help = 'force the deployment of the hosts')
+hosts.add_option('--nodeploy',
+                    action = "store_true", 
+                    help = 'consider that hosts are already deployed')
 parser.add_option_group(hosts)
 # VMs configuration
 vms = optparse.OptionGroup(parser, set_style('Virtual machines', 'log_header'))
@@ -115,6 +120,8 @@ run.add_option("-o", "--outdir",
                     help = 'where to store the vm5k files')
 parser.add_option_group(run)
 (options, args) = parser.parse_args()
+
+
 ## Start a timer
 timer = Timer()
 execution_time = {}
@@ -126,6 +133,9 @@ elif options.quiet:
     logger.setLevel(WARN)
 else:
     logger.setLevel(INFO)
+if options.nodeploy:
+    deployment_tries = 0
+
 ## Start message
 logger.info(set_style('INITIALIZATION', 'log_header')+'\n\n    Starting %s to create of virtual machines on Grid5000\n', set_style(sys.argv[0], 'log_header'))
 logger.info('Options\n'+'\n'.join( [ set_style(option.ljust(20),'emph')+\
@@ -356,7 +366,7 @@ for subjob in subjobs:
     if vlan is not None: 
         kavlan_id = vlan
         kavlan_site = subjob[1]
-        logger.info('%s found !', subjob[1])        
+        logger.info('%s in %s found !', kavlan_id, subjob[1])        
         break
     else:
         logger.info('%s, not found', subjob[1])
@@ -433,8 +443,6 @@ for ip in vm_ip[0:n_vm]:
     macs.append(mac)
     ip_mac.append( ( str(ip), ':'.join( map(lambda x: "%02x" % x, mac) ) ) )
 
-
-        
         
 #total_attr = {'ram_size': 0, 'n_cpu': 0}
 #for host in hosts:
@@ -460,30 +468,34 @@ else:
         n_vm = max_vms
     max_vms = min (max_vms, total_mem)
     
-n_vm = max_vms
 execution_time['2-reservation'] = timer.elapsed() - sum(execution_time.values())
 logger.info(set_style('Done in '+str(round(execution_time['2-reservation'],2))+' s\n', 'log_header'))
 
 
 ### HOSTS CONFIGURATION
 logger.info(set_style('HOSTS CONFIGURATION', 'log_header'))
+if options.env_name is None:
+    options.env_name = 'wheezy-x64-base'
 if options.env_file is not None:
     setup = Virsh_Deployment( hosts, kavlan = kavlan_id, env_file = options.env_file, outdir = options.outdir) 
 else:
     setup = Virsh_Deployment( hosts, kavlan = kavlan_id, env_name = options.env_name,  outdir = options.outdir)
 
 setup.fact = fact
-setup.deploy_hosts(max_tries = deployment_tries)
+setup.deploy_hosts(max_tries = deployment_tries, check_deployed_command = not options.forcedeploy)
 setup.get_hosts_attr()
 max_vms = setup.get_max_vms(options.vm_template)
 
 logger.info('Copying ssh keys')
 ssh_key = '~/.ssh/id_rsa' 
-Remote('export DEBIAN_MASTER=noninteractive ; apt-get install -y --force-yes '+ '-o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" taktuk', [setup.hosts[0]], connexion_params = {'user': 'root'}).run()
-EX.Put( setup.hosts, [ssh_key, ssh_key+'.pub'], remote_location='.ssh/', connexion_params = {'user': 'root'}).run()
+
+
+EX.Put( setup.hosts, [ssh_key, ssh_key+'.pub'], remote_location='.ssh/', 
+              connexion_params = {'user': 'root'}).run()
 configure_taktuk = setup.fact.get_remote(
         'cat '+ssh_key+'.pub >> .ssh/authorized_keys; echo "Host *" >> /root/.ssh/config ; echo " StrictHostKeyChecking no" >> /root/.ssh/config; ',
                 setup.hosts, connexion_params = {'user': 'root'}).run()
+
 
 if options.env_file is None:
     setup.configure_apt( )
@@ -518,6 +530,7 @@ logger.info('Destroying VMS')
 destroy_vms(setup.hosts)
 
 
+print len(ip_mac)
 if options.infile is None:    
     logger.info('No topology given, defining and distributing the VM')
     vms = define_vms(n_vm, ip_mac, mem_size = vm_ram_size)
