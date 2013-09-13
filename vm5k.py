@@ -422,10 +422,11 @@ logger.info('Generating the IP-MAC list')
 ips = IPNetwork(addresses)
 vm_ip = []
 for ip in ips.iter_hosts():
-    if len(sites) == 1 and ip.words[2] > 1:
-        vm_ip.append(ip)
-    elif ip.words[2] >= 216:
-        vm_ip.append(ip)
+    if ip.words[3] != 0:
+        if len(sites) == 1 and ip.words[2] > 1:
+            vm_ip.append(ip)
+        elif ip.words[2] >= 216:
+            vm_ip.append(ip)
 
 min_ip = vm_ip[0]
 ip_mac = []
@@ -550,7 +551,7 @@ install = install_vms(vms).run()
 logger.info('Starting the VMs')
 start = start_vms(vms).run()
 logger.info('Waiting for all VMs to have started')
-wait_vms_have_started(vms)
+wait_vms_have_started(vms, setup.service_node)
 
 #setup.write_placement_file()
 
