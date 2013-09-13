@@ -498,9 +498,9 @@ configure_taktuk = setup.fact.get_remote(
         'cat '+ssh_key+'.pub >> .ssh/authorized_keys; echo "Host *" >> /root/.ssh/config ; echo " StrictHostKeyChecking no" >> /root/.ssh/config; ',
                 setup.hosts, connexion_params = {'user': 'root'}).run()
 
-
+setup.configure_apt( )
 if options.env_file is None:
-    setup.configure_apt( )
+    
     setup.upgrade_hosts()   
     setup.install_packages()
     setup.reboot_nodes()
