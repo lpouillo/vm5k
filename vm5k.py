@@ -422,7 +422,7 @@ logger.info('Generating the IP-MAC list')
 ips = IPNetwork(addresses)
 vm_ip = []
 for ip in ips.iter_hosts():
-    if len(sites) == 1 and ip.words[2] > 0:
+    if len(sites) == 1 and ip.words[2] > 1:
         vm_ip.append(ip)
     elif ip.words[2] >= 216:
         vm_ip.append(ip)
