@@ -486,6 +486,7 @@ setup.deploy_hosts(max_tries = deployment_tries, check_deployed_command = not op
 setup.get_hosts_attr()
 max_vms = setup.get_max_vms(options.vm_template)
 
+options.n_vm = min(options.n_vm, max_vms)
 logger.info('Copying ssh keys')
 ssh_key = '~/.ssh/id_rsa' 
 
@@ -530,7 +531,6 @@ logger.info('Destroying VMS')
 destroy_vms(setup.hosts)
 
 
-print len(ip_mac)
 if options.infile is None:    
     logger.info('No topology given, defining and distributing the VM')
     vms = define_vms(n_vm, ip_mac, mem_size = vm_ram_size)
