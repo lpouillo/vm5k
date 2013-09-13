@@ -486,7 +486,8 @@ setup.deploy_hosts(max_tries = deployment_tries, check_deployed_command = not op
 setup.get_hosts_attr()
 max_vms = setup.get_max_vms(options.vm_template)
 
-options.n_vm = min(options.n_vm, max_vms)
+n_vm = min(n_vm, max_vms)
+print n_vm
 logger.info('Copying ssh keys')
 ssh_key = '~/.ssh/id_rsa' 
 
@@ -505,7 +506,7 @@ if options.env_file is None:
     setup.reboot_nodes()
 else:
     logger.warning('WARNING, your environnment need to have a libvirt version > 1.0.5')    
-setup.configure_libvirt(options.n_vm)
+setup.configure_libvirt(n_vm)
 setup.create_disk_image(disk_image = options.vm_backing_file)
 setup.ssh_keys_on_vmbase()
 
