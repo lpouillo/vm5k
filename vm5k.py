@@ -76,7 +76,7 @@ hosts.add_option('-e', '--env_name',
                     help = 'Kadeploy environment NAME for the physical host (%default)')
 hosts.add_option('-a', '--env_file', 
                     dest = 'env_file',
-                    help = 'Kadeploy environment FILE for the physical host (%default)')
+                    help = 'Kadeploy environment FILE for the physical host, i.e. .env file (%default)')
 hosts.add_option('-g', '--oargridsub_opts',
                     default = '-t deploy',
                     dest = 'oargridsub_opts',
@@ -423,7 +423,7 @@ ips = IPNetwork(addresses)
 vm_ip = []
 for ip in ips.iter_hosts():
     if ip.words[3] != 0:
-        if len(sites) == 1 and ip.words[2] > 1:
+        if len(sites) == 1 and ip.words[2] > (kavlan_id-4)*64:
             vm_ip.append(ip)
         elif ip.words[2] >= 216:
             vm_ip.append(ip)
@@ -487,16 +487,15 @@ setup.deploy_hosts(max_tries = deployment_tries, check_deployed_command = not op
 setup.get_hosts_attr()
 max_vms = setup.get_max_vms(options.vm_template)
 
-n_vm = min(n_vm, max_vms)
-print n_vm
+n_vm = min(n_vm, max_vms) - len(setup.hosts)
+
 logger.info('Copying ssh keys')
 ssh_key = '~/.ssh/id_rsa' 
 
 
 EX.Put( setup.hosts, [ssh_key, ssh_key+'.pub'], remote_location='.ssh/', 
               connexion_params = {'user': 'root'}).run()
-configure_taktuk = setup.fact.get_remote(
-        'cat '+ssh_key+'.pub >> .ssh/authorized_keys; echo "Host *" >> /root/.ssh/config ; echo " StrictHostKeyChecking no" >> /root/.ssh/config; ',
+configure_taktuk = setup.fact.get_remote(' echo "Host *" >> /root/.ssh/config ; echo " StrictHostKeyChecking no" >> /root/.ssh/config; ',
                 setup.hosts, connexion_params = {'user': 'root'}).run()
 
 
@@ -535,7 +534,9 @@ destroy_vms(setup.hosts)
 
 if options.infile is None:    
     logger.info('No topology given, defining and distributing the VM')
-    vms = define_vms(n_vm, ip_mac, mem_size = vm_ram_size)
+    cpuset = ET.fromstring(options.vm_template).get('cpuset')
+    cpusets = {'vm-'+str(i_vm): cpuset for i_vm in range(n_vm)}
+    vms = define_vms(n_vm, ip_mac, mem_size = vm_ram_size, cpusets = cpusets)
     vms = setup.distribute_vms(vms, mode = options.vm_distribution)
 else:
     logger.info('Distributing the virtual machines according to the topology file')
