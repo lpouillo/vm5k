@@ -30,7 +30,7 @@ from execo_g5k.planning import *
 deployment_tries = 1
 max_vms = 10000               # Limitations due to the number of IP address in a kavlan global 
 fact = ActionFactory(remote_tool = TAKTUK,
-                    fileput_tool = CHAINPUT,
+                    fileput_tool = TAKTUK,
                     fileget_tool = TAKTUK)
 
 ## Command line options 
@@ -423,7 +423,7 @@ ips = IPNetwork(addresses)
 vm_ip = []
 for ip in ips.iter_hosts():
     if ip.words[3] != 0:
-        if len(sites) == 1 and ip.words[2] > (kavlan_id-4)*64:
+        if len(sites) == 1 and ip.words[2] > (kavlan_id-4)*64+1:
             vm_ip.append(ip)
         elif ip.words[2] >= 216:
             vm_ip.append(ip)
