@@ -423,7 +423,7 @@ ips = IPNetwork(addresses)
 vm_ip = []
 for ip in ips.iter_hosts():
     if ip.words[3] != 0:
-        if len(sites) == 1 and ip.words[2] > (kavlan_id-4)*64+1:
+        if len(sites) == 1 and ip.words[2] > (kavlan_id-4)*64+2:
             vm_ip.append(ip)
         elif ip.words[2] >= 216:
             vm_ip.append(ip)
@@ -541,6 +541,7 @@ if options.infile is None:
 else:
     logger.info('Distributing the virtual machines according to the topology file')
     vms = setup.distribute_vms(vms, placement = placement)
+    
 if options.vm_disk_location == 'one':
     logger.info('Creating diskshosts')
     create = create_disks(vms).run()
