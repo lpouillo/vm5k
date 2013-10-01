@@ -487,7 +487,7 @@ setup.deploy_hosts(max_tries = deployment_tries, check_deployed_command = not op
 setup.get_hosts_attr()
 max_vms = setup.get_max_vms(options.vm_template)
 
-n_vm = min(n_vm, max_vms) - len(setup.hosts)
+n_vm = min(n_vm, max_vms)
 
 logger.info('Copying ssh keys')
 ssh_key = '~/.ssh/id_rsa' 
@@ -555,7 +555,7 @@ start = start_vms(vms).run()
 logger.info('Waiting for all VMs to have started')
 wait_vms_have_started(vms, setup.service_node)
 
-#setup.write_placement_file()
+setup.write_placement_file()
 
 
 rows, columns = os.popen('stty size', 'r').read().split()
