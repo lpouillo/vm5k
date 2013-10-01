@@ -444,12 +444,7 @@ for ip in vm_ip[0:n_vm]:
     macs.append(mac)
     ip_mac.append( ( str(ip), ':'.join( map(lambda x: "%02x" % x, mac) ) ) )
 
-        
-#total_attr = {'ram_size': 0, 'n_cpu': 0}
-#for host in hosts:
-#    attr = clusters_attr[get_host_cluster(host)]
-#    total_attr['ram_size'] += attr['ram_size']
-#    total_attr['n_cpu'] += attr['n_cpu']
+
 
 
 if placement is not None:
@@ -488,7 +483,7 @@ if len(setup.hosts) == 0:
     logger.error('No hosts have been deployed, aborting')
     exit()
 setup.get_hosts_attr()
-max_vms = setup.get_max_vms(options.vm_template)
+max_vms = setup.get_max_vms(options.vm_template)-len(setup.hosts)
 
 n_vm = min(n_vm, max_vms)
 
