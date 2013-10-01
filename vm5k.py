@@ -555,7 +555,7 @@ start = start_vms(vms).run()
 logger.info('Waiting for all VMs to have started')
 wait_vms_have_started(vms, setup.service_node)
 
-setup.write_placement_file()
+setup.write_placement_file(vms)
 
 
 rows, columns = os.popen('stty size', 'r').read().split()
