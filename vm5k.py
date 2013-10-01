@@ -484,6 +484,9 @@ else:
 
 setup.fact = fact
 setup.deploy_hosts(max_tries = deployment_tries, check_deployed_command = not options.forcedeploy)
+if len(setup.hosts) == 0:
+    logger.error('No hosts have been deployed, aborting')
+    exit()
 setup.get_hosts_attr()
 max_vms = setup.get_max_vms(options.vm_template)
 
@@ -543,7 +546,7 @@ else:
     vms = setup.distribute_vms(vms, placement = placement)
     
 if options.vm_disk_location == 'one':
-    logger.info('Creating diskshosts')
+    logger.info('Creating disks on one hosts')
     create = create_disks(vms).run()
 elif options.vm_disk_location == 'all':
     logger.info('Creating disks on all hosts')
