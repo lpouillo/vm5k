@@ -15,11 +15,11 @@ from netaddr import IPNetwork
 from operator import itemgetter
 import xml.etree.ElementTree as ET
 import execo as EX, execo_g5k, execo_engine
-from execo.log import set_style
+from execo.log import style
 from execo.config import configuration, TAKTUK, SSH, SCP, CHAINPUT
 from execo.action import ActionFactory
 from execo.time_utils import Timer, timedelta_to_seconds
-from execo_g5k.config import g5k_configuration, default_frontend_connexion_params
+from execo_g5k.config import g5k_configuration, default_frontend_connection_params
 from execo_g5k.vmutils import *
 from execo_g5k.api_utils import *
 from execo_g5k.planning import *
@@ -28,26 +28,26 @@ from execo_g5k.planning import *
 
 ## Constants
 deployment_tries = 1
-max_vms = 10000               # Limitations due to the number of IP address in a kavlan global 
+max_vms = 10000               # Limitations due to the number of IP address in a kavlan global
 fact = ActionFactory(remote_tool = TAKTUK,
                     fileput_tool = TAKTUK,
                     fileget_tool = TAKTUK)
 
 ## Command line options 
 parser = optparse.OptionParser(
-            prog = set_style( sys.argv[0], 'log_header'),
+            prog = style.log_header( sys.argv[0]),
             description = 'A tool to deploy and configure nodes and virtual machines '
-            +'with '+set_style('Debian', 'object_repr')+' and '+set_style('libvirt', 'object_repr')+\
-            '\non the '+set_style('Grid5000', 'log_header')+' platform in a '+set_style('KaVLAN','object_repr')+\
-            '.\n\nRequire '+set_style('execo-2.2', 'log_header')+'.',
+            +'with '+style.object_repr('Debian')+' and '+style.object_repr('libvirt')+\
+            '\non the '+style.log_header('Grid5000')+' platform in a '+style.object_repr('KaVLAN')+\
+            '.\n\nRequire '+style.log_header('execo-2.2')+'.',
             epilog = 'Example : '+sys.argv[0]+' -n 100 will install 100 VM with the default environnements for 3h '
             )
 # Resources
-resources = optparse.OptionGroup(parser, set_style('Ressources', 'log_header'),
-                set_style('n_vm + walltime', 'emph')+'\nperform a G5K reservation that has enough RAM for the virtual machine ;'+\
-                '\n'+set_style('n_vm + oargrid_job_id', 'emph')+'\nuse an existing reservation and create the virtual machine on the hosts'+\
-                '\n'+set_style('infile + walltime', 'emph')+'\ndeploy virtual machines and hosts according to a placement XML file for a given walltime'+\
-                '\n'+set_style('infile + oargrid_job_id', 'emph')+'\nusing a existing reservation to deploy virtual machines and hosts according to a placement XML file'
+resources = optparse.OptionGroup(parser, style.log_header('Ressources'),
+                style.emph('n_vm + walltime')+'\nperform a G5K reservation that has enough RAM for the virtual machine ;'+\
+                '\n'+style.emph('n_vm + oargrid_job_id')+'\nuse an existing reservation and create the virtual machine on the hosts'+\
+                '\n'+style.emph('infile + walltime')+'\ndeploy virtual machines and hosts according to a placement XML file for a given walltime'+\
+                '\n'+style.emph('infile + oargrid_job_id')+'\nusing a existing reservation to deploy virtual machines and hosts according to a placement XML file'
                 )                                      
 resources.add_option('-n', '--n_vm',
                     dest = 'n_vm',
@@ -70,7 +70,7 @@ resources.add_option('-w', '--walltime',
                     help = 'duration of your reservation (%default)' )
 parser.add_option_group(resources)
 # Hosts configuration
-hosts = optparse.OptionGroup(parser,set_style('Physical hosts', 'log_header'))
+hosts = optparse.OptionGroup(parser,style.log_header('Physical hosts'))
 hosts.add_option('-e', '--env_name', 
                     dest = 'env_name',
                     help = 'Kadeploy environment NAME for the physical host (%default)')
@@ -89,13 +89,14 @@ hosts.add_option('--nodeploy',
                     help = 'consider that hosts are already deployed')
 parser.add_option_group(hosts)
 # VMs configuration
-vms = optparse.OptionGroup(parser, set_style('Virtual machines', 'log_header'))
+vms = optparse.OptionGroup(parser, style.log_header('Virtual machines'))
 vms.add_option('-d', '--vm_distribution',
                     default = 'distributed', 
                     dest = 'vm_distribution',
                     help = 'how to distribute the VM distributed (default) or concentrated')
 vms.add_option('-f', '--vm_backing_file', 
                     dest = 'vm_backing_file',
+                    default = '/grid5000/images/KVM/squeeze-x64-base.qcow2',
                     help = 'backing file for your virtual machines')
 vms.add_option('-t', '--vm_template', 
                     dest = 'vm_template',
@@ -107,7 +108,7 @@ vms.add_option('-k', '--vm_disk_location',
                     help = 'Where to create the qcow2: one (default) or all)')
 parser.add_option_group(vms)
 # Run options
-run = optparse.OptionGroup(parser, set_style('Execution output', 'log_header'))
+run = optparse.OptionGroup(parser, style.log_header('Execution output'))
 run.add_option("-v", "--verbose", 
                        action = "store_true", 
                        help = 'print debug messages')
@@ -125,10 +126,12 @@ parser.add_option_group(run)
 ## Start a timer
 timer = Timer()
 execution_time = {}
+out_deploy = False
 ## Set log level
 if options.verbose:
     logger.setLevel(DEBUG)
-    logger.debug(set_style('RUNNING IN DEBUG MODE', 'user1'))
+    logger.debug(style.user1('RUNNING IN DEBUG MODE'))
+    out_deploy = True
 elif options.quiet:
     logger.setLevel(WARN)
 else:
@@ -137,8 +140,8 @@ if options.nodeploy:
     deployment_tries = 0
 
 ## Start message
-logger.info(set_style('INITIALIZATION', 'log_header')+'\n\n    Starting %s to create of virtual machines on Grid5000\n', set_style(sys.argv[0], 'log_header'))
-logger.info('Options\n'+'\n'.join( [ set_style(option.ljust(20),'emph')+\
+logger.info(style.log_header('INITIALIZATION')+'\n\n    Starting %s to create of virtual machines on Grid5000\n', style.log_header(sys.argv[0]))
+logger.info('Options\n'+'\n'.join( [ style.emph(option.ljust(20))+\
                     '= '+str(value).ljust(10) for option, value in vars(options).iteritems() if value is not None ]))
 ## Create output directory
 try:
@@ -154,14 +157,14 @@ if options.quiet and options.verbose:
     parser.error("options -e quiet and -a verbose are mutually exclusive, see -h for help")
 if options.n_vm is None and options.oargrid_job_id is None and options.infile is None:
     parser.error('must specify one of the following options: -n '+
-    set_style('n_vm', 'emph')+', -i '+set_style('infile', 'emph')+' or -j '+set_style('oargrid_job_id','emph')+' , see -h for help')
+    style('n_vm', 'emph')+', -i '+style.emph('infile')+' or -j '+style.emph('oargrid_job_id')+' , see -h for help')
 if options.infile is not None and options.oargrid_job_id is None and options.infile is None:
     parser.error('must specify one of the following options: -n '+
-    set_style('n_vm', 'emph')+', -i '+set_style('infile', 'emph')+' or -j '+set_style('oargrid_job_id','emph')+' , see -h for help')
+    style('n_vm', 'emph')+', -i '+style.emph('infile')+' or -j '+style.emph('oargrid_job_id')+' , see -h for help')
 
 
 ### TOPOLOGY
-logger.info(set_style('DEPLOYMENT TOPOLOGY', 'log_header'))
+logger.info(style.log_header('DEPLOYMENT TOPOLOGY'))
 ## Check the resources
 # Defining number of virtual machines
 if options.infile is None:
@@ -170,7 +173,7 @@ if options.infile is None:
 else:
     placement = ET.parse(options.infile)
     n_vm = len(placement.findall('.//vm'))
-logger.info('Peforming deployment of %s virtual machines', set_style(n_vm,'emph')  )
+logger.info('Peforming deployment of %s virtual machines', style.emph(n_vm)  )
 # Computing RAM and CPU requirements
 if placement is None:
     total_mem = n_vm * int(ET.fromstring(options.vm_template).get('mem'))
@@ -178,12 +181,12 @@ if placement is None:
 else:
     total_mem = sum([ int(vm.get('mem')) for vm in placement.findall('.//vm')])
     total_cpu = sum([ int(vm.get('cpu')) for vm in placement.findall('.//vm')])    
-logger.info('Total mem: '+set_style(str(total_mem),'emph').rjust(18)+' Total cpu: '.ljust(15)+set_style(str(total_cpu),'emph').rjust(15))
+logger.info('Total mem: '+style.emph(str(total_mem)).rjust(18)+' Total cpu: '.ljust(15)+style.emph(str(total_cpu)).rjust(15))
 
 # Analyzing Grid'5000 resources
 resources = {}
 if options.infile is not None:
-    logger.info( 'Using an input file for the placement: '+ set_style(options.infile, 'emph'))
+    logger.info( 'Using an input file for the placement: '+ style.emph(options.infile))
     placement = ET.parse(options.infile)
     for site in placement.findall('./site'):
         resources[site.get('id')] = len(site.findall('.//host'))
@@ -197,22 +200,13 @@ elif options.oargrid_job_id is None:
             element_uid, n_nodes = element, 0
         resources[element_uid] = int(n_nodes)
 else:
-    logger.info( 'Using an existing reservation: '+ set_style(options.infile, 'emph'))
+    logger.info( 'Using an existing reservation: '+ style.emph(str(options.oargrid_job_id)))
 
-logger.info('Grid\'5000 elements: '+' '.join([ set_style(element,'emph')+' '
-               +str(n_nodes)+'  ' if n_nodes !=0 else set_style(element,'emph') 
+logger.info('Grid\'5000 elements: '+' '.join([ style.emph(element)+' '
+               +str(n_nodes)+'  ' if n_nodes !=0 else style.emph(element) 
                for element, n_nodes in resources.iteritems()]))
 
-# Remove buggy sites/clusters
-error_sites = [ 'bordeaux', 'reims' ] 
-error_clusters = [item for sublist in map(lambda site: get_site_clusters(site), error_sites) 
-                       for item in sublist]
-
-tmp_res = resources.copy()
-for element in tmp_res.iterkeys():
-    if element in error_sites or element in error_clusters:
-        logger.warn('DUE TO G5K BUGS, %s HAS BEEN REMOVED ',  set_style(element, 'emph'))
-        del resources[element]
+        
 clusters = []   
 sites = []
 for element in resources.iterkeys():
@@ -231,7 +225,7 @@ for element in resources.iterkeys():
         clusters.append(element)
         sites.append(get_cluster_site(element))
     else:
-        logger.error('Element '+set_style(element, 'error')+' is not a Grid5000 site or cluster, abort')
+        logger.error('Element '+style.error(element)+' is not a Grid5000 site or cluster, abort')
         exit() 
 clusters = list(set(clusters))
 sites = list(set(sites))        
@@ -245,17 +239,17 @@ for cluster in clusters:
     attr = get_host_attributes(cluster+'-1')
     clusters_attr[cluster] =  {'cpu': attr['architecture']['smt_size'],
                               'mem': attr['main_memory']['ram_size']/1048576 }
-logger.info('cpu'+'mem'.rjust(11)+'\n'+'\n'.join( [ set_style(cluster,'emph').ljust(16) 
+logger.info('cpu'+'mem'.rjust(11)+'\n'+'\n'.join( [ style.emph(cluster).ljust(16) 
                 +str(attr['cpu']).rjust(30)+' '+str(attr['mem']).rjust(10) for cluster, attr in clusters_attr.iteritems() ] ) )
 
 execution_time['1-topology'] = timer.elapsed()
-logger.info(set_style('Done in '+str(round(execution_time['1-topology'],2))+' s\n', 'log_header'))
+logger.info(style.log_header('Done in '+str(round(execution_time['1-topology'],2))+' s\n'))
 
     
 ### GRID RESERVATION
-logger.info(set_style('GRID RESERVATION', 'log_header'))
+logger.info(style.log_header('GRID RESERVATION'))
 if options.oargrid_job_id is not None:   
-    logger.info('Using '+set_style(str(options.oargrid_job_id), 'emph')+' job')
+    logger.info('Using '+style.emph(str(options.oargrid_job_id))+' job')
     oargrid_job_id = options.oargrid_job_id    
 else:
 # Computing planning for resources
@@ -264,12 +258,12 @@ else:
     endtime = starttime + timedelta_to_seconds(DT.timedelta(days = 5))
     planning = Planning( clusters, starttime, endtime, kavlan = True)
     planning.compute_slots(options.walltime)
-    logger.debug('Slots:\n'+'\n'.join( [ set_style(format_oar_date(slot[0]), 'emph').ljust(30) +\
+    logger.debug('Slots:\n'+'\n'.join( [ style.emph(format_oar_date(slot[0])).ljust(30) +\
                     ', '.join( [ element+': '+ str(n_nodes) for element, n_nodes in slot[2].iteritems()]) 
                     for slot in planning.slots]) )
 # Finding slot with enough ressources
-    logger.info('Filtering slots with memory '+set_style(total_mem, 'emph')+\
-                ' and more than '+set_style(total_cpu/2, 'emph')+' cpu' )
+    logger.info('Filtering slots with memory '+style.emph(total_mem)+\
+                ' and more than '+style.emph(total_cpu/2)+' cpu' )
     tmp_slots = planning.slots[:]
     for slot in tmp_slots:
         slot_ram = 0
@@ -332,8 +326,8 @@ else:
     else:
         logger.error('Unable to find a slot for the resources you ask, abort ...')
         exit()            
-    logger.info('Chosen slot: '+set_style(format_oar_date(chosen_slot[0]), 'emph').ljust(30) +'\n'+\
-                ', '.join( [ set_style(element, 'emph')+': '+ str(n_nodes) for element, n_nodes in chosen_slot[2].iteritems()]) )
+    logger.info('Chosen slot: '+style.emph(format_oar_date(chosen_slot[0])).ljust(30) +'\n'+\
+                ', '.join( [ style.emph(element)+': '+ str(n_nodes) for element, n_nodes in chosen_slot[2].iteritems()]) )
     
     resources.update(cluster_nodes)      
     resources.update({'kavlan': chosen_slot[2]['kavlan'] })
@@ -347,16 +341,16 @@ if oargrid_job_id is None:
     
 jobinfo = get_oargrid_job_info(oargrid_job_id)
 if jobinfo['start_date'] > T.time():
-    logger.info('Job %s is scheduled for %s, waiting', set_style(oargrid_job_id, 'emph'), 
-            set_style(format_oar_date(jobinfo['start_date']), 'emph') )
+    logger.info('Job %s is scheduled for %s, waiting', style.emph(oargrid_job_id), 
+            style.emph(format_oar_date(jobinfo['start_date'])) )
     if T.time() > jobinfo['start_date'] + jobinfo['walltime']:
-        logger.error('Job %s is already finished, aborting', set_style(oargrid_job_id, 'emph'))
+        logger.error('Job %s is already finished, aborting', style.emph(oargrid_job_id))
         exit()
 else:
     logger.info('Start date = %s', format_oar_date(jobinfo['start_date']))
 
 wait_oargrid_job_start(oargrid_job_id)
-logger.info('Job '+set_style(str(oargrid_job_id), 'emph')+' has started')    
+logger.info('Job '+style.emph(str(oargrid_job_id))+' has started')    
 
 logger.info('Retrieving the KaVLAN  ')
 kavlan_id = None
@@ -376,27 +370,20 @@ if kavlan_id is None:
     exit()
     
 logger.info('Retrieving the subnet from API')
-API_stable = API.APIConnexion('https://api.grid5000.fr/stable/')    
-(_, content) = API_stable.get('sites/'+kavlan_site+'/network_equipments/')
-equips = loads(content)
-
-
+equips = API.get_resource_attributes('/sites/'+kavlan_site+'/network_equipments/')
 for equip in equips['items']:
     if equip.has_key('vlans') and len(equip['vlans']) >2:
         all_vlans = equip['vlans'] 
-for vlan, info in all_vlans.iteritems():
-    
+for vlan, info in all_vlans.iteritems():    
     if type(info) == type({}) and info.has_key('name') and info['name'] == 'kavlan-'+str(kavlan_id):
         addresses = info['addresses'][0]
-        
-
 logger.info(addresses)
 logger.info('Retrieving the list of hosts ...')        
 hosts = get_oargrid_job_nodes( oargrid_job_id )
 hosts.sort()
 
 if options.oargrid_job_id is not None:
-    logger.info('Getting the attributes of \n%s', ", ".join( [set_style(host.address.split('.')[0], 'host') for host in hosts] ))
+    logger.info('Getting the attributes of \n%s', ", ".join( [style.host(host.address.split('.')[0]) for host in hosts] ))
     clusters = []
     for host in hosts:
         cluster = get_host_cluster(host)
@@ -409,7 +396,7 @@ if options.oargrid_job_id is not None:
                                    'node_flops': attr['performance']['node_flops'] if attr.has_key('performance') else 0, 
                                    'ram_size': attr['main_memory']['ram_size']/1048576,
                                    'n_cpu': attr['architecture']['smt_size'] }
-
+        
 sites = []
 for cluster in clusters:
     site = get_cluster_site(cluster)
@@ -460,16 +447,16 @@ else:
     vm_ram_size = int(ET.fromstring(options.vm_template).get('mem'))
     if n_vm > max_vms:
         logger.warning('Reducing the number of virtual machines to %s, due to the'+\
-                     ' number of available IP in the KaVLAN global', set_style(max_vms, 'report_error') )
+                     ' number of available IP in the KaVLAN global', style.report_error(max_vms) )
         n_vm = max_vms
     max_vms = min (max_vms, total_mem)
     
 execution_time['2-reservation'] = timer.elapsed() - sum(execution_time.values())
-logger.info(set_style('Done in '+str(round(execution_time['2-reservation'],2))+' s\n', 'log_header'))
+logger.info(style.log_header('Done in '+str(round(execution_time['2-reservation'],2))+' s\n'))
 
 
 ### HOSTS CONFIGURATION
-logger.info(set_style('HOSTS CONFIGURATION', 'log_header'))
+logger.info(style.log_header('HOSTS CONFIGURATION'))
 if options.env_name is None:
     options.env_name = 'wheezy-x64-base'
 if options.env_file is not None:
@@ -478,7 +465,8 @@ else:
     setup = Virsh_Deployment( hosts, kavlan = kavlan_id, env_name = options.env_name,  outdir = options.outdir)
 
 setup.fact = fact
-setup.deploy_hosts(max_tries = deployment_tries, check_deployed_command = not options.forcedeploy)
+setup.deploy_hosts(max_tries = deployment_tries, check_deployed_command = not options.forcedeploy, 
+                   out = out_deploy)
 if len(setup.hosts) == 0:
     logger.error('No hosts have been deployed, aborting')
     exit()
@@ -491,10 +479,10 @@ logger.info('Copying ssh keys')
 ssh_key = '~/.ssh/id_rsa' 
 
 
-EX.Put( setup.hosts, [ssh_key, ssh_key+'.pub'], remote_location='.ssh/', 
-              connexion_params = {'user': 'root'}).run()
+EX.Put( setup.hosts, [ssh_key, ssh_key+'.pub'], remote_location='.ssh/',
+        connection_params ={'user': 'root'}).run()
 configure_taktuk = setup.fact.get_remote(' echo "Host *" >> /root/.ssh/config ; echo " StrictHostKeyChecking no" >> /root/.ssh/config; ',
-                setup.hosts, connexion_params = {'user': 'root'}).run()
+                setup.hosts, connection_params ={'user': 'root'}).run()
 
 
 if options.env_file is None:
@@ -505,6 +493,7 @@ if options.env_file is None:
 else:
     logger.warning('WARNING, your environnment need to have a libvirt version > 1.0.5')    
 setup.configure_libvirt(n_vm)
+
 setup.create_disk_image(disk_image = options.vm_backing_file)
 setup.ssh_keys_on_vmbase()
 
@@ -520,12 +509,12 @@ setup.ip_mac = ip_mac
 setup.configure_service_node(dhcp_range, dhcp_router, dhcp_hosts)
 
 execution_time['4-hosts'] = timer.elapsed() - sum(execution_time.values())
-logger.info(set_style('Done in '+str(round(execution_time['4-hosts'],2))+' s\n', 'log_header'))
+logger.info(style.log_header('Done in '+str(round(execution_time['4-hosts'],2))+' s\n'))
 
 
 
 ### VIRTUAL MACHINES CONFIGURATION
-logger.info(set_style('VIRTUAL MACHINES', 'log_header'))
+logger.info(style.log_header('VIRTUAL MACHINES'))
 logger.info('Destroying VMS')
 destroy_vms(setup.hosts)
 
@@ -546,6 +535,7 @@ if options.vm_disk_location == 'one':
 elif options.vm_disk_location == 'all':
     logger.info('Creating disks on all hosts')
     create = create_disks_on_hosts(vms, setup.hosts).run()
+    
 logger.info('Installing the VMs')
 install = install_vms(vms).run()
 logger.info('Starting the VMs')
