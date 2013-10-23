@@ -409,8 +409,13 @@ logger.info('Generating the IP-MAC list')
 ips = IPNetwork(addresses)
 vm_ip = []
 for ip in ips.iter_hosts():
+    if kavlan_id < 8:
+        test_lockav = (kavlan_id-4)*64 + 2
+    else:
+        test_lockav = (kavlan_id-12)*64 + 2
+    
     if ip.words[3] != 0:
-        if len(sites) == 1 and ip.words[2] > (kavlan_id-4)*64+2:
+        if len(sites) == 1 and ip.words[2] > test_lockav + 2:
             vm_ip.append(ip)
         elif ip.words[2] >= 216:
             vm_ip.append(ip)
