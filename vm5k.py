@@ -96,7 +96,7 @@ vms.add_option('-d', '--vm_distribution',
                     help = 'how to distribute the VM distributed (default) or concentrated')
 vms.add_option('-f', '--vm_backing_file', 
                     dest = 'vm_backing_file',
-                    default = '/grid5000/images/KVM/squeeze-x64-base.qcow2',
+                    default = '/grid5000/images/KVM/wheezy-x64-base.qcow2',
                     help = 'backing file for your virtual machines')
 vms.add_option('-t', '--vm_template', 
                     dest = 'vm_template',
