@@ -65,12 +65,14 @@ class MicroarchMigration( vm5k_engine ):
                 logger.info('Performing measurements with RAM stress')
                 stress = self.mem_update(vms, 0.9*512, 10)
             if type_stress is not None:
+                if type(stress) == type(True):
+                    return False
                 stress.start()
                 for p in stress.processes():
                     if not p.ok():
                         return False
                 
-            logger.info(set_style('Performing measurements with '+str(type_stress)+' stress', 'step'))
+            logger.info(style.step('Performing measurements with '+str(type_stress)+' stress'))
             measure = measurements_loop(self.options.n_measure, [vms[-1]], self.hosts, twonodes_migrations, 
                  'sequential', label = str(type_stress), mig_speed = self.options.mig_bw )
             if type_stress is not None:
@@ -79,7 +81,7 @@ class MicroarchMigration( vm5k_engine ):
         return True
         
     def get_cpu_topology(self, cluster):
-        logger.info('Determining the architecture of cluster '+set_style(cluster, 'emph'))
+        logger.info('Determining the architecture of cluster '+style.emph(cluster))
         frontend = get_cluster_site(cluster)            
         submission = OarSubmission(resources = "{'cluster=\""+cluster+"\"'}/nodes=1",
                                                          walltime = "0:02:00",
@@ -88,7 +90,7 @@ class MicroarchMigration( vm5k_engine ):
         wait_oar_job_start( job_id, frontend )        
         host = get_oar_job_nodes( job_id, frontend )[0]
         capa = SshProcess('virsh capabilities', host, 
-                          connexion_params = {'user': default_frontend_connexion_params['user'] }).run()
+                          connection_params = {'user': default_frontend_connection_params['user'] }).run()
         oardel( [ (job_id, frontend) ] )
         root = ET.fromstring( capa.stdout() )
         cpu_topology = []
