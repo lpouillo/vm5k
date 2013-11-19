@@ -7,7 +7,7 @@
 #    A great thanks to A. Lèbre and J. Pastor for alpha testing :)
 #
 #
-import os, sys, optparse, time as T, datetime as DT, json, random
+import os, sys, argparse, time as T, datetime as DT, json, random
 from pprint import pprint
 from logging import INFO, DEBUG, WARN
 from itertools import cycle
@@ -132,67 +132,46 @@ vms.add_argument('-f', '--vm_backing_file',
                     dest = 'vm_backing_file',
                     default = '/grid5000/images/KVM/squeeze-x64-base.qcow2',
                     help = 'backing file for your virtual machines')
-vms.add_option('-t', '--vm_template', 
-                    dest = 'vm_template',
-                    help = 'XML string describing the virtual machine',
-                    default = '<vm mem="1024" hdd="2" cpu="1" cpuset="auto"/>')
-vms.add_option('-k', '--vm_disk_location', 
+vms.add_argument('-k', '--vm_disk_location', 
                     default = 'one',
                     dest = 'vm_disk_location',
                     help = 'Where to create the qcow2: one (default) or all)')
-parser.add_option_group(vms)
-# Run options
-run = optparse.OptionGroup(parser, style.log_header('Execution output'))
-run.add_option("-v", "--verbose", 
-                       action = "store_true", 
-                       help = 'print debug messages')
-run.add_option("-q", "--quiet", 
-                       action = "store_true",
-                       help = 'print only warning and error messages')
-run.add_option("-o", "--outdir", 
-                    dest = "outdir", 
-                    default = 'vm5k_'+ T.strftime("%Y%m%d_%H%M%S_%z"),
-                    help = 'where to store the vm5k files')
-parser.add_option_group(run)
-(options, args) = parser.parse_args()
+vms.add_argument('-d', '--vm_distribution',
+                    default = 'distributed', 
+                    dest = 'vm_distribution',
+                    help = 'how to distribute the VM distributed (default) or concentrated')
+vms.add_argument('--vm_packages',
+                dest = 'vm_packages',
+                help = 'comma separated list of packages to be installed on the vms')
 
+args = parser.parse_args()
 
 ## Start a timer
 timer = Timer()
 execution_time = {}
 out_deploy = False
 ## Set log level
-if options.verbose:
+if args.verbose:
     logger.setLevel(DEBUG)
     logger.debug(style.user1('RUNNING IN DEBUG MODE'))
     out_deploy = True
-elif options.quiet:
+elif args.quiet:
     logger.setLevel(WARN)
 else:
     logger.setLevel(INFO)
-if options.nodeploy:
+if args.nodeploy:
     deployment_tries = 0
 
 ## Start message
 logger.info(style.log_header('INITIALIZATION')+'\n\n    Starting %s to create of virtual machines on Grid5000\n', style.log_header(sys.argv[0]))
 logger.info('Options\n'+'\n'.join( [ style.emph(option.ljust(20))+\
-                    '= '+str(value).ljust(10) for option, value in vars(options).iteritems() if value is not None ]))
+                    '= '+str(value).ljust(10) for option, value in vars(args).iteritems() if value is not None ]))
 ## Create output directory
 try:
-    os.mkdir(options.outdir)
+    os.mkdir(args.outdir)
 except os.error:
     pass
-## Check options consistency
-if options.n_vm and options.infile:
-    parser.error("options -n n_vm and -i infile are mutually exclusive, see -h for help")
-if options.env_name and options.env_file:
-    parser.error("options -e env_name and -a env_file are mutually exclusive, see -h for help")
-if options.quiet and options.verbose:
-    parser.error("options -e quiet and -a verbose are mutually exclusive, see -h for help")
-if options.n_vm is None and options.oargrid_job_id is None and options.infile is None:
-    parser.error('must specify one of the following options: -n '+
-    style('n_vm', 'emph')+', -i '+style.emph('infile')+' or -j '+style.emph('oargrid_job_id')+' , see -h for help')
-if options.infile is not None and options.oargrid_job_id is None and options.infile is None:
+if args.n_vm is None and args.oargrid_job_id is None and args.infile is None:
     parser.error('must specify one of the following options: -n '+
     style('n_vm', 'emph')+', -i '+style.emph('infile')+' or -j '+style.emph('oargrid_job_id')+' , see -h for help')
 
@@ -201,17 +180,17 @@ if options.infile is not None and options.oargrid_job_id is None and options.inf
 logger.info(style.log_header('DEPLOYMENT TOPOLOGY'))
 ## Check the resources
 # Defining number of virtual machines
-if options.infile is None:
+if args.infile is None:
     placement = None
-    n_vm = options.n_vm
+    n_vm = args.n_vm
 else:
-    placement = ET.parse(options.infile)
+    placement = ET.parse(args.infile)
     n_vm = len(placement.findall('.//vm'))
 logger.info('Peforming deployment of %s virtual machines', style.emph(n_vm)  )
 # Computing RAM and CPU requirements
 if placement is None:
-    total_mem = n_vm * int(ET.fromstring(options.vm_template).get('mem'))
-    total_cpu = n_vm * int(ET.fromstring(options.vm_template).get('cpu'))
+    total_mem = n_vm * int(ET.fromstring(args.vm_template).get('mem'))
+    total_cpu = n_vm * int(ET.fromstring(args.vm_template).get('cpu'))
 else:
     total_mem = sum([ int(vm.get('mem')) for vm in placement.findall('.//vm')])
     total_cpu = sum([ int(vm.get('cpu')) for vm in placement.findall('.//vm')])    
@@ -219,22 +198,22 @@ logger.info('Total mem: '+style.emph(str(total_mem)).rjust(18)+' Total cpu: '.lj
 
 # Analyzing Grid'5000 resources
 resources = {}
-if options.infile is not None:
-    logger.info( 'Using an input file for the placement: '+ style.emph(options.infile))
-    placement = ET.parse(options.infile)
+if args.infile is not None:
+    logger.info( 'Using an input file for the placement: '+ style.emph(args.infile))
+    placement = ET.parse(args.infile)
     for site in placement.findall('./site'):
         resources[site.get('id')] = len(site.findall('.//host'))
         for cluster in site.findall('./cluster'):
             resources[cluster.get('id')] = len(cluster.findall('.//host'))
-elif options.oargrid_job_id is None:
-    for element in options.resources.split(','):
+elif args.oargrid_job_id is None:
+    for element in args.resources.split(','):
         if ':' in element:
             element_uid, n_nodes = element.split(':')
         else: 
             element_uid, n_nodes = element, 0
         resources[element_uid] = int(n_nodes)
 else:
-    logger.info( 'Using an existing reservation: '+ style.emph(str(options.oargrid_job_id)))
+    logger.info( 'Using an existing reservation: '+ style.emph(str(args.oargrid_job_id)))
 
 logger.info('Grid\'5000 elements: '+' '.join([ style.emph(element)+' '
                +str(n_nodes)+'  ' if n_nodes !=0 else style.emph(element) 
@@ -282,16 +261,16 @@ logger.info(style.log_header('Done in '+str(round(execution_time['1-topology'],2
     
 ### GRID RESERVATION
 logger.info(style.log_header('GRID RESERVATION'))
-if options.oargrid_job_id is not None:   
-    logger.info('Using '+style.emph(str(options.oargrid_job_id))+' job')
-    oargrid_job_id = options.oargrid_job_id    
+if args.oargrid_job_id is not None:   
+    logger.info('Using '+style.emph(str(args.oargrid_job_id))+' job')
+    oargrid_job_id = args.oargrid_job_id    
 else:
 # Computing planning for resources
     logger.info('No oargrid_job_id given, finding a slot that suit your need')
     starttime = T.time()
     endtime = starttime + timedelta_to_seconds(DT.timedelta(days = 5))
     planning = Planning( clusters, starttime, endtime, kavlan = True)
-    planning.compute_slots(options.walltime)
+    planning.compute_slots(args.walltime)
     logger.debug('Slots:\n'+'\n'.join( [ style.emph(format_oar_date(slot[0])).ljust(30) +\
                     ', '.join( [ element+': '+ str(n_nodes) for element, n_nodes in slot[2].iteritems()]) 
                     for slot in planning.slots]) )
@@ -321,7 +300,7 @@ else:
         exit()
     
     
-    slots_ok = planning.find_free_slots(options.walltime, resources) 
+    slots_ok = planning.find_free_slots(args.walltime, resources) 
     
     
     if len(slots_ok) > 0:
@@ -335,7 +314,7 @@ else:
         iter_cluster = cycle(cluster_nodes.iterkeys())
         cluster = iter_cluster.next()
         
-        vm_ram_size = int(ET.fromstring(options.vm_template).get('mem'))
+        vm_ram_size = int(ET.fromstring(args.vm_template).get('mem'))
         node_ram = 0
         for i_vm in range(n_vm):
             node_ram += vm_ram_size
@@ -367,7 +346,7 @@ else:
     resources.update({'kavlan': chosen_slot[2]['kavlan'] })
     
     
-    oargrid_job_id = create_reservation(chosen_slot[0], resources, options.walltime, auto_reservation = True)
+    oargrid_job_id = create_reservation(chosen_slot[0], resources, args.walltime, auto_reservation = True)
 
 if oargrid_job_id is None:
     logger.error('No reservation available, abort ...')
@@ -416,7 +395,7 @@ logger.info('Retrieving the list of hosts ...')
 hosts = get_oargrid_job_nodes( oargrid_job_id )
 hosts.sort()
 
-if options.oargrid_job_id is not None:
+if args.oargrid_job_id is not None:
     logger.info('Getting the attributes of \n%s', ", ".join( [style.host(host.address.split('.')[0]) for host in hosts] ))
     clusters = []
     for host in hosts:
@@ -483,7 +462,7 @@ if placement is not None:
             tmp_hosts.remove(tmp[0])   
 else:
     logger.info('No topology given, VMs will be distributed')
-    vm_ram_size = int(ET.fromstring(options.vm_template).get('mem'))
+    vm_ram_size = int(ET.fromstring(args.vm_template).get('mem'))
     if n_vm > max_vms:
         logger.warning('Reducing the number of virtual machines to %s, due to the'+\
                      ' number of available IP in the KaVLAN global', style.report_error(max_vms) )
@@ -496,21 +475,21 @@ logger.info(style.log_header('Done in '+str(round(execution_time['2-reservation'
 
 ### HOSTS CONFIGURATION
 logger.info(style.log_header('HOSTS CONFIGURATION'))
-if options.env_name is None:
-    options.env_name = 'wheezy-x64-base'
-if options.env_file is not None:
-    setup = Virsh_Deployment( hosts, kavlan = kavlan_id, env_file = options.env_file, outdir = options.outdir) 
+if args.env_name is None:
+    args.env_name = 'wheezy-x64-prod'
+if args.env_file is not None:
+    setup = Virsh_Deployment( hosts, kavlan = kavlan_id, env_file = args.env_file, outdir = args.outdir) 
 else:
-    setup = Virsh_Deployment( hosts, kavlan = kavlan_id, env_name = options.env_name,  outdir = options.outdir)
+    setup = Virsh_Deployment( hosts, kavlan = kavlan_id, env_name = args.env_name,  outdir = args.outdir)
 
 setup.fact = fact
-setup.deploy_hosts(max_tries = deployment_tries, check_deployed_command = not options.forcedeploy, 
+setup.deploy_hosts(max_tries = deployment_tries, check_deployed_command = not args.forcedeploy, 
                    out = out_deploy)
 if len(setup.hosts) == 0:
     logger.error('No hosts have been deployed, aborting')
     exit()
 setup.get_hosts_attr()
-max_vms = setup.get_max_vms(options.vm_template)-len(setup.hosts)
+max_vms = setup.get_max_vms(args.vm_template)-len(setup.hosts)
 
 n_vm = min(n_vm, max_vms)
 
@@ -524,7 +503,7 @@ configure_taktuk = setup.fact.get_remote(' echo "Host *" >> /root/.ssh/config ; 
                 setup.hosts, connection_params ={'user': 'root'}).run()
 
 
-if options.env_file is None:
+if args.env_file is None:
     setup.configure_apt( )
     setup.upgrade_hosts()   
     setup.install_packages()
@@ -533,7 +512,7 @@ else:
     logger.warning('WARNING, your environnment need to have a libvirt version > 1.0.5')    
 setup.configure_libvirt(n_vm)
 
-setup.create_disk_image(disk_image = options.vm_backing_file)
+setup.create_disk_image(disk_image = args.vm_backing_file)
 setup.ssh_keys_on_vmbase()
 
 dhcp_hosts = ''
@@ -558,20 +537,20 @@ logger.info('Destroying VMS')
 destroy_vms(setup.hosts)
 
 
-if options.infile is None:    
+if args.infile is None:    
     logger.info('No topology given, defining and distributing the VM')
-    cpuset = ET.fromstring(options.vm_template).get('cpuset')
+    cpuset = ET.fromstring(args.vm_template).get('cpuset')
     cpusets = {'vm-'+str(i_vm): cpuset for i_vm in range(n_vm)}
     vms = define_vms(n_vm, ip_mac, mem_size = vm_ram_size, cpusets = cpusets)
-    vms = setup.distribute_vms(vms, mode = options.vm_distribution)
+    vms = setup.distribute_vms(vms, mode = args.vm_distribution)
 else:
     logger.info('Distributing the virtual machines according to the topology file')
     vms = setup.distribute_vms(vms, placement = placement)
     
-if options.vm_disk_location == 'one':
+if args.vm_disk_location == 'one':
     logger.info('Creating disks on one hosts')
     create = create_disks(vms).run()
-elif options.vm_disk_location == 'all':
+elif args.vm_disk_location == 'all':
     logger.info('Creating disks on all hosts')
     create = create_disks_on_hosts(vms, setup.hosts).run()
     
