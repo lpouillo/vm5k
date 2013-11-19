@@ -34,67 +34,101 @@ fact = ActionFactory(remote_tool = TAKTUK,
                     fileget_tool = TAKTUK)
 
 ## Command line options 
-parser = optparse.OptionParser(
-            prog = style.log_header( sys.argv[0]),
-            description = 'A tool to deploy and configure nodes and virtual machines '
-            +'with '+style.object_repr('Debian')+' and '+style.object_repr('libvirt')+\
-            '\non the '+style.log_header('Grid5000')+' platform in a '+style.object_repr('KaVLAN')+\
-            '.\n\nRequire '+style.log_header('execo-2.2')+'.',
-            epilog = 'Example : '+sys.argv[0]+' -n 100 will install 100 VM with the default environnements for 3h '
-            )
-# Resources
-resources = optparse.OptionGroup(parser, style.log_header('Ressources'),
-                style.emph('n_vm + walltime')+'\nperform a G5K reservation that has enough RAM for the virtual machine ;'+\
-                '\n'+style.emph('n_vm + oargrid_job_id')+'\nuse an existing reservation and create the virtual machine on the hosts'+\
-                '\n'+style.emph('infile + walltime')+'\ndeploy virtual machines and hosts according to a placement XML file for a given walltime'+\
-                '\n'+style.emph('infile + oargrid_job_id')+'\nusing a existing reservation to deploy virtual machines and hosts according to a placement XML file'
-                )                                      
-resources.add_option('-n', '--n_vm',
-                    dest = 'n_vm',
-                    type = int,
-                    help = 'number of virtual machines (%default)' )
-resources.add_option('-i', '--infile',
-                    dest = "infile",
-                    help = 'topology file describing the placement of VM on G5K sites and clusters (%default)' )
-resources.add_option('-j', '--oargrid_job_id',
-                    dest = 'oargrid_job_id',
-                    type = int,
-                    help = 'use the hosts from a oargrid_job (%default)' )
-resources.add_option('-r', '--resources', 
-                    default = 'grid5000',
-                    dest = 'resources',
-                    help = 'list of resources (%default)')
-resources.add_option('-w', '--walltime',
-                    default = '3:00:00',
-                    dest = 'walltime',
-                    help = 'duration of your reservation (%default)' )
-parser.add_option_group(resources)
-# Hosts configuration
-hosts = optparse.OptionGroup(parser,style.log_header('Physical hosts'))
-hosts.add_option('-e', '--env_name', 
-                    dest = 'env_name',
-                    help = 'Kadeploy environment NAME for the physical host (%default)')
-hosts.add_option('-a', '--env_file', 
-                    dest = 'env_file',
-                    help = 'Kadeploy environment FILE for the physical host, i.e. .env file (%default)')
-hosts.add_option('-g', '--oargridsub_opts',
-                    default = '-t deploy',
-                    dest = 'oargridsub_opts',
-                    help = 'oargribsub -t option (%default)')
-hosts.add_option('--forcedeploy',
-                    action = "store_true", 
-                    help = 'force the deployment of the hosts')
-hosts.add_option('--nodeploy',
-                    action = "store_true", 
-                    help = 'consider that hosts are already deployed')
-parser.add_option_group(hosts)
-# VMs configuration
-vms = optparse.OptionGroup(parser, style.log_header('Virtual machines'))
-vms.add_option('-d', '--vm_distribution',
-                    default = 'distributed', 
-                    dest = 'vm_distribution',
-                    help = 'how to distribute the VM distributed (default) or concentrated')
-vms.add_option('-f', '--vm_backing_file', 
+prog = 'vm5k'
+desc = 'A tool to deploy and configure nodes and virtual machines with '+\
+    style.log_header('Debian')+' and '+style.log_header('libvirt')+'\non the '+\
+    style.log_header('Grid5000')+' platform in a '+style.log_header('KaVLAN')+\
+    '.\nYou must select one of these options combinations:'+\
+    '\n - '+style.host('n_vm + oargrid_job_id')+\
+    ' = use an existing reservation and specify number of VMs'+\
+    '\n - '+style.host('infile + oargrid_job_id')+\
+    ' = use an existing reservation and specify vm placement XML file'+\
+    '\n - '+style.host('n_vm + walltime')+\
+    ' = perform a reservation that has enough RAM'+\
+    '\n - '+style.host('infile + walltime')+\
+    ' = perform a reservation according to the placement XML infile'+\
+    '.\nBased on execo-2.2, '+style.emph('http://execo.gforge.inria.fr/doc/')
+epilog = style.host('Examples:')+'\nDeploy 100 VM with the default environnements for 3h '+\
+    style.command('\n  %(prog)s -n 100 -w 3:00:00 \n')+\
+    'Issues/features requests can be reported to '+style.emph('https://github.com/lpouillo/vm5k')
+
+parser = argparse.ArgumentParser(prog = prog, description = desc, epilog = epilog, 
+                formatter_class = argparse.RawTextHelpFormatter, add_help = False)
+## Run options
+run = parser.add_argument_group(style.host('Execution'), 
+                "Manage how %(prog)s is executed")
+run.add_argument("-h", "--help", 
+                action = "help", 
+                help = "show this help message and exit")
+optio = run.add_mutually_exclusive_group()
+optio.add_argument("-v", "--verbose", 
+                action = "store_true", 
+                help = 'print debug messages')
+optio.add_argument("-q", "--quiet", 
+                action = "store_true",
+                help = 'print only warning and error messages')
+run.add_argument("-o", "--outdir", 
+                dest = "outdir", 
+                default = 'vm5k_'+ T.strftime("%Y%m%d_%H%M%S_%z"),
+                help = 'where to store the vm5k log files'+\
+                    "\ndefault = %(default)s")
+ 
+## Mode
+mode = parser.add_argument_group( style.host("Mode"), 
+                "Define the mode of %(prog)s")
+optnvm = mode.add_mutually_exclusive_group()
+optnvm.add_argument('-n', '--n_vm',
+                dest = 'n_vm',
+                type = int,
+                help = 'number of virtual machines' )
+optnvm.add_argument('-i', '--infile',
+                dest = "infile",
+                help = 'topology file describing the placement of VM on G5K sites and clusters' )
+optresa = mode.add_mutually_exclusive_group()
+optresa.add_argument('-j', '--oargrid_job_id',
+                dest = 'oargrid_job_id',
+                type = int,
+                help = 'use the hosts from a oargrid_job' )
+optresa.add_argument('-w', '--walltime',
+                default = '3:00:00',
+                dest = 'walltime',
+                help = 'duration of your reservation'+\
+                    "\ndefault = %(default)s" )
+
+
+## Hosts configuration
+hosts =  parser.add_argument_group(style.host('Physical hosts'),
+            "Tune the physical hosts.")
+hosts.add_argument('-r', '--resources', 
+                default = 'grid5000',
+                dest = 'resources',
+                help = 'list of Grid\'5000 elements')
+optenv = hosts.add_mutually_exclusive_group()
+optenv.add_argument('-e', '--env_name', 
+                dest = 'env_name',
+                help = 'Kadeploy environment name')
+optenv.add_argument('-a', '--env_file', 
+                dest = 'env_file',
+                help = 'path to the Kadeploy environment file')
+optdeploy = hosts.add_mutually_exclusive_group()
+optdeploy.add_argument('--forcedeploy',
+                action = "store_true", 
+                help = 'force the deployment of the hosts')
+optdeploy.add_argument('--nodeploy',
+                action = "store_true", 
+                help = 'consider that hosts are already deployed')
+hosts.add_argument('--host_packages',
+                dest = 'host_packages',
+                help = 'comma separated list of packages to be installed on the hosts')
+
+## VMs configuration
+vms = parser.add_argument_group(style.host('Virtual machines'),
+                "Tune the virtual machines.")
+vms.add_argument('-t', '--vm_template', 
+                    dest = 'vm_template',
+                    help = 'XML string describing the virtual machine',
+                    default = '<vm mem="1024" hdd="2" cpu="1" cpuset="auto"/>')
+vms.add_argument('-f', '--vm_backing_file', 
                     dest = 'vm_backing_file',
                     default = '/grid5000/images/KVM/squeeze-x64-base.qcow2',
                     help = 'backing file for your virtual machines')
