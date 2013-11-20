@@ -506,7 +506,7 @@ configure_taktuk = setup.fact.get_remote(' echo "Host *" >> /root/.ssh/config ; 
 if args.env_file is None:
     setup.configure_apt( )
     setup.upgrade_hosts()   
-    setup.install_packages()
+    setup.install_packages(packages_list = " ".join( [package for package in args.host_packages.split(',') ]) )
     setup.reboot_nodes()
 else:
     logger.warning('WARNING, your environnment need to have a libvirt version > 1.0.5')    
