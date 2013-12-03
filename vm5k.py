@@ -14,7 +14,8 @@ from itertools import cycle
 from netaddr import IPNetwork
 from operator import itemgetter
 import xml.etree.ElementTree as ET
-import execo as EX, execo_g5k, execo_engine
+from execo import logger, Put
+from execo_g5k import oargriddel, get_oargrid_job_nodes, get_oargrid_job_info, wait_oargrid_job_start, get_oargrid_job_oar_jobs, get_oar_job_kavlan
 from execo.log import style
 from execo.config import configuration, TAKTUK, SSH, SCP, CHAINPUT
 from execo.action import ActionFactory
@@ -163,7 +164,7 @@ if args.nodeploy:
     deployment_tries = 0
 
 ## Start message
-logger.info(style.log_header('INITIALIZATION')+'\n\n    Starting %s to create of virtual machines on Grid5000\n', style.log_header(sys.argv[0]))
+logger.info(style.log_header('INITIALIZATION')+'\n\n    Starting %s to deploy virtual machines on Grid5000\n', style.log_header(sys.argv[0]))
 logger.info('Options\n'+'\n'.join( [ style.emph(option.ljust(20))+\
                     '= '+str(value).ljust(10) for option, value in vars(args).iteritems() if value is not None ]))
 ## Create output directory
@@ -264,89 +265,89 @@ logger.info(style.log_header('GRID RESERVATION'))
 if args.oargrid_job_id is not None:   
     logger.info('Using '+style.emph(str(args.oargrid_job_id))+' job')
     oargrid_job_id = args.oargrid_job_id    
-else:
-# Computing planning for resources
-    logger.info('No oargrid_job_id given, finding a slot that suit your need')
-    starttime = T.time()
-    endtime = starttime + timedelta_to_seconds(DT.timedelta(days = 5))
-    planning = Planning( clusters, starttime, endtime, kavlan = True)
-    planning.compute_slots(args.walltime)
-    logger.debug('Slots:\n'+'\n'.join( [ style.emph(format_oar_date(slot[0])).ljust(30) +\
-                    ', '.join( [ element+': '+ str(n_nodes) for element, n_nodes in slot[2].iteritems()]) 
-                    for slot in planning.slots]) )
-# Finding slot with enough ressources
-    logger.info('Filtering slots with memory '+style.emph(total_mem)+\
-                ' and more than '+style.emph(total_cpu/2)+' cpu' )
-    tmp_slots = planning.slots[:]
-    for slot in tmp_slots:
-        slot_ram = 0
-        slot_cpu = 0 
-        slot_has_nodes = True
-        
-        for resource, n_node in slot[2].iteritems():
-            if resource in clusters:
-                slot_ram += n_node * clusters_attr[resource]['mem']
-                slot_cpu += n_node * clusters_attr[resource]['cpu']
-            resouce_node = 0
-            if resources.has_key(resource) and n_node < resources[resource]:
-                slot_has_nodes = False
-                
-        logger.debug(format_oar_date(slot[0])+' '+str(slot_ram)+' '+str(slot_cpu))
-        if total_mem > slot_ram or total_cpu/2 > slot_cpu or not slot_has_nodes:
-            planning.slots.remove(slot)
-        
-    if len(planning.slots) == 0:
-        logger.error('Unable to find a slot for the resources you ask, abort ...')    
-        exit()
-    
-    
-    slots_ok = planning.find_free_slots(args.walltime, resources) 
-    
-    
-    if len(slots_ok) > 0:
-        chosen_slot = slots_ok[0]
-# Distributing the hosts on the chosen slot
-        cluster_nodes = {}
-        for cluster in chosen_slot[2].iterkeys():
-            if cluster in clusters:
-                cluster_nodes[cluster] = 0 
-        
-        iter_cluster = cycle(cluster_nodes.iterkeys())
-        cluster = iter_cluster.next()
-        
-        vm_ram_size = int(ET.fromstring(args.vm_template).get('mem'))
-        node_ram = 0
-        for i_vm in range(n_vm):
-            node_ram += vm_ram_size
-            if node_ram + vm_ram_size > clusters_attr[cluster]['mem']:            
-                node_ram = 0
-                if cluster_nodes[cluster] + 1 > chosen_slot[2][cluster]:
-                    cluster = iter_cluster.next()
-                cluster_nodes[cluster] += 1
-                cluster = iter_cluster.next()
-                while cluster_nodes[cluster] >= chosen_slot[2][cluster]:
-                    cluster = iter_cluster.next()
-        cluster_nodes[cluster] += 1
-        
-        
-        for cluster in cluster_nodes.iterkeys():
-            if resources.has_key(cluster):
-                cluster_nodes[cluster] = max( cluster_nodes[cluster], resources[cluster])
-            if resources.has_key(get_cluster_site(cluster)):  
-                resources[get_cluster_site(cluster)] += cluster_nodes[cluster]  
-            else:
-                resources[get_cluster_site(cluster)] = cluster_nodes[cluster]
-    else:
-        logger.error('Unable to find a slot for the resources you ask, abort ...')
-        exit()            
-    logger.info('Chosen slot: '+style.emph(format_oar_date(chosen_slot[0])).ljust(30) +'\n'+\
-                ', '.join( [ style.emph(element)+': '+ str(n_nodes) for element, n_nodes in chosen_slot[2].iteritems()]) )
-    
-    resources.update(cluster_nodes)      
-    resources.update({'kavlan': chosen_slot[2]['kavlan'] })
-    
-    
-    oargrid_job_id = create_reservation(chosen_slot[0], resources, args.walltime, auto_reservation = True)
+
+## Computing planning for resources
+#    logger.info('No oargrid_job_id given, finding a slot that suit your need')
+#    starttime = T.time()
+#    endtime = starttime + timedelta_to_seconds(DT.timedelta(days = 5))
+#    planning = Planning( clusters, starttime, endtime, kavlan = True)
+#    planning.compute_slots(args.walltime)
+#    logger.debug('Slots:\n'+'\n'.join( [ style.emph(format_oar_date(slot[0])).ljust(30) +\
+#                    ', '.join( [ element+': '+ str(n_nodes) for element, n_nodes in slot[2].iteritems()]) 
+#                    for slot in planning.slots]) )
+## Finding slot with enough ressources
+#    logger.info('Filtering slots with memory '+style.emph(total_mem)+\
+#                ' and more than '+style.emph(total_cpu/2)+' cpu' )
+#    tmp_slots = planning.slots[:]
+#    for slot in tmp_slots:
+#        slot_ram = 0
+#        slot_cpu = 0 
+#        slot_has_nodes = True
+#        
+#        for resource, n_node in slot[2].iteritems():
+#            if resource in clusters:
+#                slot_ram += n_node * clusters_attr[resource]['mem']
+#                slot_cpu += n_node * clusters_attr[resource]['cpu']
+#            resouce_node = 0
+#            if resources.has_key(resource) and n_node < resources[resource]:
+#                slot_has_nodes = False
+#                
+#        logger.debug(format_oar_date(slot[0])+' '+str(slot_ram)+' '+str(slot_cpu))
+#        if total_mem > slot_ram or total_cpu/2 > slot_cpu or not slot_has_nodes:
+#            planning.slots.remove(slot)
+#        
+#    if len(planning.slots) == 0:
+#        logger.error('Unable to find a slot for the resources you ask, abort ...')    
+#        exit()
+#    
+#    
+#    slots_ok = planning.find_free_slots(args.walltime, resources) 
+#    
+#    
+#    if len(slots_ok) > 0:
+#        chosen_slot = slots_ok[0]
+## Distributing the hosts on the chosen slot
+#        cluster_nodes = {}
+#        for cluster in chosen_slot[2].iterkeys():
+#            if cluster in clusters:
+#                cluster_nodes[cluster] = 0 
+#        
+#        iter_cluster = cycle(cluster_nodes.iterkeys())
+#        cluster = iter_cluster.next()
+#        
+#        vm_ram_size = int(ET.fromstring(args.vm_template).get('mem'))
+#        node_ram = 0
+#        for i_vm in range(n_vm):
+#            node_ram += vm_ram_size
+#            if node_ram + vm_ram_size > clusters_attr[cluster]['mem']:            
+#                node_ram = 0
+#                if cluster_nodes[cluster] + 1 > chosen_slot[2][cluster]:
+#                    cluster = iter_cluster.next()
+#                cluster_nodes[cluster] += 1
+#                cluster = iter_cluster.next()
+#                while cluster_nodes[cluster] >= chosen_slot[2][cluster]:
+#                    cluster = iter_cluster.next()
+#        cluster_nodes[cluster] += 1
+#        
+#        
+#        for cluster in cluster_nodes.iterkeys():
+#            if resources.has_key(cluster):
+#                cluster_nodes[cluster] = max( cluster_nodes[cluster], resources[cluster])
+#            if resources.has_key(get_cluster_site(cluster)):  
+#                resources[get_cluster_site(cluster)] += cluster_nodes[cluster]  
+#            else:
+#                resources[get_cluster_site(cluster)] = cluster_nodes[cluster]
+#    else:
+#        logger.error('Unable to find a slot for the resources you ask, abort ...')
+#        exit()            
+#    logger.info('Chosen slot: '+style.emph(format_oar_date(chosen_slot[0])).ljust(30) +'\n'+\
+#                ', '.join( [ style.emph(element)+': '+ str(n_nodes) for element, n_nodes in chosen_slot[2].iteritems()]) )
+#    
+#    resources.update(cluster_nodes)      
+#    resources.update({'kavlan': chosen_slot[2]['kavlan'] })
+#    
+#    
+#    oargrid_job_id = create_reservation(chosen_slot[0], resources, args.walltime, auto_reservation = True)
 
 if oargrid_job_id is None:
     logger.error('No reservation available, abort ...')
@@ -383,7 +384,7 @@ if kavlan_id is None:
     exit()
     
 logger.info('Retrieving the subnet from API')
-equips = API.get_resource_attributes('/sites/'+kavlan_site+'/network_equipments/')
+equips = get_resource_attributes('/sites/'+kavlan_site+'/network_equipments/')
 for equip in equips['items']:
     if equip.has_key('vlans') and len(equip['vlans']) >2:
         all_vlans = equip['vlans'] 
@@ -497,7 +498,7 @@ logger.info('Copying ssh keys')
 ssh_key = '~/.ssh/id_rsa' 
 
 
-EX.Put( setup.hosts, [ssh_key, ssh_key+'.pub'], remote_location='.ssh/',
+Put( setup.hosts, [ssh_key, ssh_key+'.pub'], remote_location='.ssh/',
         connection_params ={'user': 'root'}).run()
 configure_taktuk = setup.fact.get_remote(' echo "Host *" >> /root/.ssh/config ; echo " StrictHostKeyChecking no" >> /root/.ssh/config; ',
                 setup.hosts, connection_params ={'user': 'root'}).run()
@@ -506,7 +507,8 @@ configure_taktuk = setup.fact.get_remote(' echo "Host *" >> /root/.ssh/config ; 
 if args.env_file is None:
     setup.configure_apt( )
     setup.upgrade_hosts()   
-    setup.install_packages(packages_list = " ".join( [package for package in args.host_packages.split(',') ]) )
+    packages_list = " ".join( [package for package in args.host_packages.split(',') ]) if args.host_packages is not None else None
+    setup.install_packages(packages_list = packages_list )
     setup.reboot_nodes()
 else:
     logger.warning('WARNING, your environnment need to have a libvirt version > 1.0.5')    
@@ -524,7 +526,9 @@ dhcp_range = 'dhcp-range='+network+',12h\n'
 
 dhcp_router = 'dhcp-option=option:router,'+str(max(vm_ip))+'\n'
 setup.ip_mac = ip_mac
-setup.configure_service_node(dhcp_range, dhcp_router, dhcp_hosts)
+setup.configure_service_node(dhcp_range, dhcp_router, dhcp_hosts, apt_cacher = True)
+
+
 
 execution_time['4-hosts'] = timer.elapsed() - sum(execution_time.values())
 logger.info(style.log_header('Done in '+str(round(execution_time['4-hosts'],2))+' s\n'))
