@@ -490,7 +490,7 @@ if len(setup.hosts) == 0:
     logger.error('No hosts have been deployed, aborting')
     exit()
 setup.get_hosts_attr()
-max_vms = setup.get_max_vms(args.vm_template)-len(setup.hosts)
+#max_vms = setup.get_max_vms(args.vm_template)-len(setup.hosts)
 
 n_vm = min(n_vm, max_vms)
 
