@@ -3,6 +3,7 @@ vm5k
 
 Automate virtual machines deployment on Grid5000 in a global KaVLAN.
 
+WARNING : Option -j is temporary mandatory as the git version of execo_g5K.planning has been refactored recently ...
 
 ## Prerequisites
 This script is based on *execo* to control the deployment process of *debian*-based physical hosts
