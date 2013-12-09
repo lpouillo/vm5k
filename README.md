@@ -12,19 +12,20 @@ with *libvirt* installed and configured.
 To use it on a Grid'5000 frontend, you need to install the following modules:
 * execo
 
-     git clone git://scm.gforge.inria.fr/execo/execo.git
-     cd execo
-     make install PREFIX=$HOME/.local
-     
+    git clone git://scm.gforge.inria.fr/execo/execo.git
+    cd execo
+    make install PREFIX=$HOME/.local
+
 * netaddr 
 
-     export http_proxy="http://proxy.site.grid5000.fr:3128" ; export https_proxy="http://proxy.site.grid5000.fr:3128" ; easy_install --user netaddr
+    export http_proxy="http://proxy.site.grid5000.fr:3128" ; export https_proxy="http://proxy.site.grid5000.fr:3128" ; easy_install --user netaddr
 
 and update your .bashrc with:
 
      PYTHONHOMEPATH="$HOME/.local/"$(python -c "import sys,os; print os.sep.join(['lib', 'python' + sys.version[:3], 'site-packages'])")
-
      export PYTHONPATH="$PYTHONHOMEPATH${PYTHONPATH:+:${PYTHONPATH}}"
+     
+     
 ## Workflow
 * define a deployment **topology**:
   * distributed virtual machines using a template and a list of clusters/sites
