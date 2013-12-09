@@ -10,8 +10,8 @@ This script is based on *execo* to control the deployment process of *debian*-ba
 with *libvirt* installed and configured.
 
 Required python modules:
-* execo
-* netaddr
+* execo => git version from http://execo.gforge.inria.fr/doc/tutorial.html#installation 
+* netaddr => easy_install --user netaddr
 
 ## Workflow
 * define a deployment **topology**:
