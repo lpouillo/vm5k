@@ -22,8 +22,7 @@ Then install execo from the git repository:
 
 Finally, install the netaddr module
 
-    export http_proxy="http://proxy.site.grid5000.fr:3128" ; export https_proxy="http://proxy.site.grid5000.fr:3128" ; easy_install --user netaddr
-
+     easy_install --user netaddr
 
 and update your .bashrc with:
 
