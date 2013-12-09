@@ -7,12 +7,18 @@ WARNING : Option -j is temporary mandatory as the git version of execo_g5K.plann
 
 ## Prerequisites
 This script is based on *execo* to control the deployment process of *debian*-based physical hosts
-with *libvirt* installed and configured.
+with *libvirt* installed and configured. 
 
-Required python modules:
-* execo => git version from http://execo.gforge.inria.fr/doc/tutorial.html#installation 
-* netaddr => easy_install --user netaddr
-
+To use it on a Grid'5000 frontend, you need to install the following modules:
+* execo
+     git clone git://scm.gforge.inria.fr/execo/execo.git
+     cd execo
+     make install PREFIX=$HOME/.local
+* netaddr 
+     export http_proxy="http://proxy.site.grid5000.fr:3128" ; export https_proxy="http://proxy.site.grid5000.fr:3128" ; easy_install --user netaddr
+and update your .bashrc with:
+     PYTHONHOMEPATH="$HOME/.local/"$(python -c "import sys,os; print os.sep.join(['lib', 'python' + sys.version[:3], 'site-packages'])")
+     export PYTHONPATH="$PYTHONHOMEPATH${PYTHONPATH:+:${PYTHONPATH}}"
 ## Workflow
 * define a deployment **topology**:
   * distributed virtual machines using a template and a list of clusters/sites
