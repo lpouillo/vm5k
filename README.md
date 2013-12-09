@@ -9,18 +9,18 @@ WARNING : Option -j is temporary mandatory as the git version of execo_g5K.plann
 This script is based on *execo* to control the deployment process of *debian*-based physical hosts
 with *libvirt* installed and configured. 
 
-To use it on a Grid'5000 frontend, you need to install the following modules:
-- execo
-
+To use it on a Grid'5000 frontend, you need to install the following modules. First, enable the http and https proxy:
 
     export http_proxy="http://proxy.site.grid5000.fr:3128" ; export https_proxy="http://proxy.site.grid5000.fr:3128" ;
+
+Then install execo from the git repository:
+
     git clone git://scm.gforge.inria.fr/execo/execo.git
     cd execo
     make install PREFIX=$HOME/.local
 
 
-- netaddr 
-
+Finally, install the netaddr module
 
     export http_proxy="http://proxy.site.grid5000.fr:3128" ; export https_proxy="http://proxy.site.grid5000.fr:3128" ; easy_install --user netaddr
 
