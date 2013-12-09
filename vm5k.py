@@ -91,7 +91,6 @@ optresa.add_argument('-j', '--oargrid_job_id',
                 type = int,
                 help = 'use the hosts from a oargrid_job' )
 optresa.add_argument('-w', '--walltime',
-                default = '3:00:00',
                 dest = 'walltime',
                 help = 'duration of your reservation'+\
                     "\ndefault = %(default)s" )
@@ -100,8 +99,7 @@ optresa.add_argument('-w', '--walltime',
 ## Hosts configuration
 hosts =  parser.add_argument_group(style.host('Physical hosts'),
             "Tune the physical hosts.")
-hosts.add_argument('-r', '--resources', 
-                default = 'grid5000',
+hosts.add_argument('-r', '--resources',
                 dest = 'resources',
                 help = 'list of Grid\'5000 elements')
 optenv = hosts.add_mutually_exclusive_group()
@@ -477,7 +475,7 @@ logger.info(style.log_header('Done in '+str(round(execution_time['2-reservation'
 ### HOSTS CONFIGURATION
 logger.info(style.log_header('HOSTS CONFIGURATION'))
 if args.env_name is None:
-    args.env_name = 'wheezy-x64-prod'
+    args.env_name = 'wheezy-x64-base'
 if args.env_file is not None:
     setup = Virsh_Deployment( hosts, kavlan = kavlan_id, env_file = args.env_file, outdir = args.outdir) 
 else:
