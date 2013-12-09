@@ -18,10 +18,12 @@ To use it on a Grid'5000 frontend, you need to install the following modules:
     cd execo
     make install PREFIX=$HOME/.local
 
+
 - netaddr 
 
 
     export http_proxy="http://proxy.site.grid5000.fr:3128" ; export https_proxy="http://proxy.site.grid5000.fr:3128" ; easy_install --user netaddr
+
 
 and update your .bashrc with:
 
