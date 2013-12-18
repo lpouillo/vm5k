@@ -24,14 +24,9 @@ from execo.time_utils import sleep
 from execo_g5k import default_frontend_connection_params
 from execo_g5k.api_utils import get_host_site
 import tempfile
-from execo_g5k.vmutils.deployment import configuration
 from copy import deepcopy
 from execo.exception import ActionsFailed
 
-default_vm =  {'id': None, 'host': None, 'ip': None, 'mac': None,
-    'mem': 512, 'n_cpu': 1, 'cpuset': 'auto', 
-    'hdd': 10, 'backing_file': '/tmp/vm-base.img',
-    'state': 'KO'}
 
 def show_vms(vms):
     """ """

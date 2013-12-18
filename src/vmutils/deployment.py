@@ -22,7 +22,7 @@ from xml.etree.ElementTree import Element, SubElement,tostring, parse
 from itertools import cycle
 from xml.dom import minidom
 from tempfile import mkstemp
-from execo import configuration, logger, SshProcess, Put, TaktukRemote, SequentialActions, Host, Local, sleep, default_connection_params
+from execo import logger, SshProcess, Put, TaktukRemote, SequentialActions, Host, Local, sleep, default_connection_params
 from execo.action import ActionFactory
 from execo.log import style
 from execo.config import SSH, SCP
@@ -32,16 +32,11 @@ from execo_g5k.config import g5k_configuration, default_frontend_connection_para
 from execo_g5k.api_utils import get_host_cluster, get_g5k_sites, get_g5k_clusters, get_cluster_site, \
     get_host_attributes, get_resource_attributes, get_host_site
 from execo_g5k.utils import get_kavlan_host_name
-from execo_g5k.vmutils.actions import create_disks, install_vms, start_vms, wait_vms_have_started, destroy_vms
-from execo_g5k.services import dns_dhcp_server
-from execo_g5k.vmutils.actions import define_vms
+from vm5k.services import dns_dhcp_server
+from vm5k.actions import define_vms, create_disks, install_vms, start_vms, wait_vms_have_started, destroy_vms
 
 
-configuration['color_styles']['OK'] = 'green',  'bold'
-configuration['color_styles']['KO'] = 'red', 'bold'
-configuration['color_styles']['Unknown'] = 'white', 'bold'
-configuration['color_styles']['step'] = 'on_yellow', 'bold'
-configuration['color_styles']['VM'] = 'white', 'bold'
+
 
 def get_oar_job_vm5k_resources(oar_job_id, site):
     """Retrieve the hosts list and (ip, mac) list from an oar_job_id and
