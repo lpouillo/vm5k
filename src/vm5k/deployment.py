@@ -22,7 +22,7 @@ from xml.etree.ElementTree import Element, SubElement,tostring, parse
 from itertools import cycle
 from xml.dom import minidom
 from tempfile import mkstemp
-from execo import logger, SshProcess, Put, TaktukRemote, SequentialActions, Host, Local, sleep, default_connection_params
+from execo import logger, SshProcess, SequentialActions, Host, Local, sleep, default_connection_params
 from execo.action import ActionFactory
 from execo.log import style
 from execo.config import SSH, SCP
@@ -459,9 +459,9 @@ class vm5k_deployment(object):
         self._actions_hosts(install_libvirt)
         
         if other_packages is not None:
-            logger.info('Installing extra packages %s', style.emph(other_packages))
-            cmd = 'export DEBIAN_MASTER=noninteractive ; apt-get update && apt-get install -y --force-yes '+\
-            other_packages
+            logger.info('Installing extra packages \n%s', style.emph(other_packages))
+            cmd = 'export DEBIAN_MASTER=noninteractive ; apt-get update && '+\
+                'apt-get install -y --force-yes '+other_packages
             install_extra = self.fact.get_remote(cmd, self.hosts).run()
             self._actions_hosts(install_extra)
         
@@ -505,8 +505,6 @@ class vm5k_deployment(object):
         self._add_xml_elements()
         
         
-        
-
         logger.debug('Virtual Machines')
         max_vms = get_max_vms(self.hosts)
         if vms is not None:
@@ -598,7 +596,7 @@ class vm5k_deployment(object):
                 dist[host][vm['id']] = vm['state']
         log = ''
         for host, vms in dist.iteritems():
-            log += '\n'+style.host(host)+': '.ljust(max_len_host-len(host))
+            log += '\n'+style.host(host)+': '.ljust(max_len_host+2-len(host))
             for vm in sorted(vms.keys()):
                 if vms[vm] == 'OK':
                     log += style.OK(vm)
