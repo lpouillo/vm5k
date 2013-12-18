@@ -132,7 +132,7 @@ class vm5k_engine( Engine ):
                     t.start()
                 
                     
-            if job_is_dead: self.oar_job_id = None
+                if job_is_dead: self.oar_job_id = None
                 
         finally:
             
