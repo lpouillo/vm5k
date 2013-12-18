@@ -1,9 +1,18 @@
 vm5k
-==============
+====
+
+A python module to ease the experimentations of virtual Machines for the Grid'5000 platform.
+
+The module is compo
+
+
+
+
+
+###### OUTDATED
 
 Automate virtual machines deployment on Grid5000 in a global KaVLAN.
 
-WARNING : Option -j is temporary mandatory as the git version of execo_g5K.planning has been refactored recently ...
 
 ## Prerequisites
 This script is based on *execo* to control the deployment process of *debian*-based physical hosts
