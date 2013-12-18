@@ -134,7 +134,7 @@ class vm5k_engine( Engine ):
         finally:        
             if not self.options.keep_alive:
                 logger.info('Deleting job')
-                oardel( [(self.oarjob_id, self.frontend)] )
+                oardel( [(self.oar_job_id, self.frontend)] )
             elif self.oar_job_id is not None:
                 logger.info('Keeping job alive for debugging')
         
