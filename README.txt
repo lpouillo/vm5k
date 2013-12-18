@@ -9,6 +9,7 @@ A python module to ease the experimentations of virtual Machines for the Grid'50
 Contributors
 ============
 * Laurent Pouilloux
+* Daniel Balouek-Thomert
 * Matthieu Imbert
 * Jonathan Rouzaud-Cornabas
 * Jonathan Pastor
