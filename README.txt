@@ -1,9 +1,34 @@
+====
 vm5k
 ====
 
 A python module to ease the experimentations of virtual Machines for the Grid'5000 platform.
 
-The module is compo
+
+
+Contributors
+============
+* Laurent Pouilloux
+* Matthieu Imbert
+* Jonathan Rouzaud-Cornabas
+* Jonathan Pastor
+* Takahiro Hirofuchi
+* Adrien Lèbre
+
+Requirements
+============
+The module requires:
+* execo 2.2, <http://execo.gforge.inria.fr/>
+* matplotlib 1.2, <http://matplotlib.org/>
+
+
+
+Usage
+=====
+
+
+Documentation
+=============
 
 
 
