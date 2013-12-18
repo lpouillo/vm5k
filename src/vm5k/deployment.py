@@ -623,7 +623,7 @@ class vm5k_deployment(object):
         if len(self.hosts) == 0:
             logger.error('Not enough hosts available, because %s are KO', 
                          [ style.host(host.address) for host in hosts_ok])
-            exit()
+            
         
             
     def _actions_hosts(self, action):
