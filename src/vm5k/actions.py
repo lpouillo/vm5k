@@ -196,7 +196,6 @@ def wait_vms_have_started(vms, host = None):
                 started_vms = line.split()[5].replace('(','')
         if started_vms != old_started:
             old_started = started_vms
-            nmap_tries = 0
         else:
             nmap_tries += 1
         if not ssh_open:
