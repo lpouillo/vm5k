@@ -5,11 +5,12 @@ setup(
     version='0.1.0',
     author='Laurent Pouilloux',
     author_email='laurent.pouilloux@inria.fr',
-    packages=['vm5k', 'vm5k.engines', 'vm5k.services'],
+    package_dir = {'': 'src'},
+    packages=['vmutils', 'vmutils.engines', 'vmutils.services'],
     scripts=['bin/vm5k'],
     url='https://github.com/lpouillo/vm5k',
     license='LICENSE.txt',
-    description='A module that helps you to ',
+    description='A module that helps you to deploy virtual machines on Grid5000',
     long_description=open('README.txt').read(),
 )
 
