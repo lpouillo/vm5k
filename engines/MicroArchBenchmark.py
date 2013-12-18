@@ -1,18 +1,15 @@
 from vm5k_engine import *
 from itertools import product, repeat
-import xml.etree.ElementTree as ET
 
-class MicroArchBenchmark( vm5k_engine_parallel ):
+
+class MicroArchBenchmark( vm5k_engine ):
     """ An execo engine that performs migration time measurements with 
     various cpu/cell usage conditions and VM colocation. """
     
     def __init__(self):
         super(MicroArchBenchmark, self).__init__()
-        self.walltime = '2:00:00'
-        self.n_measure = 20
         self.env_name = 'wheezy-x64-base'
-        self.parallel = True
-        
+        self.stress_time = 300
         
     def define_parameters(self):
         """ Create the parameters for the engine :
@@ -22,7 +19,8 @@ class MicroArchBenchmark( vm5k_engine_parallel ):
         cluster = self.cluster
         n_vm = 3
         
-        self.cpu_topology = self.get_cpu_topology(cluster)
+        self.cpu_topology = get_cpu_topology(cluster)
+        
         n_core = len(self.cpu_topology[0])
         n_cell = len(self.cpu_topology)
         
@@ -40,129 +38,129 @@ class MicroArchBenchmark( vm5k_engine_parallel ):
                 if other_cell not in dists:
                     dists.append(other_cell)
                     
-        mutl_cpu_vm = []
+        mult_cpu_vm = []
         for i in range(n_core+1):
-            mutl_cpu_vm.append( '1'*i+'0'*(n_core-i))
-
-        parameters = {'dist': dists, 'multi_cpu': mutl_cpu_vm}
+            mult_cpu_vm.append( '1'*i+'0'*(n_core-i))
+        mult_cpu_vm.remove('1'+'0'*(n_core-1))
+        
+        parameters = {'dist': dists, 'multi_cpu': mult_cpu_vm}
+        logger.debug(parameters)
+        
         return parameters
-    
-    
-    def get_cpu_topology(self, cluster):
-        logger.info('Determining the architecture of cluster '+style.emph(cluster))
-        frontend = get_cluster_site(cluster)            
-        submission = OarSubmission(resources = "{'cluster=\""+cluster+"\"'}/nodes=1",
-                                                         walltime = "0:02:00",
-                                                         job_type = "allow_classic_ssh")
-        ((job_id, _), ) = oarsub([(submission, frontend)])
-        wait_oar_job_start( job_id, frontend )        
-        host = get_oar_job_nodes( job_id, frontend )[0]
-        capa = SshProcess('virsh capabilities', host, 
-                          connection_params = {'user': default_frontend_connection_params['user'] }).run()
-        oardel( [ (job_id, frontend) ] )
-        root = ET.fromstring( capa.stdout )
-        cpu_topology = []
-        i_cell = 0
-        for cell in root.findall('.//cell'):
-            cpu_topology.append([])
-            for cpu in cell.findall('.//cpu'):
-                cpu_topology[i_cell].append(int(cpu.attrib['id']))
-            i_cell += 1
-        
-        return cpu_topology                
-    
                     
-    def workflow(self, combs): 
+    def workflow(self, comb, hosts, ip_mac): 
         """ Perform a cpu stress on the VM """
-        
-        pprint( combs )
-    
-        cpu_index = [item for sublist in self.cpu_topology for item in sublist] 
-        
-        logger.info('Destroying VMS on all hosts')
-        destroy_vms(self.hosts)
-        n_vm = sum( [ int(i) for comb in combs.itervalues() for i in comb['dist'] ] )
-        for comb in combs:
-            if sum( [ int(i) for comb in comb['multi_cpu'] ]) > 0:
-                n_vm += 1
-        
-        cpusets = {}  
-        n_cpus = {}
-        i_vm = 0
-        for comb in combs.itervalues():
-            for i in range(len(comb['dist'])):
-                for j in range(int(comb['dist'][i])):
-                    cpusets['vm-'+str(i_vm)] = str(cpu_index[i])
-                    i_vm += 1
-        vms = define_vms(n_vm, self.ip_mac, mem_size = 512, cpusets = cpusets)
-        # Adding the multicore virtual machine
-        for comb in combs.itervalues():
-            n_cpu = sum( [ int(i) for comb in comb['multi_cpu'] ]) 
-            if n_cpu > 0:
-                vms = define_vms(n_vm, self.ip_mac, mem_size = 512, cpusets = cpusets, vms = vms)
+        host = hosts[0].address
+        comb_ok = False
+        try:
+            logger.info(style.step('Performing combination')+slugify(comb)+' on '+host)
             
-        logger.debug(pformat(vms))
-        logger.info('Cleaning all disks')
-        self.setup.create_disk_image(clean = True)
-        self.setup.ssh_keys_on_vmbase()
-        
-        logger.info('Creating disks')
-        action = create_disks_on_hosts(vms, self.hosts).run()
-        if not action.ok():
-            return False
-        for vm in vms:
-            vm['host'] = self.hosts[0]
-        
-        logger.info('VMs defined\n'+'\n'.join( [ vm['vm_id']+': '+
-            vm['cpuset']+' '+vm['host'].address+' '+vm['ip']  for vm in vms ]))
-        logger.info('Installing VMS')
-        action = install_vms(vms).run()
-        if not action.ok():
-            return False
-        logger.info('Starting VMS')
-        action = start_vms(vms).run()
-        if not action.ok():
-            return False
-        if not wait_vms_have_started(vms, self.hosts[0]):
-            return False
-        
-        
-        stress = self.cpu_kflops(vms)
-        stress.start()
-        for p in stress.processes():
-            if not p.ok():
-                return False
-        stress.kill()
-        self.vms = vms
-        
-        return True
+            logger.info(host+': Destroying existing VMS')
+            destroy_vms(hosts)
+            logger.info(host+': Removing existing drives')
+            rm_qcow2_disks(hosts)
+            
+            logger.info(host+':Defining virtual machines for the combination')
+            n_vm = self.comb_nvm(comb)
+            # Affecting a cpuset to each virtual machine
+            cpu_index = [item for sublist in self.cpu_topology for item in sublist]
+            cpusets = []
+            for i in range(len(comb['dist'])):
+                index = cpu_index[i]
+                for j in range(int(comb['dist'][i])): 
+                    cpusets.append(str(index))
+            n_cpu = sum( [ int(i) for i in comb['multi_cpu'] ])
+            if n_cpu  > 1:
+                cpusets.append( ','.join( str(i) for i in range(n_cpu) ))
+                multi_cpu = 'vm'+str(n_vm)
+            else:
+                multi_cpu = None
+
+            vms = define_vms(['vm-'+str(i+1) for i in range(n_vm)], ip_mac = ip_mac, cpusets = cpusets)
+            for vm in vms:
+                vm['host'] = hosts[0]
+            logger.info(', '.join( [vm['id']+' '+ vm['ip']+' '+str(vm['n_cpu'])+'('+vm['cpuset']+')' for vm in vms]))
+            
+                
+            # Create disks, install vms and boot by core 
+            logger.info(host+': Creating disks')
+            create = create_disks(vms).run()
+            logger.info(host+': Installing VMS')
+            install_vms(vms).run()
+            boot_vms_by_core(vms)
+            
+            # Prepare virtual machines for experiments
+            stress = []
+            logger.info(host+': Installing kflops on vms and creating stress action')
+            stress.append( self.cpu_kflops([vm for vm in vms if vm['n_cpu'] == 1 ]) )
+            
+            if multi_cpu is not None:
+                logger.info(host+': Installing numactl and kflops on multicore vms')
+                cmd =  'export DEBIAN_MASTER=noninteractive ; apt-get update && apt-get install -y  --force-yes numactl'
+                inst_numactl = Remote( cmd, [vm['ip'] for vm in vms if vm['id'] == multi_cpu]).run()
+                self.cpu_kflops([vm for vm in vms if vm['id'] == multi_cpu ], install_only = True)
+                for multi_vm in [vm for vm in vms if vm['id'] == multi_cpu ]:
+                    for i in range(multi_vm['n_cpu']):
+                        stress.append( Remote('numactl -C '+str(i)+' ./kflops/kflops > vm_multi_'+str(i)+'.out ', 
+                                            [multi_vm['ip']] ) )
+            logger.info(host+': Starting stress !! \n%s', pformat(stress) )
+            stress_actions = ParallelActions(stress)
+            for p in stress_actions.processes:
+                if not p.ok:
+                    exit()       
+            sleep(self.stress_time)
+            logger.info(host+': Killing stress !!')
+            stress_actions.kill()
+            
+            # Gathering results
+            vms_ip = [vm['ip'] for vm in vms if vm['n_cpu'] == 1]
+            comb_dir = self.result_dir +'/'+ slugify(comb)+'/'
+            Get(vms_ip, ['{{vms_ip}}.out'], local_location = comb_dir).run()
+            if multi_cpu is not None:
+                for multi_vm in [vm for vm in vms if vm['id'] == multi_cpu ]:
+                    Get([multi_vm['ip']], ['vm_multi_'+str(i)+'.out ' for i in range(multi_vm['n_cpu']) ], 
+                        local_location = comb_dir)
+            
+            comb_ok = True
+        finally:
+            print comb_ok
+            if comb_ok:
+                self.sweeper.done( comb )
+            else:
+                self.sweeper.cancel( comb )
+            
     
+    def comb_nvm(self, comb):
+        """ """          
+        n_vm = sum( [ int(i) for i in comb['dist'] ] )
+        if sum( [ int(i) for i in comb['multi_cpu'] ]) > 1:
+            n_vm += 1
+        return n_vm
     
-    def cpu_kflops(self, vms):
-        logger.info('Installing kflops on vms')
+    def cpu_kflops(self, vms, install_only = False):
+        vms_ip = [Host(vm['ip']) for vm in vms]
         #ChainPut([Host(vm['ip']) for vm in vms], 'kflops.tgz' ).run()
-        Put([Host(vm['ip']) for vm in vms], 'kflops.tgz' ).run()
-        vms_ip = [vm['ip'] for vm in vms]
-        make_all = Remote( 'tar -xzf kflops.tgz; cd kflops; make', vms_ip).run()
-        
-        return Remote('./kflops/kflops > {{vms_ip}}.out', vms_ip)
+        ChainPut(vms_ip, ['kflops.tgz'] ).run()
+        TaktukRemote( 'tar -xzf kflops.tgz; cd kflops; make', vms_ip).run()
+        if not install_only:                
+            return Remote('./kflops/kflops > {{vms_ip}}.out', vms_ip)
 
 
-    def mem_update(self, vms, size, speed):
-        """Copy, compile memtouch, calibrate and return memtouch action """
-        
-        logger.debug('VMS: %s', pformat (vms) )
-        vms_ip = [Host(vm['ip']) for vm in vms]        
-        #ChainPut(vms_ip, 'memtouch.tgz' ).run()
-        Put(vms_ip, 'memtouch.tgz' ).run()
-        Remote('tar -xzf memtouch.tgz; cd memtouch; gcc -O2 -lm -std=gnu99 -Wall memtouch-with-busyloop3.c -o memtouch-with-busyloop3', 
-               vms_ip ).run()
-        calibration = SshProcess('./memtouch/memtouch-with-busyloop3 --cmd-calibrate '+str(size), vms_ip[0] ).run()
-        args = None
-        for line in calibration.stdout().split('\n'):
-            if '--cpu-speed' in line:
-                args = line
-        if args is None:
-            return False
-        logger.debug('%s', args)
-        return Remote('./memtouch/memtouch-with-busyloop3 --cmd-makeload '+args+' '+str(size)+' '+str(speed), vms_ip)       
+#    def mem_update(self, vms, size, speed):
+#        """Copy, compile memtouch, calibrate and return memtouch action """
+#        
+#        logger.debug('VMS: %s', pformat (vms) )
+#        vms_ip = [Host(vm['ip']) for vm in vms]        
+#        #ChainPut(vms_ip, 'memtouch.tgz' ).run()
+#        Put(vms_ip, 'memtouch.tgz' ).run()
+#        Remote('tar -xzf memtouch.tgz; cd memtouch; gcc -O2 -lm -std=gnu99 -Wall memtouch-with-busyloop3.c -o memtouch-with-busyloop3', 
+#               vms_ip ).run()
+#        calibration = SshProcess('./memtouch/memtouch-with-busyloop3 --cmd-calibrate '+str(size), vms_ip[0] ).run()
+#        args = None
+#        for line in calibration.stdout().split('\n'):
+#            if '--cpu-speed' in line:
+#                args = line
+#        if args is None:
+#            return False
+#        logger.debug('%s', args)
+#        return Remote('./memtouch/memtouch-with-busyloop3 --cmd-makeload '+args+' '+str(size)+' '+str(speed), vms_ip)       
