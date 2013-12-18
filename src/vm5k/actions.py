@@ -26,6 +26,7 @@ from execo_g5k.api_utils import get_host_site
 import tempfile
 from copy import deepcopy
 from execo.exception import ActionsFailed
+from vmutils import config
 
 
 def show_vms(vms):

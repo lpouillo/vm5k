@@ -6,7 +6,7 @@ setup(
     author='Laurent Pouilloux',
     author_email='laurent.pouilloux@inria.fr',
     package_dir = {'': 'src'},
-    packages=['vmutils', 'services'],
+    packages=['vm5k', 'vm5k.services'],
     scripts=['bin/vm5k'],
     url='https://github.com/lpouillo/vm5k',
     license='LICENSE.txt',
