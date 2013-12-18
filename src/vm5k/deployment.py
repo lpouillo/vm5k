@@ -33,7 +33,7 @@ from execo_g5k.api_utils import get_host_cluster, get_g5k_sites, get_g5k_cluster
     get_host_attributes, get_resource_attributes, get_host_site
 from execo_g5k.utils import get_kavlan_host_name
 from vm5k.services import dns_dhcp_server
-from vm5k.actions import define_vms, create_disks, install_vms, start_vms, wait_vms_have_started, destroy_vms
+from vm5k.actions import create_disks, install_vms, start_vms, wait_vms_have_started, destroy_vms
 
 
 
@@ -285,8 +285,8 @@ class vm5k_deployment(object):
         logger.debug('Destroying existing network')
         destroy = self.fact.get_remote('virsh net-destroy default; virsh net-undefine default', self.hosts)
         destroy.nolog_exit_code = True
-        put = self.fact.get_fileput(self.hosts, ['default.xml'], remote_location = '/etc/libvirt/qemu/networks/')
-        start = self.fact.get_remote('virsh net-define /etc/libvirt/qemu/networks/default.xml ; '+\
+        put = self.fact.get_fileput(self.hosts, [network_xml], remote_location = '/etc/libvirt/qemu/networks/')
+        start = self.fact.get_remote('virsh net-define /etc/libvirt/qemu/networks/'+network_xml.split('/')[-1]+' ; '+\
                                      'virsh net-start default; virsh net-autostart default;', self.hosts)
         conf = SequentialActions( [destroy, put, start] ).run()
     
@@ -617,7 +617,8 @@ class vm5k_deployment(object):
         for host in hosts_ko:
             self.state.find(".//host/[@id='"+host.address+"']").set('state', 'KO')
             self.hosts.remove(host)
-            distribute_vms(self.vms, self.hosts, self.distribution)
+            if len(self.vms) > 0:
+                distribute_vms(self.vms, self.hosts, self.distribution)
         
         if len(self.hosts) == 0:
             logger.error('Not enough hosts available, because %s are KO', 

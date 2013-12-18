@@ -18,7 +18,7 @@
 """A set of functions to manipulate virtual machines on Grid'5000"""
 
 from pprint import pformat, pprint
-from execo import SshProcess, Remote, Put, logger, get_remote, Process, ParallelActions
+from execo import SshProcess, Remote, Put, logger, get_remote, Process, ParallelActions, Host
 from execo.log import style
 from execo.time_utils import sleep
 from execo_g5k import default_frontend_connection_params
@@ -26,7 +26,7 @@ from execo_g5k.api_utils import get_host_site
 import tempfile
 from copy import deepcopy
 from execo.exception import ActionsFailed
-from vmutils import config
+from vm5k.config import default_vm
 
 
 def show_vms(vms):
@@ -37,7 +37,7 @@ def show_vms(vms):
                     for vm in vms ] ) )
     
 
-def define_vms( vms_id, template = None, ip_mac = None, state = None, 
+def define_vms( vms_id, template = None, ip_mac = None, state = None, host = None,
         n_cpu = 1, cpusets = None, mem = None, hdd = None, backing_file = None):
     """Create a list of virtual machines, where VM parameter is a dict similar to
     {'id': None, 'host': None, 'ip': None, 'mac': None,
@@ -60,6 +60,8 @@ def define_vms( vms_id, template = None, ip_mac = None, state = None,
             else [backing_file] * n_vm if isinstance(backing_file, str) else backing_file
         state = [default_vm['state']]*n_vm if state is None \
             else [state] * n_vm if isinstance(state, str) else state
+        host = [default_vm['host']]*n_vm if host is None \
+            else [host] * n_vm if isinstance(host, Host) else host
     else:
         n_cpu = [default_vm['n_cpu']] * n_vm if 'n_cpu' not in template.attrib \
             else [int(template.get('n_cpu'))] * n_vm

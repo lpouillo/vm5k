@@ -18,12 +18,16 @@
 from os import path, mkdir
 from pprint import pformat, pprint
 from xml.etree.ElementTree import fromstring
+from time import time
+from datetime import timedelta
 from execo import configuration, Host, SshProcess, sleep, Remote, TaktukRemote, Get, Put, ChainPut, ParallelActions
+from execo.time_utils import timedelta_to_seconds
 from execo.config import SSH, SCP, TAKTUK, CHAINPUT
 from execo.log import style
 from execo.action import ActionFactory
 from execo_g5k import default_frontend_connection_params, get_oar_job_info, get_cluster_site, OarSubmission, \
     oarsub, get_oar_job_nodes, wait_oar_job_start, oardel, get_host_attributes
+from execo_g5k.planning import get_planning, compute_slots, get_jobs_specs
 from vm5k import define_vms, create_disks, install_vms, start_vms, wait_vms_have_started,\
  destroy_vms, rm_qcow2_disks, vm5k_deployment, get_oar_job_vm5k_resources
 from execo_engine import Engine, ParamSweeper, sweep, slugify, logger
@@ -49,6 +53,8 @@ class vm5k_engine( Engine ):
                     default = "wheezy-x64-base")
         self.options_parser.add_option("-f", dest = "env_file", 
                     help = "path to the environment file", type = "string", default = None)
+        self.options_parser.add_option("-w", dest = "walltime", type = "string", default = "3:00:00", 
+                    help = "walltime for the reservation")
         self.options_parser.add_option("-j", dest = "oar_job_id", type = int,
                     help = "oar_job_id to relaunch an engine")
         self.options_parser.add_option("-k", dest = "keep_alive", 
@@ -64,7 +70,7 @@ class vm5k_engine( Engine ):
         
     def run(self):
         """The main experimental workflow, as described in ``Using the Execo toolkit to perform ... ``"""
-        print_step('Start vm5k_engine')
+        print_step('Defining parameters')
         # The argument is a cluster
         self.cluster = self.args[0]
         self.frontend = get_cluster_site(self.cluster)
@@ -94,6 +100,7 @@ class vm5k_engine( Engine ):
                 
                 # Checking that the job is running and not in Error
                 while get_oar_job_info(self.oar_job_id, self.frontend)['state'] != 'Error':
+                    job_is_dead = False
                     while self.options.n_nodes > len(available_hosts):
                         tmp_threads = dict(threads)
                         for t in tmp_threads:
@@ -102,7 +109,12 @@ class vm5k_engine( Engine ):
                                 available_ip_mac.extend(tmp_threads[t]['ip_mac'])
                                 del threads[t]
                         sleep(5)
-                        
+                        if get_oar_job_info(self.oar_job_id, self.frontend)['state'] == 'Error':
+                            job_is_dead = True
+                            break
+                    if job_is_dead:
+                        break
+                    
                     # Getting the next combination
                     comb = self.sweeper.get_next()
                     if not comb: break
@@ -123,7 +135,7 @@ class vm5k_engine( Engine ):
             if not self.options.keep_alive:
                 logger.info('Deleting job')
                 oardel( [(self.oarjob_id, self.frontend)] )
-            else:
+            elif self.oar_job_id is not None:
                 logger.info('Keeping job alive for debugging')
         
     def force_options(self):
@@ -143,11 +155,31 @@ class vm5k_engine( Engine ):
         
     def make_reservation(self): 
         """Perform """
-        if self.options.outofchart:
-            print self.options.outofchart
-        print self.cluster
+        logger.info('Performing reservation')
+        planning = get_planning(elements = [self.cluster], 
+                    starttime = int(time()+timedelta_to_seconds(timedelta(minutes = 1))),
+                    endtime = int(time()+timedelta_to_seconds(timedelta(days = 3, minutes = 1))),
+                    out_of_chart =  self.options.outofchart) 
+        slots = compute_slots(planning, self.options.walltime)
+        startdate = slots[0][0]
+        i_slot = 0
+        n_nodes = slots[i_slot][2][self.cluster]
+        while n_nodes < self.options.n_nodes:
+            logger.debug(slots[i_slot])
+            startdate = slots[i_slot][0]
+            n_nodes = slots[i_slot][2][self.cluster]
+            i_slot += 1
+            
         
-        exit()
+        jobs_specs = get_jobs_specs({self.cluster: n_nodes}, name = 'vm5k_engine')
+        sub = jobs_specs[0][0]
+        tmp = str(sub.resources).replace('\\', '')
+        sub.resources = 'slash_22=2+'+tmp.replace('"', '')
+        sub.walltime = self.options.walltime
+        sub.additional_options = '-t deploy'
+        sub.reservation_date = startdate
+        (self.oar_job_id, self.frontend) = oarsub(jobs_specs)[0]
+        
         
     def get_resources(self):
         """ """
@@ -203,6 +235,7 @@ def get_cpu_topology(cluster):
 
 def boot_vms_by_core(vms):
     """ """
+    host = vms[0]['host'].address
     n_vm = len(vms)
     sub_vms = {}
     for i_core in list(set( vm['cpuset'] for vm in vms )):
@@ -219,13 +252,13 @@ def boot_vms_by_core(vms):
             if len(sub_vms[i_core]) == 0:
                 del sub_vms[i_core]
         
-        logger.info('Starting VMS '+', '.join( [vm['id'] for vm in sorted(vms_to_boot)]))
+        logger.info(host+': Starting VMS '+', '.join( [vm['id'] for vm in sorted(vms_to_boot)]))
         start_vms(vms_to_boot).run()
         booted = wait_vms_have_started(vms_to_boot)
         if not booted:
             return False
         booted_vms += len(vms_to_boot)
-        logger.info(style.emph(str(booted_vms)+'/'+str(n_vm)))               
+        logger.info(host+': '+style.emph(str(booted_vms)+'/'+str(n_vm)))               
     return True
 #        
 #        

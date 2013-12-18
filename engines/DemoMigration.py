@@ -7,7 +7,9 @@ default_mig_speed = 125
 class DemoMigration( vm5k_engine ):
     
     def __init__(self):
+        # Initialize the engine using the parent class, that creates option
         super(DemoMigration, self).__init__()
+        self.n_nodes = 2
     
     def define_parameters(self):
         cluster = self.cluster
@@ -36,3 +38,4 @@ class DemoMigration( vm5k_engine ):
         
         return parameters
         
+    

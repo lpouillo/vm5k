@@ -53,14 +53,14 @@ class MicroArchBenchmark( vm5k_engine ):
         host = hosts[0].address
         comb_ok = False
         try:
-            logger.info(style.step('Performing combination')+slugify(comb)+' on '+host)
+            logger.info(style.step('Performing combination '+slugify(comb)+' on '+host))
             
             logger.info(host+': Destroying existing VMS')
             destroy_vms(hosts)
             logger.info(host+': Removing existing drives')
             rm_qcow2_disks(hosts)
             
-            logger.info(host+':Defining virtual machines for the combination')
+            logger.info(host+': Defining virtual machines for the combination')
             n_vm = self.comb_nvm(comb)
             # Affecting a cpuset to each virtual machine
             cpu_index = [item for sublist in self.cpu_topology for item in sublist]
@@ -69,14 +69,19 @@ class MicroArchBenchmark( vm5k_engine ):
                 index = cpu_index[i]
                 for j in range(int(comb['dist'][i])): 
                     cpusets.append(str(index))
+            
+            vms = define_vms(['vm-'+str(i+1) for i in range(n_vm-1)], ip_mac = ip_mac, cpusets = cpusets)
+            
             n_cpu = sum( [ int(i) for i in comb['multi_cpu'] ])
-            if n_cpu  > 1:
-                cpusets.append( ','.join( str(i) for i in range(n_cpu) ))
-                multi_cpu = 'vm'+str(n_vm)
+            if n_cpu > 1:                
+                cpuset =  ','.join( str(i) for i in range(n_cpu) )
+                print cpuset
+                vms += define_vms(['vm-multi'], ip_mac = [ip_mac[len(vms)]], n_cpu = n_cpu, cpusets = cpuset)
+                multi_cpu = True
             else:
-                multi_cpu = None
+                multi_cpu = False
 
-            vms = define_vms(['vm-'+str(i+1) for i in range(n_vm)], ip_mac = ip_mac, cpusets = cpusets)
+            
             for vm in vms:
                 vm['host'] = hosts[0]
             logger.info(', '.join( [vm['id']+' '+ vm['ip']+' '+str(vm['n_cpu'])+'('+vm['cpuset']+')' for vm in vms]))
@@ -94,32 +99,45 @@ class MicroArchBenchmark( vm5k_engine ):
             logger.info(host+': Installing kflops on vms and creating stress action')
             stress.append( self.cpu_kflops([vm for vm in vms if vm['n_cpu'] == 1 ]) )
             
-            if multi_cpu is not None:
+            if multi_cpu:
                 logger.info(host+': Installing numactl and kflops on multicore vms')
                 cmd =  'export DEBIAN_MASTER=noninteractive ; apt-get update && apt-get install -y  --force-yes numactl'
-                inst_numactl = Remote( cmd, [vm['ip'] for vm in vms if vm['id'] == multi_cpu]).run()
-                self.cpu_kflops([vm for vm in vms if vm['id'] == multi_cpu ], install_only = True)
-                for multi_vm in [vm for vm in vms if vm['id'] == multi_cpu ]:
+                inst_numactl = Remote( cmd, [vm['ip'] for vm in vms if vm['id'] == 'vm-multi']).run()
+                self.cpu_kflops([vm for vm in vms if vm['id'] == 'vm-multi' ], install_only = True)
+                for multi_vm in [vm for vm in vms if vm['id'] == 'vm-multi' ]:
                     for i in range(multi_vm['n_cpu']):
                         stress.append( Remote('numactl -C '+str(i)+' ./kflops/kflops > vm_multi_'+str(i)+'.out ', 
                                             [multi_vm['ip']] ) )
+                        
+                        
             logger.info(host+': Starting stress !! \n%s', pformat(stress) )
-            stress_actions = ParallelActions(stress)
+            stress_actions = ParallelActions(stress).start()
             for p in stress_actions.processes:
                 if not p.ok:
                     exit()       
+                    
             sleep(self.stress_time)
             logger.info(host+': Killing stress !!')
             stress_actions.kill()
             
+            for p in stress_actions.processes:
+                if not p.ok:
+                    exit()  
+            
+            
             # Gathering results
+            comb_dir = self.result_dir +'/'+ slugify(comb)+'/'
+            try:
+                mkdir(comb_dir)
+            except:
+                logger.warning('%s already exists', comb_dir)
             vms_ip = [vm['ip'] for vm in vms if vm['n_cpu'] == 1]
             comb_dir = self.result_dir +'/'+ slugify(comb)+'/'
             Get(vms_ip, ['{{vms_ip}}.out'], local_location = comb_dir).run()
-            if multi_cpu is not None:
-                for multi_vm in [vm for vm in vms if vm['id'] == multi_cpu ]:
+            if multi_cpu:
+                for multi_vm in [vm for vm in vms if vm['id'] == 'vm-multi' ]:
                     Get([multi_vm['ip']], ['vm_multi_'+str(i)+'.out ' for i in range(multi_vm['n_cpu']) ], 
-                        local_location = comb_dir)
+                        local_location = comb_dir).run()
             
             comb_ok = True
         finally:
@@ -138,7 +156,7 @@ class MicroArchBenchmark( vm5k_engine ):
         return n_vm
     
     def cpu_kflops(self, vms, install_only = False):
-        vms_ip = [Host(vm['ip']) for vm in vms]
+        vms_ip = [vm['ip'] for vm in vms]
         #ChainPut([Host(vm['ip']) for vm in vms], 'kflops.tgz' ).run()
         ChainPut(vms_ip, ['kflops.tgz'] ).run()
         TaktukRemote( 'tar -xzf kflops.tgz; cd kflops; make', vms_ip).run()
