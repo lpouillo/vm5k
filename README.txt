@@ -6,21 +6,6 @@ A python module to ease the experimentations of virtual Machines for the Grid'50
 
 
 
-People
-======
-
-Contributors
-------------
-* Laurent Pouilloux
-* Daniel Balouek-Thomert
-* Matthieu Imbert
-
-Testers
--------
-* Jonathan Rouzaud-Cornabas
-* Jonathan Pastor
-* Takahiro Hirofuchi
-* Adrien Lèbre
 
 Requirements
 ============
@@ -148,4 +133,19 @@ where `topology_file.xml` is:
      
      
 
+People
+======
+
+Contributors
+------------
+* Laurent Pouilloux
+* Daniel Balouek-Thomert
+* Matthieu Imbert
+
+Testers
+-------
+* Jonathan Rouzaud-Cornabas
+* Jonathan Pastor
+* Takahiro Hirofuchi
+* Adrien Lèbre
 

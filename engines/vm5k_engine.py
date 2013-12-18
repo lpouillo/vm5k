@@ -24,9 +24,8 @@ from execo.log import style
 from execo.action import ActionFactory
 from execo_g5k import default_frontend_connection_params, get_oar_job_info, get_cluster_site, OarSubmission, \
     oarsub, get_oar_job_nodes, wait_oar_job_start, oardel, get_host_attributes
-from execo_g5k.vmutils.deployment import vm5k_deployment, get_oar_job_vm5k_resources
-from execo_g5k.vmutils.actions import define_vms, create_disks, install_vms, start_vms, wait_vms_have_started,\
- destroy_vms, rm_qcow2_disks
+from vm5k import define_vms, create_disks, install_vms, start_vms, wait_vms_have_started,\
+ destroy_vms, rm_qcow2_disks, vm5k_deployment, get_oar_job_vm5k_resources
 from execo_engine import Engine, ParamSweeper, sweep, slugify, logger
 from threading import Thread, Lock
 
