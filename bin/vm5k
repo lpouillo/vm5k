@@ -21,7 +21,7 @@ from execo.action import ActionFactory
 from execo.time_utils import Timer, timedelta_to_seconds
 from execo_g5k.config import g5k_configuration, default_frontend_connection_params
 from execo_g5k.planning import get_planning, compute_slots, show_resources, find_free_slot
-from vm5k import vm5k_deployment, prettify, define_vms, show_vms, get_oar_job_vm5k_resources, \
+from vmutils import vm5k_deployment, prettify, define_vms, show_vms, get_oar_job_vm5k_resources, \
     get_oargrid_job_vm5k_resources, get_vms_slot
 
 ### INITIALIZATION
