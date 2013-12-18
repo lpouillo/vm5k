@@ -659,7 +659,7 @@ def distribute_vms(vms, hosts, distribution = 'round-robin'):
                                  'Available'.ljust(15)+'%s Mb'.ljust(15)+'%s \n'+\
                                  'Needed'.ljust(15)+'%s Mb'.ljust(15)+\
                                  '%s \n', attr['TOTAL']['RAM'], attr['TOTAL']['CPU'],req_mem, req_cpu)
-                    exit()
+
                 iter_hosts = cycle(dist_hosts)
                 host = iter_hosts.next()
                 remaining = attr[host.address].copy()

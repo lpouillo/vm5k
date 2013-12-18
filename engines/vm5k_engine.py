@@ -131,7 +131,11 @@ class vm5k_engine( Engine ):
                     t.daemon = True
                     t.start()
                 
+                    
+            if job_is_dead: self.oar_job_id = None
+                
         finally:
+            
             if self.oar_job_id is not None:        
                 if not self.options.keep_alive:
                     logger.info('Deleting job')
