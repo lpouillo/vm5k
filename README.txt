@@ -6,11 +6,17 @@ A python module to ease the experimentations of virtual Machines for the Grid'50
 
 
 
+People
+======
+
 Contributors
-============
+------------
 * Laurent Pouilloux
 * Daniel Balouek-Thomert
 * Matthieu Imbert
+
+Testers
+-------
 * Jonathan Rouzaud-Cornabas
 * Jonathan Pastor
 * Takahiro Hirofuchi
@@ -23,47 +29,17 @@ The module requires:
 * matplotlib 1.2, <http://matplotlib.org/>
 
 
+Documentation
+=============
+See wiki pages
+
 
 Usage
 =====
 
-
-Documentation
-=============
-
-
-
-
-
-###### OUTDATED
-
+Virtual machines deployment with vm5k
+-------------------------------------
 Automate virtual machines deployment on Grid5000 in a global KaVLAN.
-
-
-## Prerequisites
-This script is based on *execo* to control the deployment process of *debian*-based physical hosts
-with *libvirt* installed and configured. 
-
-To use it on a Grid'5000 frontend, you need to install the following modules. First, enable the http and https proxy:
-
-    export http_proxy="http://proxy.site.grid5000.fr:3128" ; export https_proxy="http://proxy.site.grid5000.fr:3128" ;
-
-Then install execo from the git repository:
-
-    git clone git://scm.gforge.inria.fr/execo/execo.git
-    cd execo
-    make install PREFIX=$HOME/.local
-
-
-Finally, install the netaddr module
-
-     easy_install --user netaddr
-
-and update your .bashrc with:
-
-     PYTHONHOMEPATH="$HOME/.local/"$(python -c "import sys,os; print os.sep.join(['lib', 'python' + sys.version[:3], 'site-packages'])")
-     export PYTHONPATH="$PYTHONHOMEPATH${PYTHONPATH:+:${PYTHONPATH}}"
-     
      
 ## Workflow
 * define a deployment **topology**:
