@@ -7,7 +7,8 @@
 #    A great thanks to A. Lèbre and J. Pastor for alpha testing :)
 #
 #
-import os, sys, argparse, time as T, datetime as DT
+import os, argparse
+from time import strftime
 from logging import INFO, DEBUG, WARN
 from math import ceil
 from xml.etree.ElementTree import fromstring, parse, dump
@@ -16,16 +17,19 @@ from execo.log import style
 from execo.config import TAKTUK, CHAINPUT
 from execo.action import ActionFactory
 from execo.time_utils import Timer
-from execo_g5k.planning import get_planning, compute_slots, show_resources, find_free_slot
-from vm5k import vm5k_deployment, define_vms, get_oar_job_vm5k_resources, \
-    get_oargrid_job_vm5k_resources, get_vms_slot, print_step, distribute_vms, get_max_vms
+from execo_g5k import oargridsub, get_g5k_clusters
+from execo_g5k.oargrid import get_oargridsub_commandline
+from execo_g5k.planning import get_planning, compute_slots, show_resources, find_free_slot, \
+    get_jobs_specs
+from vm5k import vm5k_deployment, define_vms, get_oar_job_vm5k_resources, get_max_vms, \
+    get_oargrid_job_vm5k_resources, get_vms_slot, print_step, distribute_vms 
 
 
 ### INITIALIZATION 
 
 ## Constants
 deployment_tries = 1
-fact = ActionFactory(remote_tool = TAKTUK,
+default_action_factory = ActionFactory(remote_tool = TAKTUK,
                     fileput_tool = TAKTUK,
                     fileget_tool = TAKTUK)
 blacklisted = ['graphite', 'helios', 'sagittaire']
@@ -65,7 +69,7 @@ optio.add_argument("-q", "--quiet",
                 help = 'print only warning and error messages')
 run.add_argument("-o", "--outdir", 
                 dest = "outdir", 
-                default = 'vm5k_'+ T.strftime("%Y%m%d_%H%M%S_%z"),
+                default = 'vm5k_'+strftime("%Y%m%d_%H%M%S_%z"),
                 help = 'where to store the vm5k log files'+\
                     "\ndefault = %(default)s")
  
@@ -201,7 +205,7 @@ show_resources(elements, 'Resources wanted')
 
 # MANAGING RESERVATION
 logger.info(style.log_header('Reservation'))
-
+frontend = None
 if args.job_id is None:
     logger.info('Finding a slot for your reservation')
     if args.kavlan:
@@ -224,7 +228,21 @@ if args.job_id is None:
         slot = find_free_slot(slots, elements)
     else:
         slot = get_vms_slot(vms, slots)
-    print slot
+    startdate = slot[1]
+    resources = { cluster: n_nodes for cluster, n_nodes in slot[2].iteritems() if cluster in get_g5k_clusters() }
+    
+    show_resources(resources)
+    jobs_specs = get_jobs_specs(resources)
+    for OarSubmission, frontend in jobs_specs:
+        OarSubmission.resources = 'slash_22=2+'+OarSubmission.resources
+    
+    
+    
+    (job_id, _) = oargridsub(jobs_specs, walltime = args.walltime, 
+         additional_options = "-t deploy", reservation_date = startdate)
+    if job_id is None:
+        logger.error('Wrong command line ? \n%s', get_oargridsub_commandline(jobs_specs, walltime = args.walltime, 
+         additional_options = "-t deploy", reservation_date = startdate))
     
 else:
     logger.info('Using an existing job: %s', style.emph(args.job_id))
