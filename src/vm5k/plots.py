@@ -90,7 +90,7 @@ plt.axis('equal')
 nx.draw_networkx_nodes(G, pos, 
                    node_size = 2000, 
                    nodelist = ['vm5k'],
-                   node_color = '#ddddaa')
+                   node_color = '#FF6363')
 nx.draw_networkx_nodes(G, pos, 
                    node_size = 1000, 
                    nodelist = site_nodes, 
