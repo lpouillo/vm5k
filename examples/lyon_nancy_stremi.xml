@@ -1,0 +1,270 @@
+<deployment>
+  <site id="lyon">
+    <cluster id="taurus">
+      <host id="taurus-1">
+        <vm n_cpu="1" hdd="4" id="vm-0" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-1" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-2" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-3" ip="X.X.X.X" mem="256"/>
+      </host>
+      <host id="taurus-2">
+        <vm n_cpu="1" hdd="4" id="vm-4" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-5" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-6" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-7" ip="X.X.X.X" mem="256"/>
+      </host>
+      <host id="taurus-3">
+        <vm n_cpu="1" hdd="4" id="vm-8" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-9" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-10" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-11" ip="X.X.X.X" mem="256"/>
+      </host>
+      <host id="taurus-4">
+        <vm n_cpu="1" hdd="4" id="vm-12" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-13" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-14" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-15" ip="X.X.X.X" mem="256"/>
+      </host>
+      <host id="taurus-5">
+        <vm n_cpu="1" hdd="4" id="vm-16" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-17" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-18" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-19" ip="X.X.X.X" mem="256"/>
+      </host>
+      <host id="taurus-6">
+        <vm n_cpu="1" hdd="4" id="vm-20" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-21" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-22" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-23" ip="X.X.X.X" mem="256"/>
+      </host>
+    </cluster>
+  </site>
+  <site id="nancy">
+    <cluster id="griffon">
+      <host id="griffon-1">
+        <vm n_cpu="1" hdd="4" id="vm-24" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-25" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-26" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-27" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-28" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-29" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-30" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-31" ip="X.X.X.X" mem="256"/>
+      </host>
+      <host id="griffon-2">
+        <vm n_cpu="1" hdd="4" id="vm-32" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-33" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-34" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-35" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-36" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-37" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-38" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-39" ip="X.X.X.X" mem="256"/>
+      </host>
+      <host id="griffon-3">
+        <vm n_cpu="1" hdd="4" id="vm-40" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-41" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-42" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-43" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-44" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-45" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-46" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-47" ip="X.X.X.X" mem="256"/>
+      </host>
+      <host id="griffon-4">
+        <vm n_cpu="1" hdd="4" id="vm-48" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-49" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-50" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-51" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-52" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-53" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-54" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-55" ip="X.X.X.X" mem="256"/>
+      </host>
+      <host id="griffon-5">
+        <vm n_cpu="1" hdd="4" id="vm-56" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-57" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-58" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-59" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-60" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-61" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-62" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-63" ip="X.X.X.X" mem="256"/>
+      </host>
+      <host id="griffon-6">
+        <vm n_cpu="1" hdd="4" id="vm-64" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-65" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-66" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-67" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-68" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-69" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-70" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-71" ip="X.X.X.X" mem="256"/>
+      </host>
+      <host id="griffon-7">
+        <vm n_cpu="1" hdd="4" id="vm-72" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-73" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-74" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-75" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-76" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-77" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-78" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-79" ip="X.X.X.X" mem="256"/>
+      </host>
+      <host id="griffon-8">
+        <vm n_cpu="1" hdd="4" id="vm-80" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-81" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-82" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-83" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-84" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-85" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-86" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-87" ip="X.X.X.X" mem="256"/>
+      </host>
+      <host id="griffon-9">
+        <vm n_cpu="1" hdd="4" id="vm-88" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-89" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-90" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-91" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-92" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-93" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-94" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-95" ip="X.X.X.X" mem="256"/>
+      </host>
+      <host id="griffon-10">
+        <vm n_cpu="1" hdd="4" id="vm-96" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-97" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-98" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-99" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-100" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-101" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-102" ip="X.X.X.X" mem="256"/>
+        <vm n_cpu="1" hdd="4" id="vm-103" ip="X.X.X.X" mem="256"/>
+      </host>
+    </cluster>
+    <cluster id="graphene">
+      <host id="graphene-1">
+        <vm n_cpu="1" hdd="4" id="vm-124" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-125" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-126" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-127" ip="X.X.X.X" mem="1024"/>
+      </host>
+      <host id="graphene-2">
+        <vm n_cpu="1" hdd="4" id="vm-128" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-129" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-130" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-131" ip="X.X.X.X" mem="1024"/>
+      </host>
+      <host id="graphene-3">
+        <vm n_cpu="1" hdd="4" id="vm-132" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-133" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-134" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-135" ip="X.X.X.X" mem="1024"/>
+      </host>
+      <host id="graphene-4">
+        <vm n_cpu="1" hdd="4" id="vm-136" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-137" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-138" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-139" ip="X.X.X.X" mem="1024"/>
+      </host>
+      <host id="graphene-5">
+        <vm n_cpu="1" hdd="4" id="vm-140" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-141" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-142" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-143" ip="X.X.X.X" mem="1024"/>
+      </host>
+      <host id="graphene-6">
+        <vm n_cpu="1" hdd="4" id="vm-144" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-145" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-146" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-147" ip="X.X.X.X" mem="1024"/>
+      </host>
+      <host id="graphene-7">
+        <vm n_cpu="1" hdd="4" id="vm-148" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-149" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-150" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-151" ip="X.X.X.X" mem="1024"/>
+      </host>
+      <host id="graphene-8">
+        <vm n_cpu="1" hdd="4" id="vm-152" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-153" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-154" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-155" ip="X.X.X.X" mem="1024"/>
+      </host>
+      <host id="graphene-9">
+        <vm n_cpu="1" hdd="4" id="vm-156" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-157" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-158" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-159" ip="X.X.X.X" mem="1024"/>
+      </host>
+      <host id="graphene-10">
+        <vm n_cpu="1" hdd="4" id="vm-160" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-161" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-162" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-163" ip="X.X.X.X" mem="1024"/>
+      </host>
+      <host id="graphene-11">
+        <vm n_cpu="1" hdd="4" id="vm-164" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-165" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-166" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-167" ip="X.X.X.X" mem="1024"/>
+      </host>
+      <host id="graphene-12">
+        <vm n_cpu="1" hdd="4" id="vm-168" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-169" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-170" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-171" ip="X.X.X.X" mem="1024"/>
+      </host>
+      <host id="graphene-13">
+        <vm n_cpu="1" hdd="4" id="vm-172" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-173" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-174" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-175" ip="X.X.X.X" mem="1024"/>
+      </host>
+      <host id="graphene-14">
+        <vm n_cpu="1" hdd="4" id="vm-176" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-177" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-178" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-179" ip="X.X.X.X" mem="1024"/>
+      </host>
+      <host id="graphene-15">
+        <vm n_cpu="1" hdd="4" id="vm-180" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-181" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-182" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-183" ip="X.X.X.X" mem="1024"/>
+      </host>
+      <host id="graphene-16">
+        <vm n_cpu="1" hdd="4" id="vm-184" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-185" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-186" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-187" ip="X.X.X.X" mem="1024"/>
+      </host>
+      <host id="graphene-17">
+        <vm n_cpu="1" hdd="4" id="vm-188" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-189" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-190" ip="X.X.X.X" mem="1024"/>
+        <vm n_cpu="1" hdd="4" id="vm-191" ip="X.X.X.X" mem="1024"/>
+      </host>
+    </cluster>
+  </site>
+  <site id="reims">
+    <cluster id="stremi">
+      <host id="stremi-1">
+        <vm n_cpu="4" hdd="10" id="vm-104" ip="X.X.X.X" mem="4096"/>
+        <vm n_cpu="4" hdd="10" id="vm-105" ip="X.X.X.X" mem="4096"/>
+      </host>
+      <host id="stremi-2">
+        <vm n_cpu="4" hdd="10" id="vm-106" ip="X.X.X.X" mem="4096"/>
+        <vm n_cpu="4" hdd="10" id="vm-107" ip="X.X.X.X" mem="4096"/>
+      </host>
+      <host id="stremi-3">
+        <vm n_cpu="4" hdd="10" id="vm-108" ip="X.X.X.X" mem="4096"/>
+        <vm n_cpu="4" hdd="10" id="vm-109" ip="X.X.X.X" mem="4096"/>
+      </host>
+      <host id="stremi-4">
+        <vm n_cpu="4" hdd="10" id="vm-110" ip="X.X.X.X" mem="4096"/>
+        <vm n_cpu="4" hdd="10" id="vm-111" ip="X.X.X.X" mem="4096"/>
+      </host>
+    </cluster>
+  </site>
+</deployment>
