@@ -35,7 +35,10 @@ def show_vms(vms):
         ', '.join( [style.VM(vm['id'])+' ('+str(vm['mem'])+'Mb, '+str(vm['n_cpu'])+' cpu '+\
                    vm['cpuset']+', '+str(vm['hdd'])+'Gb)' 
                     for vm in vms ] ) )
-    
+
+def _default_xml_value(key):
+            return default_vm[key] if key not in vm.attrib else vm.get(key)
+            
 
 def define_vms( vms_id, template = None, ip_mac = None, state = None, host = None,
         n_cpu = 1, cpusets = None, mem = None, hdd = None, backing_file = None):
