@@ -16,11 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with Execo.  If not, see <http://www.gnu.org/licenses/>
 
-from pprint import pformat, pprint
+from pprint import pformat
 from random import randint
 from xml.etree.ElementTree import Element, SubElement,tostring, parse
-from itertools import cycle
 from xml.dom import minidom
+from itertools import cycle
+from time import localtime, strftime
 from tempfile import mkstemp
 from execo import logger, SshProcess, SequentialActions, Host, Local, sleep, default_connection_params
 from execo.action import ActionFactory
@@ -32,6 +33,7 @@ from execo_g5k.config import g5k_configuration, default_frontend_connection_para
 from execo_g5k.api_utils import get_host_cluster, get_g5k_sites, get_g5k_clusters, get_cluster_site, \
     get_host_attributes, get_resource_attributes, get_host_site
 from execo_g5k.utils import get_kavlan_host_name
+from vm5k.config import default_vm
 from vm5k.services import dns_dhcp_server
 from vm5k.actions import create_disks, install_vms, start_vms, wait_vms_have_started, destroy_vms
 
@@ -288,7 +290,8 @@ class vm5k_deployment(object):
         put = self.fact.get_fileput(self.hosts, [network_xml], remote_location = '/etc/libvirt/qemu/networks/')
         start = self.fact.get_remote('virsh net-define /etc/libvirt/qemu/networks/'+network_xml.split('/')[-1]+' ; '+\
                                      'virsh net-start default; virsh net-autostart default;', self.hosts)
-        conf = SequentialActions( [destroy, put, start] ).run()
+        netconf = SequentialActions( [destroy, put, start] ).run()
+        self._actions_hosts(netconf)
     
     
     # Hosts configuration
@@ -543,7 +546,19 @@ class vm5k_deployment(object):
         
     def _get_xml_vms(self):
         """Define the list of VMs from the infile """
-        self.vms = [ {'id': vm.get('id')} for vm in self.state.findall('./vm') ]
+        self.vms = []
+        
+        def _default_xml_value(key):
+            return default_vm[key] if key not in vm.attrib else vm.get(key)
+            
+        for vm in self.state.findall('.//vm'):
+            self.vms.append( {'id': vm.get('id'), 
+                    'n_cpu': _default_xml_value['n_cpu'], 
+                    'cpuset': _default_xml_value['cpuset'],
+                    'mem': _default_xml_value['mem'], 
+                    'hdd': _default_xml_value['hdd'],  
+                    'backing_file': _default_xml_value['backing_file'],
+                    'host': _default_xml_value['host'] } )
         
     def _add_xml_elements(self):
         """Add sites, clusters, hosts to self.state """
@@ -576,10 +591,20 @@ class vm5k_deployment(object):
                                              'backing_file': vm['backing_file'],
                                              'state': vm['state'] })
 
-    def get_state(self, output = None, mode = 'compact', plot = False):
+    def get_state(self, output = True, mode = 'compact', plot = False):
         """ """
+        
+        if output:
+            output = 'vm5k_'+strftime('%Y%m%d_%H%M%S',localtime())+'.xml'
+            f = open(output, 'w')
+            f.write(prettify(self.state))
+            f.close()
+        
         if mode == 'compact':
             log = self._print_state_compact()
+        
+        if plot == True:
+            print 'plot'
    
         logger.info('State %s', log)
 
