@@ -8,6 +8,7 @@
 #
 #
 import os, argparse
+from pprint import pformat
 from time import strftime
 from logging import INFO, DEBUG, WARN
 from math import ceil
@@ -217,7 +218,7 @@ if args.job_id is None:
         subnets = 'slash_22='+str(int(ceil(len(vms)/1024.)))
 
     planning = get_planning(elements, vlan = kavlan, subnet = subnet)
-    slots = compute_slots(planning, walltime = args.walltime, excluded_resources = blacklisted)
+    slots = compute_slots(planning, walltime = args.walltime, excluded_elements = blacklisted)
     # Test if we need a free slot or a vms slot
     for element, n_nodes in elements.iteritems():
         if n_nodes > 0:
@@ -231,11 +232,16 @@ if args.job_id is None:
     startdate = slot[1]
     resources = { cluster: n_nodes for cluster, n_nodes in slot[2].iteritems() if cluster in get_g5k_clusters() }
     
+    ## TODO REDUCE RESOURCES
+    
     show_resources(resources)
     jobs_specs = get_jobs_specs(resources)
     for OarSubmission, frontend in jobs_specs:
         OarSubmission.resources = 'slash_22=2+'+OarSubmission.resources
     
+    
+    logger.debug('Jobs specifications %s', pformat(jobs_specs) )
+  
     
     
     (job_id, _) = oargridsub(jobs_specs, walltime = args.walltime, 
