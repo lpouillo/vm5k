@@ -62,6 +62,10 @@ class MicroArchBenchmark( vm5k_engine ):
             
             logger.info(host+': Defining virtual machines for the combination')
             n_vm = self.comb_nvm(comb)
+            if n_vm == 0:
+	      self.sweeper.done( comb )
+	      exit()
+            
             # Affecting a cpuset to each virtual machine
             cpu_index = [item for sublist in self.cpu_topology for item in sublist]
             cpusets = []
@@ -159,6 +163,8 @@ class MicroArchBenchmark( vm5k_engine ):
         vms_ip = [vm['ip'] for vm in vms]
         #ChainPut([Host(vm['ip']) for vm in vms], 'kflops.tgz' ).run()
         ChainPut(vms_ip, ['kflops.tgz'] ).run()
+        TaktukRemote('echo 8146 > /proc/sys/kernel/pty/max',vms_ip).run()
+        
         TaktukRemote( 'tar -xzf kflops.tgz; cd kflops; make', vms_ip).run()
         if not install_only:                
             return Remote('./kflops/kflops > {{vms_ip}}.out', vms_ip)
