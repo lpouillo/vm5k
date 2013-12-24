@@ -240,10 +240,11 @@ def get_cpu_topology(cluster):
 
 def boot_vms_by_core(vms):
     """ """
-    host = vms[0]['host'].address
-    n_vm = len(vms)
     if n_vm == 0:
       return True
+    
+    host = vms[0]['host'].address
+    n_vm = len(vms)
     
     sub_vms = {}
     for i_core in list(set( vm['cpuset'] for vm in vms )):
