@@ -18,7 +18,7 @@
 
 from pprint import pformat
 from random import randint
-from xml.etree.ElementTree import Element, SubElement,tostring, parse
+from xml.etree.ElementTree import Element, SubElement, tostring, parse
 from xml.dom import minidom
 from itertools import cycle
 from time import localtime, strftime
