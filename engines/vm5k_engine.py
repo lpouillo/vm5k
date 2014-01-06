@@ -242,7 +242,7 @@ def boot_vms_by_core(vms):
     """ """
     n_vm = len(vms)
     if n_vm == 0:
-      return True
+        return True
     
     host = vms[0]['host'].address
     
