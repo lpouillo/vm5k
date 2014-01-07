@@ -139,11 +139,18 @@ class MicroArchBenchmark( vm5k_engine ):
                 logger.warning('%s already exists', comb_dir)
             vms_ip = [vm['ip'] for vm in vms if vm['n_cpu'] == 1]
             comb_dir = self.result_dir +'/'+ slugify(comb)+'/'
-            Get(vms_ip, ['{{vms_ip}}.out'], local_location = comb_dir).run()
+            get_vms_output = Get(vms_ip, ['{{vms_ip}}.out'], local_location = comb_dir).run()
+            for p in not get_vms_output.processes:
+                if not p.ok:
+                    exit()
             if multi_cpu:
                 for multi_vm in [vm for vm in vms if vm['id'] == 'vm-multi' ]:
-                    Get([multi_vm['ip']], ['vm_multi_'+str(i)+'.out ' for i in range(multi_vm['n_cpu']) ], 
+                    get_multi = Get([multi_vm['ip']], ['vm_multi_'+str(i)+'.out ' for i in range(multi_vm['n_cpu']) ], 
                         local_location = comb_dir).run()
+                    for p in not get_multi.processes:
+                        if not p.ok:
+                            exit()
+                            
             
             comb_ok = True
         finally:
