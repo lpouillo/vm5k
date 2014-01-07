@@ -96,7 +96,9 @@ class MicroArchBenchmark( vm5k_engine ):
             create = create_disks(vms).run()
             logger.info(host+': Installing VMS')
             install_vms(vms).run()
-            boot_vms_by_core(vms)
+            boot_successfull = boot_vms_by_core(vms)
+            if not boot_successfull:
+                exit() 
             
             # Prepare virtual machines for experiments
             stress = []
