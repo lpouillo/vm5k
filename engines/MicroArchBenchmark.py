@@ -60,9 +60,10 @@ class MicroArchBenchmark( vm5k_engine ):
             logger.info(host+': Removing existing drives')
             rm_qcow2_disks(hosts)
             
-            logger.info(host+': Defining virtual machines for the combination')
+            logger.info(host+': Defining virtual machines ')
             n_vm = self.comb_nvm(comb)
             if n_vm == 0:
+                logger.warning('Combination '+slugify(comb)+' has no VM' )
                 self.sweeper.done( comb )
                 exit()
             
@@ -119,6 +120,7 @@ class MicroArchBenchmark( vm5k_engine ):
             stress_actions = ParallelActions(stress).start()
             for p in stress_actions.processes:
                 if not p.ok:
+                    logger.error('Unable to start the stress for combination %s', slugify(comb))
                     exit()       
                     
             sleep(self.stress_time)
@@ -145,6 +147,7 @@ class MicroArchBenchmark( vm5k_engine ):
             get_vms_output = Get(vms_ip, ['{{vms_out}}.out'], local_location = comb_dir).run()
             for p in get_vms_output.processes:
                 if not p.ok:
+                    logger.error('Unable to retrieve the files for combination %s', slugify(comb)) 
                     exit()
             if multi_cpu:
                 for multi_vm in [vm for vm in vms if vm['id'] == 'vm-multi' ]:
@@ -152,6 +155,7 @@ class MicroArchBenchmark( vm5k_engine ):
                         local_location = comb_dir).run()
                     for p in get_multi.processes:
                         if not p.ok:
+                            logger.error('Unable to retrieve the vm_multi files for combination %s', slugify(comb))
                             exit()
             
             comb_ok = True
