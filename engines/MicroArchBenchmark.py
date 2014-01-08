@@ -175,8 +175,9 @@ class MicroArchBenchmark( vm5k_engine ):
         #TaktukRemote('echo 8146 > /proc/sys/kernel/pty/max', vms_ip).run()
         
         TaktukRemote( 'tar -xzf kflops.tgz; cd kflops; make', vms_ip).run()
+        vms_out = [vm['ip']+'_'+vm['cpuset'] for vm in vms]
         if not install_only:                
-            return TaktukRemote('./kflops/kflops > {{vms_ip}}.out', vms_ip)
+            return TaktukRemote('./kflops/kflops > {{vms_out}}.out', vms_ip)
 
 
 #    def mem_update(self, vms, size, speed):
