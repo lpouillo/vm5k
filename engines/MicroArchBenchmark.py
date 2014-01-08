@@ -19,7 +19,7 @@ class MicroArchBenchmark( vm5k_engine ):
         cluster = self.cluster
         n_vm = 3
         
-        self.cpu_topology = get_cpu_topology(cluster)
+        self.cpu_topology = get_cpu_topology(cluster, dir = self.result_dir)
         
         n_core = len(self.cpu_topology[0])
         n_cell = len(self.cpu_topology)
