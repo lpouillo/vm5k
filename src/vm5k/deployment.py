@@ -280,8 +280,7 @@ class vm5k_deployment(object):
         name.text = 'default'
         SubElement(root, 'forward', attrib={'mode':'bridge'})
         SubElement(root, 'bridge', attrib={'name': bridge})
-        _, network_xml = mkstemp(dir = '/tmp/', prefix='create_br_')
-        f = open(network_xml, 'w')
+        f, network_xml = mkstemp(dir = '/tmp/', prefix='create_br_')
         f.write(prettify(root))
         f.close()
         logger.debug('Destroying existing network')
@@ -353,7 +352,6 @@ class vm5k_deployment(object):
                 'echo "  bridge_fd 0" >> /etc/network/interfaces ; \n'+\
                 'ifup '+name
             f, br_script = mkstemp(dir = '/tmp/', prefix='create_br_')
-            f = open(br_script, 'w')
             f.write(script)
             f.close()
             
@@ -404,23 +402,20 @@ class vm5k_deployment(object):
     def _configure_apt(self):
         """ """
         logger.info('Configuring APT')
-        _, tmpsource = mkstemp(dir = '/tmp/', prefix='sources.list_')
+        f, tmpsource = mkstemp(dir = '/tmp/', prefix='sources.list_')
         # Create sources.list file
-        f = open(tmpsource, 'w')
         f.write('deb http://ftp.debian.org/debian stable main contrib non-free\n'+\
                 'deb http://ftp.debian.org/debian testing main \n'+\
                 'deb http://ftp.debian.org/debian unstable main \n')
         f.close()
         # Create preferences file
-        _, tmppref = mkstemp(dir = '/tmp/', prefix='preferences_')
-        f = open(tmppref, 'w')
+        f, tmppref = mkstemp(dir = '/tmp/', prefix='preferences_')
         f.write('Package: * \nPin: release a=stable \nPin-Priority: 900\n\n'+\
                 'Package: * \nPin: release a=testing \nPin-Priority: 850\n\n'+\
                 'Package: * \nPin: release a=unstable \nPin-Priority: 800\n\n')
         f.close()
         # Create apt.conf file
-        _, tmpaptconf = mkstemp(dir = '/tmp/', prefix='apt.conf_')
-        f = open(tmpaptconf, 'w')
+        f, tmpaptconf = mkstemp(dir = '/tmp/', prefix='apt.conf_')
         f.write('APT::Acquire::Retries=20;\n')
         f.close()
         
@@ -753,9 +748,10 @@ def get_vms_slot(vms, slots):
                     hosts.append(Host(str(element+'-1.'+get_cluster_site(element)+'.grid5000.fr')))
         attr = get_CPU_RAM_FLOPS(hosts)['TOTAL']
         if 3*attr['CPU'] > cpu and attr['RAM'] > ram:
-            
-            return slot
+            break
         del hosts[:]
+#    for element, n_hosts in slot[2].iteritems():
+        
 
 
 def print_step(step_desc = None):

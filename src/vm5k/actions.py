@@ -169,14 +169,11 @@ def wait_vms_have_started(vms, host = None):
     else:
         user = 'root'
           
-    tmpdir = tempfile.mkdtemp()
-    tmpfile = tempfile.mkstemp(prefix='vmips')
-    f = open(tmpfile[1], 'w')
+    f, tmpfile = tempfile.mkstemp(prefix='vmips')
     for vm in vms:
         f.write(vm['ip']+'\n')
     f.close()
-    Put([host], [tmpfile[1]], connection_params = {'user': user}).run()
-    Process("rm -rf " + tmpdir).run()
+    Put([host], [tmpfile], connection_params = {'user': user}).run()
     nmap_tries = 0
     started_vms = '0'
     old_started = '0'
@@ -185,7 +182,7 @@ def wait_vms_have_started(vms, host = None):
         sleep(20)
         logger.debug('nmap_tries %s', nmap_tries)
         
-        nmap = SshProcess('nmap -i '+tmpfile[1].split('/')[-1]+' -p 22', host, connection_params = {'user': user}).run()
+        nmap = SshProcess('nmap -i '+tmpfile.split('/')[-1]+' -p 22', host, connection_params = {'user': user}).run()
         logger.debug('%s', nmap.cmd)
         for line in nmap.stdout.split('\n'):
             if 'Nmap scan report for' in line:
@@ -203,8 +200,8 @@ def wait_vms_have_started(vms, host = None):
             nmap_tries += 1
         if not ssh_open:
             logger.info(str(nmap_tries)+': '+  started_vms+'/'+str(len(vms)) )
-    SshProcess('rm '+tmpfile[1].split('/')[-1], host, connection_params = {'user': user}).run()    
-    Process('rm'+tmpfile[1]).run()
+    SshProcess('rm '+tmpfile.split('/')[-1], host, connection_params = {'user': user}).run()    
+    Process('rm '+tmpfile).run()
     if ssh_open:
         logger.info('All VM have been started')
         return True
@@ -235,9 +232,6 @@ def migrate_vm(vm, host):
             'qemu+ssh://'+host.address+"/system'  "
     return get_remote(cmd, [src] ) 
     
-    
-    
-
 
 def destroy_vms( hosts):
     """Destroy all the VM on the hosts"""
