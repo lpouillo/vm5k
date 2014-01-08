@@ -15,7 +15,7 @@
 #
 # Laurent Pouilloux, INRIA 2012-2013
 
-from os import path, mkdir
+from os import path, mkdir, remove, listdir
 from pprint import pformat, pprint
 from xml.etree.ElementTree import fromstring, parse, ElementTree
 from time import time
