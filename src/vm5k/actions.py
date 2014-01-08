@@ -36,8 +36,8 @@ def show_vms(vms):
                    vm['cpuset']+', '+str(vm['hdd'])+'Gb)' 
                     for vm in vms ] ) )
 
-def _default_xml_value(key):
-            return default_vm[key] if key not in vm.attrib else vm.get(key)
+#def _default_xml_value(key):
+#            return default_vm[key] if key not in vm.attrib else vm.get(key)
             
 
 def define_vms( vms_id, template = None, ip_mac = None, state = None, host = None,
