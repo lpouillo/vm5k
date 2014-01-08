@@ -73,23 +73,19 @@ class MicroArchBenchmark( vm5k_engine ):
                 index = cpu_index[i]
                 for j in range(int(comb['dist'][i])): 
                     cpusets.append(str(index))
-            
-            vms = define_vms(['vm-'+str(i+1) for i in range(n_vm-1)], ip_mac = ip_mac, cpusets = cpusets)
-            
+            # Adding the multi_cpu vm if it exists
             n_cpu = sum( [ int(i) for i in comb['multi_cpu'] ])
             if n_cpu > 1:                
-                cpuset =  ','.join( str(i) for i in range(n_cpu) )
-                print cpuset
-                vms += define_vms(['vm-multi'], ip_mac = [ip_mac[len(vms)]], n_cpu = n_cpu, cpusets = cpuset)
+                cpusets.append( ','.join( str(i) for i in range(n_cpu) ) )
                 multi_cpu = True
             else:
                 multi_cpu = False
-
-            
+                
+            vms = define_vms(['vm-'+str(i+1) for i in range(n_vm)], ip_mac = ip_mac, cpusets = cpusets)
+                        
             for vm in vms:
                 vm['host'] = hosts[0]
             logger.info(', '.join( [vm['id']+' '+ vm['ip']+' '+str(vm['n_cpu'])+'('+vm['cpuset']+')' for vm in vms]))
-            
                 
             # Create disks, install vms and boot by core 
             logger.info(host+': Creating disks')
@@ -98,6 +94,7 @@ class MicroArchBenchmark( vm5k_engine ):
             install_vms(vms).run()
             boot_successfull = boot_vms_by_core(vms)
             if not boot_successfull:
+                logger.error('Unable to boot all the VMS for %s', slugify(comb))
                 exit() 
             
             # Prepare virtual machines for experiments
@@ -109,6 +106,8 @@ class MicroArchBenchmark( vm5k_engine ):
                 logger.info(host+': Installing numactl and kflops on multicore vms')
                 cmd =  'export DEBIAN_MASTER=noninteractive ; apt-get update && apt-get install -y  --force-yes numactl'
                 inst_numactl = Remote( cmd, [vm['ip'] for vm in vms if vm['id'] == 'vm-multi']).run()
+                if not inst_numactl.ok:
+                    exit()
                 self.cpu_kflops([vm for vm in vms if vm['id'] == 'vm-multi' ], install_only = True)
                 for multi_vm in [vm for vm in vms if vm['id'] == 'vm-multi' ]:
                     for i in range(multi_vm['n_cpu']):
@@ -136,10 +135,14 @@ class MicroArchBenchmark( vm5k_engine ):
             try:
                 mkdir(comb_dir)
             except:
-                logger.warning('%s already exists', comb_dir)
+                logger.warning('%s already exists, removing existing files', comb_dir)
+                for f in listdir(comb_dir):
+                    remove(f)
+                
             vms_ip = [vm['ip'] for vm in vms if vm['n_cpu'] == 1]
+            vms_out = [vm['ip']+'_'+vm['cpuset'] for vm in vms if vm['n_cpu'] == 1]
             comb_dir = self.result_dir +'/'+ slugify(comb)+'/'
-            get_vms_output = Get(vms_ip, ['{{vms_ip}}.out'], local_location = comb_dir).run()
+            get_vms_output = Get(vms_ip, ['{{vms_out}}.out'], local_location = comb_dir).run()
             for p in get_vms_output.processes:
                 if not p.ok:
                     exit()
@@ -150,7 +153,6 @@ class MicroArchBenchmark( vm5k_engine ):
                     for p in get_multi.processes:
                         if not p.ok:
                             exit()
-                            
             
             comb_ok = True
         finally:
