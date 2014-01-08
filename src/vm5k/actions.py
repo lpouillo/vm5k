@@ -204,6 +204,7 @@ def wait_vms_have_started(vms, host = None):
         if not ssh_open:
             logger.info(str(nmap_tries)+': '+  started_vms+'/'+str(len(vms)) )
     SshProcess('rm '+tmpfile[1].split('/')[-1], host, connection_params = {'user': user}).run()    
+    Process('rm'+tmpfile[1]).run()
     if ssh_open:
         logger.info('All VM have been started')
         return True
