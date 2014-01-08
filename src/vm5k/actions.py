@@ -17,8 +17,9 @@
 # along with Execo.  If not, see <http://www.gnu.org/licenses/>
 """A set of functions to manipulate virtual machines on Grid'5000"""
 
-from pprint import pformat, pprint
-from execo import SshProcess, Remote, Put, logger, get_remote, Process, ParallelActions, Host
+from os import fdopen
+from pprint import pformat
+from execo import SshProcess, Put, logger, get_remote, Process, ParallelActions, Host
 from execo.log import style
 from execo.time_utils import sleep
 from execo_g5k import default_frontend_connection_params
@@ -169,7 +170,8 @@ def wait_vms_have_started(vms, host = None):
     else:
         user = 'root'
           
-    f, tmpfile = tempfile.mkstemp(prefix='vmips')
+    fd, tmpfile = tempfile.mkstemp(prefix='vmips')
+    f = fdopen(fd, 'w')
     for vm in vms:
         f.write(vm['ip']+'\n')
     f.close()

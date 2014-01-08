@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Execo.  If not, see <http://www.gnu.org/licenses/>
 
+from os import fdopen
 from pprint import pformat
 from random import randint
 from xml.etree.ElementTree import Element, SubElement, tostring, parse
@@ -280,7 +281,8 @@ class vm5k_deployment(object):
         name.text = 'default'
         SubElement(root, 'forward', attrib={'mode':'bridge'})
         SubElement(root, 'bridge', attrib={'name': bridge})
-        f, network_xml = mkstemp(dir = '/tmp/', prefix='create_br_')
+        fd, network_xml = mkstemp(dir = '/tmp/', prefix='create_br_')
+        f = fdopen(fd, 'w')
         f.write(prettify(root))
         f.close()
         logger.debug('Destroying existing network')
@@ -351,7 +353,8 @@ class vm5k_deployment(object):
                 'echo "  bridge_maxwait 0" >> /etc/network/interfaces ; \n'+\
                 'echo "  bridge_fd 0" >> /etc/network/interfaces ; \n'+\
                 'ifup '+name
-            f, br_script = mkstemp(dir = '/tmp/', prefix='create_br_')
+            fd, br_script = mkstemp(dir = '/tmp/', prefix='create_br_')
+            f = fdopen(fd, 'w')
             f.write(script)
             f.close()
             
@@ -402,20 +405,23 @@ class vm5k_deployment(object):
     def _configure_apt(self):
         """ """
         logger.info('Configuring APT')
-        f, tmpsource = mkstemp(dir = '/tmp/', prefix='sources.list_')
         # Create sources.list file
+        fd, tmpsource = mkstemp(dir = '/tmp/', prefix='sources.list_')
+        f = fdopen(fd, 'w')
         f.write('deb http://ftp.debian.org/debian stable main contrib non-free\n'+\
                 'deb http://ftp.debian.org/debian testing main \n'+\
                 'deb http://ftp.debian.org/debian unstable main \n')
         f.close()
         # Create preferences file
-        f, tmppref = mkstemp(dir = '/tmp/', prefix='preferences_')
+        fd, tmppref = mkstemp(dir = '/tmp/', prefix='preferences_')
+        f = fdopen(fd, 'w')
         f.write('Package: * \nPin: release a=stable \nPin-Priority: 900\n\n'+\
                 'Package: * \nPin: release a=testing \nPin-Priority: 850\n\n'+\
                 'Package: * \nPin: release a=unstable \nPin-Priority: 800\n\n')
         f.close()
         # Create apt.conf file
-        f, tmpaptconf = mkstemp(dir = '/tmp/', prefix='apt.conf_')
+        fd, tmpaptconf = mkstemp(dir = '/tmp/', prefix='apt.conf_')
+        f = fdopen(fd, 'w')
         f.write('APT::Acquire::Retries=20;\n')
         f.close()
         
@@ -750,8 +756,7 @@ def get_vms_slot(vms, slots):
         if 3*attr['CPU'] > cpu and attr['RAM'] > ram:
             break
         del hosts[:]
-#    for element, n_hosts in slot[2].iteritems():
-        
+#    for element, n_hosts in slot[2].iteritems
 
 
 def print_step(step_desc = None):
