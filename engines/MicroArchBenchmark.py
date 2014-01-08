@@ -154,7 +154,7 @@ class MicroArchBenchmark( vm5k_engine ):
             
             comb_ok = True
         finally:
-            print comb_ok
+            logger.info(host+': '+slugify(comb)+' '+str(comb_ok))
             if comb_ok:
                 self.sweeper.done( comb )
             else:
