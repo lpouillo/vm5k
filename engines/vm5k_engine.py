@@ -17,7 +17,7 @@
 
 from os import path, mkdir
 from pprint import pformat, pprint
-from xml.etree.ElementTree import fromstring
+from xml.etree.ElementTree import fromstring, parse, ElementTree
 from time import time
 from datetime import timedelta
 from execo import configuration, Host, SshProcess, sleep, Remote, TaktukRemote, Get, Put, ChainPut, ParallelActions
@@ -214,20 +214,37 @@ def print_step(step_desc = None):
     logger.info(style.step(' '+step_desc+' '))
      
      
-def get_cpu_topology(cluster):
+def get_cpu_topology(cluster, dir = None):
     """ """
     logger.info('Determining the architecture of cluster '+style.emph(cluster))
-    frontend = get_cluster_site(cluster)            
-    submission = OarSubmission(resources = "{cluster='"+cluster+"'}/nodes=1",
-                                                     walltime = "0:02:00",
-                                                     job_type = "allow_classic_ssh")
-    ((job_id, _), ) = oarsub([(submission, frontend)])
-    wait_oar_job_start( job_id, frontend )        
-    host = get_oar_job_nodes( job_id, frontend )[0]
-    capa = SshProcess('unset LIBVIRT_DEFAULT_URI ; virsh capabilities', host, 
-                      connection_params = {'user': default_frontend_connection_params['user'] }).run()
-    oardel( [ (job_id, frontend) ] )
-    root = fromstring( capa.stdout )
+    
+    root = None
+    # Trying to reed topology from a directory
+    if dir is not None:
+        fname = dir+'/topo_'+cluster+'.xml'
+        try:
+            tree = parse(fname)
+            root = tree.getroot()
+        except:
+            logger.info('No cache file found, will reserve a node')
+            pass
+        
+    if root is None:
+        frontend = get_cluster_site(cluster)            
+        submission = OarSubmission(resources = "{cluster='"+cluster+"'}/nodes=1",
+                                                         walltime = "0:02:00",
+                                                         job_type = "allow_classic_ssh")
+        ((job_id, _), ) = oarsub([(submission, frontend)])
+        wait_oar_job_start( job_id, frontend )        
+        host = get_oar_job_nodes( job_id, frontend )[0]
+        capa = SshProcess('unset LIBVIRT_DEFAULT_URI ; virsh capabilities', host, 
+                          connection_params = {'user': default_frontend_connection_params['user'] }).run()
+        oardel( [ (job_id, frontend) ] )
+        root = fromstring( capa.stdout )
+        if dir is not None:
+            tree = ElementTree(root)
+            tree.write(fname)
+        
     cpu_topology = []
     i_cell = 0
     for cell in root.findall('.//cell'):
@@ -269,272 +286,8 @@ def boot_vms_by_core(vms):
         booted_vms += len(vms_to_boot)
         logger.info(host+': '+style.emph(str(booted_vms)+'/'+str(n_vm)))               
     return True
-#        
-#        
-#      
-#    def get_resources(self, mode = 'sequential'):
-#        """ Perform a reservation and return all the required job parameters """
-#        logger.info('%s %s', style.step('Getting the resources on Grid5000 for cluster'), self.cluster)
-#        
-#        site = get_cluster_site(self.cluster)
-#        if self.options.oarjob_id is None:
-#            
-#            print 'coucou'
-#            if self.options.parallel:
-#                n_nodes = 0
-#                logger.debug('Compiling planning')
-#                planning = get_planning([self.cluster], int(time()+timedelta_to_seconds(timedelta(minutes = 1))),
-#                                    int(time()+timedelta_to_seconds(timedelta(days = 3, minutes = 1))) ) 
-#                slots = compute_slots(planning, self.options.walltime)
-#                logger.debug(slots)
-#                
-#                resa = format_oar_date(slots[0][0])
-##                i_slot = 0
-##                while n_nodes < self.options.n_nodes:
-##                    logger.debug(slots[i_slot])
-###                    n_nodes = planning.slots[i_slot][2][self.cluster]
-##                    resa = format_oar_date(slots[i_slot][0])
-##                    i_slot += 1
-#                
-#            else:
-#                n_nodes = self.options.n_nodes
-#            
-#            n_nodes = 2
-#            submission = OarSubmission(resources = "slash_22=1+{'cluster=\"%s\"'}/nodes=%i" % (self.cluster, n_nodes),
-#                                                 walltime = self.options.walltime,
-#                                                 name = self.run_name,
-#                                                 reservation_date = resa,
-#                                                 job_type = "deploy")
-#            print 'coucou'
-#            logger.debug('%s', submission)
-#            
-#            
-#            ((job_id, _), ) = oarsub([(submission, site)])
-#        else:
-#            job_id = self.options.oarjob_id
-#        logger.info('Waiting for the job start')    
-#        wait_oar_job_start( job_id, site )
-#        logger.info('Job %s has started!', style.emph(job_id))
-#        self.job_info = {'job_id': job_id, 'site': site}
-#        self.job_info.update(get_oar_job_info( job_id, site ))
-#        logger.debug('%s', pprint(self.job_info))
-#        logger.info( style.step('Done\n') )
-#        
-#        logger.info('%s', style.report_error('Getting hosts and VLAN parameters '))
-#        self.hosts = get_oar_job_nodes( job_id, site )
-#        logger.info('%s %s', style.parameter('Hosts:'),
-#                        ' '.join( [host.address for host in self.hosts] ))
-#        self.ip_mac = get_oar_job_subnets( job_id, site )[0]         
-#        logger.info('%s %s %s ', style.parameter('Network:'), self.ip_mac[0][0], self.ip_mac[-1][0])
-#        logger.info( style.step('Done\n') )
-#        
-#    
-#    def setup_cluster(self):
-#        logger.info('%s', style.step('Installing and configuring hosts '))
-#        
-#        if self.options.env_file is None:
-#            virsh_setup = Virsh_Deployment( self.hosts, env_name = self.options.env_name, 
-#                                oarjob_id = self.job_info['job_id'] )
-#        else:
-#            virsh_setup = Virsh_Deployment( self.hosts, env_file = self.options.env_file, 
-#                                oarjob_id = self.job_info['job_id'] )
-#        
-#        logger.info('Deploying hosts')   
-#        virsh_setup.deploy_hosts()
-#        logger.info('Copying ssh keys on hosts for taktuk connection')
-#        ssh_key = '~/.ssh/id_rsa'    
-#        copy_ssh_keys = Put( virsh_setup.hosts, [ssh_key, ssh_key+'.pub'], remote_location='.ssh/', 
-#              connection_params = {'user': 'root'}).run()
-#        TaktukRemote(' echo "Host *" >> /root/.ssh/config ; echo " StrictHostKeyChecking no" >> /root/.ssh/config; ',
-#                virsh_setup.hosts, connection_params = {'user': 'root'}).run()
-#        logger.info('Configuring APT')
-#        virsh_setup.configure_apt()
-#        logger.info('Upgrading hosts')
-#        virsh_setup.upgrade_hosts()
-#        logger.info('Installing packages')
-#        virsh_setup.install_packages()
-##        logger.info('Creating bridge')
-##        virsh_setup.create_bridge('br0')
-##        
-##        logger.info('Rebooting nodes')
-##        virsh_setup.reboot_nodes()
-#        logger.info('Configuring libvirt')
-#        virsh_setup.configure_libvirt()
-##        logger.info('Configuring munin')
-##        virsh_setup.setup_munin()
-#        logger.info('Creating backing file')
-#        virsh_setup.create_disk_image( disk_image = '/grid5000/images/KVM/squeeze-x64-base.qcow2', clean = True)
-#        logger.info('Copying id_rsa keys on vm-base.img')
-#        virsh_setup.ssh_keys_on_vmbase()
-#        logger.info('Hosts %s have been setup!', ', '.join([host.address for host in self.hosts]) )
-#        
-#        if len(virsh_setup.hosts) >= self.options.n_nodes:
-#            self.setup = virsh_setup
-#            return True
-#        else:
-#            return False
-#    
-#    def set_cpufreq(self, mode = 'performance'):
-#        """ Installing cpu_freq_utils and configuring CPU with given mode """
-#        install = Remote('source /etc/profile; apt-get install -y cpufrequtils', self.hosts).run()
-#        if not install.ok():
-#            logger.debug('Impossible to install cpufrequtils')
-#            return False
-#        setmode = []
-#        nproc_act = Remote('nproc', self.hosts).run()
-#        for p in nproc_act.processes():
-#            nproc = p.stdout().strip()
-#            cmd = ''
-#            for i_proc in range(int(nproc)):
-#                cmd += 'cpufreq-set -c '+str(i_proc)+' -g '+mode +'; '
-#            setmode.append(Remote(cmd, [p.host()]))
-#        setmode_act = ParallelActions(setmode).run()
-#        
-#        if not setmode_act.ok():
-#            logger.debug('Impossible to change cpufreq mode')            
-#            return False
-#        else:
-#            logger.debug('cpufreq mode set to %s', mode)
-#            return True
-#    
-#    def get_results(self, comb):
-#        logger.info('%s \n', style.step(' Getting results from nodes and frontend '))
-#
-#    
-#        comb_dir = self.result_dir +'/'+ slugify(comb)+'/'
-#        
-#        try:
-#            mkdir(comb_dir)
-#        except:
-#            logger.warning('%s already exists', comb_dir)
-#            pass
-#        cluster = comb['cluster']
-#        site = get_cluster_site(cluster)
-#        get_ping_files = []
-#        
-#        for vm_params in self.vms_params:
-#            get_ping_file = Get([site+'.grid5000.fr'], self.ping_dir+'/ping_'+cluster+'_'+vm_params['vm_id']+'.out', 
-#                local_location = comb_dir, connection_params = default_frontend_connection_params)            
-#            get_ping_files.append( get_ping_file) 
-#        rm_ping_dir = Remote('rm -rf '+self.ping_dir, [site+'.grid5000.fr'], 
-#                        connection_params = default_frontend_connection_params)
-#        SequentialActions( [ParallelActions(get_ping_files), rm_ping_dir] ).run()
-#        
-#        get_mig_file = Get(self.hosts, '*.out', local_location = comb_dir)
-#        rm_mig_file = Remote('rm *.out', self.hosts)
-#        logger.info('Saving files into %s', comb_dir)
-#        get = SequentialActions([get_mig_file, rm_mig_file]).run()
-#        
-#        
-#        return get.ok()
-#    
-#    def ping_probes( self, vms_params, cluster, jobid = None):
-#        """A function that create a parallel actions to be executed on the site frontend of the cluster
-#        that ping the vms and write a log file"""
-#        site = get_cluster_site(cluster)
-#        self.ping_dir = self.result_dir.split('/')[-1]
-#        
-#        if not self.ping_dir_created:
-#            Remote('mkdir '+self.ping_dir, [site+'.grid5000.fr'], 
-#               connection_params={'user': default_frontend_connection_params['user']}).run()
-#            self.ping_dir_created = True
-#        
-#        pingactions=[]
-#        for vm_params in vms_params:
-#            cmd='ping -i 0.2 '+vm_params['ip']+ \
-#            ' | while read pong; do pong=`echo $pong | cut -f4 -d "=" | cut -f1 -d \' \' `;'+\
-#            'if [ -z "$pong" ]; then pong=0.0; fi;'+\
-#            'echo "$(date +%s) $pong"; done > '+self.ping_dir+'/ping_'+cluster+'_'+vm_params['vm_id']+'.out'
-#            pingactions.append(Remote(cmd, [site+'.grid5000.fr'], log_exit_code=False, 
-#                                    connection_params={'user': default_frontend_connection_params['user']}))
-#        logger.debug('%s', pformat(pingactions))    
-#        return ParallelActions(pingactions)
-#    
-#    def kill_ping(self, site):
-#        get_id = Remote('id | cut -d " " -f 1 | cut -d "=" -f 2 | cut -d "(" -f 1', 
-#                        [g5k_configuration['default_frontend']+'.grid5000.fr'], connection_params = default_frontend_connection_params ).run()
-#
-#        for p in get_id.processes():
-#            id = p.stdout().strip()
-#        kill_ping = Remote( 'list_proc=`ps aux |grep ping|grep '+str(id)+'|grep -v grep| cut -d " " -f 5` ; echo $list_proc ; for proc in $list_proc; do kill $proc; done', 
-#                   [site+'.grid5000.fr'], connection_params = default_frontend_connection_params ).run()
-#        
-#    def stress_hosts(self, hosts, params = {'cpu': 0, 'ram': 0, 'hdd': 0}):
-#        cmd = ' apt-get install stress -y ; stress '
-#        for param, n in params.iteritems():
-#            if n != 0:
-#                if param == 'cpu':
-#                    cmd += ' --cpu '
-#                if param == 'ram':
-#                    cmd += ' --vm '
-#                if param == 'hdd':
-#                    cmd += ' --hdd '
-#                cmd += str(n)
-#        logger.info('Ready to execute stress on hosts % s\n%s', ' '.join( [self.host_string(host) for host in self.hosts]), cmd )
-#        return Remote(cmd, hosts)
-#    
 
-#    
-#
-#class vm5k_sequential_engine( vm5k_engine ):
-#
-#    def run(self):
-#        self.force_options()
-#        logger.debug('%s', pformat(self.options) )
-#        self.cluster = self.args[0]
-#        logger.debug('%s', pformat(self.cluster) )
-#        self.create_paramsweeper()
-#        
-#        while len(self.sweeper.get_remaining()) > 0:
-#            logger.info('Performing experiments on cluster %s', style.step(self.cluster))
-#            logger.info('%s', pformat( self.sweeper.stats()['done_ratio'] ))
-#        
-#            try: 
-#                self.get_resources()
-#                if not self.setup_cluster():
-#                    break
-#                
-#                print 'coucou'
-#                while True:
-#                    print 'ocuocu'
-#                    
-#                    combs = []
-#                    if not self.options.parallel:
-#                        combs.append(self.sweeper.get_next() ) 
-#                    else:
-#                        for i in range( min(len(self.hosts), len(self.sweeper.get_remaining())) ) :
-#                            combs.append( self.sweeper.get_next() )
-#                            
-#                    state = self.workflow( combs )
-#                    print 'coucou'
-#                    
-#                    if state:
-#                        for comb in combs:
-#                            self.sweeper.done( comb )
-#                        return True
-#                    else:
-#                        self.sweeper.cancel( combs )
-#                        return False
-#                    
-#                    if (int(self.job_info['start_date'])+self.job_info['walltime']) < int(time()):                        
-#                        logger.info('G5K reservation has been terminated, doing a new deployment')
-#                        break
-#                    
-#            finally:
-#                if self.job_info['job_id'] is not None:
-#                    if not self.options.keep_alive:
-#                        logger.info('Deleting job')
-#                        oardel( [(self.job_info['job_id'], self.job_info['site'])] )
-#                    else:
-#                        logger.info('Keeping job alive for debugging')
-#
-#        logger.info( style.step('\n\nvm5k-engine COMPLETED ') )     
-#
-#
-#
-#
-#
-#
+
 #
 #
 ## Migration functions
