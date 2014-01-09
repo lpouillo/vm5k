@@ -311,7 +311,7 @@ class vm5k_deployment(object):
         
         # Renaming hosts if a kavlan is used
         if self.kavlan is not None:
-            self.hosts = [ get_kavlan_host_name(host, self.kavlan) for host in self.hosts]
+            self.hosts = [ Host(get_kavlan_host_name(host, self.kavlan)) for host in self.hosts]
         
         # Configuring SSH with precopy of id_rsa and id_rsa.pub keys on all hosts to allow TakTuk connection
         if self.fact.remote_tool == 2:
