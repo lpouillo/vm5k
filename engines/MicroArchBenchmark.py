@@ -10,6 +10,7 @@ class MicroArchBenchmark( vm5k_engine ):
         super(MicroArchBenchmark, self).__init__()
         self.env_name = 'wheezy-x64-base'
         self.stress_time = 300
+        configuration['color_styles']['Thread'] = 'cyan', 'bold'
         
     def define_parameters(self):
         """ Create the parameters for the engine :
@@ -50,7 +51,7 @@ class MicroArchBenchmark( vm5k_engine ):
                     
     def workflow(self, comb, hosts, ip_mac): 
         """ Perform a cpu stress on the VM """
-        host = hosts[0].address
+        host = style.Thread(hosts[0].address.split('.')[0])
         comb_ok = False
         try:
             logger.info(style.step('Performing combination '+slugify(comb)+' on '+host))
