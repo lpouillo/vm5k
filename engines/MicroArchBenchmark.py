@@ -160,7 +160,7 @@ class MicroArchBenchmark( vm5k_engine ):
                     exit()
             if multi_cpu:
                 for multi_vm in [vm for vm in vms if vm['id'] == 'vm-multi' ]:
-                    get_multi = Get([multi_vm['ip']], ['vm_multi_'+str(i)+'.out ' for i in range(multi_vm['n_cpu']) ], 
+                    get_multi = Get([multi_vm['ip']], ['vm_multi_'+str(cpu_index[i])+'.out ' for i in range(multi_vm['n_cpu']) ], 
                         local_location = comb_dir).run()
                     for p in get_multi.processes:
                         if not p.ok:
