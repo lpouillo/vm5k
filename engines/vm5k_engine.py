@@ -83,7 +83,8 @@ class vm5k_engine( Engine ):
             # You need have a method called define_parameters, that returns a list of parameter dicts
             self.create_paramsweeper()
             
-            # While there combination to treat
+            job_is_dead = False
+            # While they are combinations to treat
             while len(self.sweeper.get_remaining()) > 0:
                 # If no job, we make a reservation and prepare the hosts for the experiments 
                 if self.oar_job_id is None:
