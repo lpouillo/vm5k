@@ -131,6 +131,8 @@ class vm5k_engine( Engine ):
                     t.daemon = True
                     t.start()
                 
+                if get_oar_job_info(self.oar_job_id, self.frontend)['state'] == 'Error':
+                    job_is_dead = True
                     
                 if job_is_dead: self.oar_job_id = None
                 
@@ -261,7 +263,7 @@ def boot_vms_by_core(vms):
     if n_vm == 0:
         return True
     
-    host = vms[0]['host'].address
+    host = vms[0]['host'].address.split('.')[0]
     
     sub_vms = {}
     for i_core in list(set( vm['cpuset'] for vm in vms )):
