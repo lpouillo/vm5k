@@ -64,7 +64,7 @@ class MicroArchBenchmark( vm5k_engine ):
             n_vm = self.comb_nvm(comb)
             if n_vm == 0:
                 logger.warning('Combination '+slugify(comb)+' has no VM' )
-                self.sweeper.done( comb )
+                comb_ok = True
                 exit()
             
             # Affecting a cpuset to each virtual machine
@@ -125,6 +125,7 @@ class MicroArchBenchmark( vm5k_engine ):
                 if not p.ok:
                     logger.error(host+': Unable to start the stress for combination %s', slugify(comb))
                     exit()       
+                p.ignore_exit_code = p.nolog_exit_code = True
                     
             sleep(self.stress_time)
             logger.info(host+': Killing stress !!')
