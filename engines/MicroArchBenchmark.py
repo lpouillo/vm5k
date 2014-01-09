@@ -10,7 +10,6 @@ class MicroArchBenchmark( vm5k_engine ):
         super(MicroArchBenchmark, self).__init__()
         self.env_name = 'wheezy-x64-base'
         self.stress_time = 300
-        configuration['color_styles']['Thread'] = 'cyan', 'bold'
         
     def define_parameters(self):
         """ Create the parameters for the engine :

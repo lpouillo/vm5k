@@ -28,7 +28,7 @@ from execo.action import ActionFactory
 from execo_g5k import default_frontend_connection_params, get_oar_job_info, get_cluster_site, OarSubmission, \
     oarsub, get_oar_job_nodes, wait_oar_job_start, oardel, get_host_attributes
 from execo_g5k.planning import get_planning, compute_slots, get_jobs_specs
-from vm5k import define_vms, create_disks, install_vms, start_vms, wait_vms_have_started,\
+from vm5k import config, define_vms, create_disks, install_vms, start_vms, wait_vms_have_started,\
  destroy_vms, rm_qcow2_disks, vm5k_deployment, get_oar_job_vm5k_resources
 from execo_engine import Engine, ParamSweeper, sweep, slugify, logger
 from threading import Thread, Lock
@@ -278,13 +278,13 @@ def boot_vms_by_core(vms):
             if len(sub_vms[i_core]) == 0:
                 del sub_vms[i_core]
         
-        logger.info(host+': Starting VMS '+', '.join( [vm['id'] for vm in sorted(vms_to_boot)]))
+        logger.info(style.Thread(host)+': Starting VMS '+', '.join( [vm['id'] for vm in sorted(vms_to_boot)]))
         start_vms(vms_to_boot).run()
         booted = wait_vms_have_started(vms_to_boot)
         if not booted:
             return False
         booted_vms += len(vms_to_boot)
-        logger.info(host+': '+style.emph(str(booted_vms)+'/'+str(n_vm)))               
+        logger.info(style.Thread(host)+': '+style.emph(str(booted_vms)+'/'+str(n_vm)))               
     return True
 
 
