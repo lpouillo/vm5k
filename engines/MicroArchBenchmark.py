@@ -118,14 +118,16 @@ class MicroArchBenchmark( vm5k_engine ):
                         stress.append( Remote('numactl -C '+str(i)+' ./kflops/kflops > vm_multi_'+str(i)+'.out ', 
                                             [multi_vm['ip']] ) )
                         
+            stress_actions = ParallelActions(stress)
+            for p in stress_actions.processes:
+                p.ignore_exit_code = p.nolog_exit_code = True
                         
             logger.info(host+': Starting stress !! \n%s', pformat(stress) )
-            stress_actions = ParallelActions(stress).start()
+            stress_actions.start()
             for p in stress_actions.processes:
                 if not p.ok:
                     logger.error(host+': Unable to start the stress for combination %s', slugify(comb))
                     exit()       
-                p.ignore_exit_code = p.nolog_exit_code = True
                     
             sleep(self.stress_time)
             logger.info(host+': Killing stress !!')
