@@ -130,11 +130,6 @@ class MicroArchBenchmark( vm5k_engine ):
             logger.info(host+': Killing stress !!')
             stress_actions.kill()
             
-            for p in stress_actions.processes:
-                if not p.ok:
-                    logger.error(host+': stress not correctly ended combination %s', slugify(comb))
-                    exit()  
-            
             
             # Gathering results
             comb_dir = self.result_dir +'/'+ slugify(comb)+'/'
