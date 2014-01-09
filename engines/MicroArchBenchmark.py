@@ -177,18 +177,17 @@ class MicroArchBenchmark( vm5k_engine ):
             
     
     def comb_nvm(self, comb):
-        """ """          
+        """Calculate the number of virtual machines in the combination"""          
         n_vm = sum( [ int(i) for i in comb['dist'] ] )
         if sum( [ int(i) for i in comb['multi_cpu'] ]) > 1:
             n_vm += 1
         return n_vm
     
     def cpu_kflops(self, vms, install_only = False):
+        """Put kflops.tgz on the hosts, compile it and optionnaly prepare a TaktukRemote"""
         vms_ip = [vm['ip'] for vm in vms]
-        #ChainPut([Host(vm['ip']) for vm in vms], 'kflops.tgz' ).run()
-        ChainPut(vms_ip, ['kflops.tgz'] ).run()
-        #TaktukRemote('echo 8146 > /proc/sys/kernel/pty/max', vms_ip).run()
         
+        ChainPut(vms_ip, ['kflops.tgz'] ).run()        
         TaktukRemote( 'tar -xzf kflops.tgz; cd kflops; make', vms_ip).run()
         vms_out = [vm['ip']+'_'+vm['cpuset'] for vm in vms]
         if not install_only:                
