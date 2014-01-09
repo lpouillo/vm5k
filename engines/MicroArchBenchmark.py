@@ -121,7 +121,7 @@ class MicroArchBenchmark( vm5k_engine ):
                 self.cpu_kflops([vm for vm in vms if vm['id'] == 'vm-multi' ], install_only = True)
                 for multi_vm in [vm for vm in vms if vm['id'] == 'vm-multi' ]:
                     for i in range(multi_vm['n_cpu']):
-                        stress.append( Remote('numactl -C '+str(i)+' ./kflops/kflops > vm_multi_'+str(i)+'.out ', 
+                        stress.append( Remote('numactl -C '+str(i)+' ./kflops/kflops > vm_multi_'+str(cpu_index[i])+'.out ', 
                                             [multi_vm['ip']] ) )
                         
             stress_actions = ParallelActions(stress)
