@@ -84,7 +84,7 @@ class MicroArchBenchmark( vm5k_engine ):
             
             n_cpus = 1 if not multi_cpu else [1]*(n_vm-1)+[n_cpu]
             vm_ids = ['vm-'+str(i+1) for i in range(n_vm)] if not multi_cpu else ['vm-'+str(i+1) for i in range(n_vm-1)]+['vm-multi']  
-            vms = define_vms(['vm-'+str(i+1) for i in range(n_vm)], ip_mac = ip_mac, 
+            vms = define_vms(vm_ids, ip_mac = ip_mac, 
                              n_cpu = n_cpus, cpusets = cpusets)
                         
             for vm in vms:
@@ -98,7 +98,7 @@ class MicroArchBenchmark( vm5k_engine ):
             install_vms(vms).run()
             boot_successfull = boot_vms_by_core(vms)
             if not boot_successfull:
-                logger.error('Unable to boot all the VMS for %s', slugify(comb))
+                logger.error(host+': Unable to boot all the VMS for %s', slugify(comb))
                 exit() 
             
             # Prepare virtual machines for experiments
@@ -123,7 +123,7 @@ class MicroArchBenchmark( vm5k_engine ):
             stress_actions = ParallelActions(stress).start()
             for p in stress_actions.processes:
                 if not p.ok:
-                    logger.error('Unable to start the stress for combination %s', slugify(comb))
+                    logger.error(host+': Unable to start the stress for combination %s', slugify(comb))
                     exit()       
                     
             sleep(self.stress_time)
@@ -132,6 +132,7 @@ class MicroArchBenchmark( vm5k_engine ):
             
             for p in stress_actions.processes:
                 if not p.ok:
+                    logger.error(host+': stress not correctly ended combination %s', slugify(comb))
                     exit()  
             
             
@@ -140,17 +141,18 @@ class MicroArchBenchmark( vm5k_engine ):
             try:
                 mkdir(comb_dir)
             except:
-                logger.warning('%s already exists, removing existing files', comb_dir)
+                logger.warning(host+': %s already exists, removing existing files', comb_dir)
                 for f in listdir(comb_dir):
                     remove(f)
-                
+            
+            logger.info(host+': Retrieving file from VMs')    
             vms_ip = [vm['ip'] for vm in vms if vm['n_cpu'] == 1]
             vms_out = [vm['ip']+'_'+vm['cpuset'] for vm in vms if vm['n_cpu'] == 1]
             comb_dir = self.result_dir +'/'+ slugify(comb)+'/'
             get_vms_output = Get(vms_ip, ['{{vms_out}}.out'], local_location = comb_dir).run()
             for p in get_vms_output.processes:
                 if not p.ok:
-                    logger.error('Unable to retrieve the files for combination %s', slugify(comb)) 
+                    logger.error(host+': Unable to retrieve the files for combination %s', slugify(comb)) 
                     exit()
             if multi_cpu:
                 for multi_vm in [vm for vm in vms if vm['id'] == 'vm-multi' ]:
@@ -158,7 +160,7 @@ class MicroArchBenchmark( vm5k_engine ):
                         local_location = comb_dir).run()
                     for p in get_multi.processes:
                         if not p.ok:
-                            logger.error('Unable to retrieve the vm_multi files for combination %s', slugify(comb))
+                            logger.error(host+': Unable to retrieve the vm_multi files for combination %s', slugify(comb))
                             exit()
             
             comb_ok = True
