@@ -1,4 +1,4 @@
-# Copyright 2009-2012 INRIA Rhone-Alpes, Service Experimentation et
+    # Copyright 2009-2012 INRIA Rhone-Alpes, Service Experimentation et
 # Developpement
 #
 # This file is part of Execo.
@@ -637,9 +637,17 @@ class vm5k_deployment(object):
         """ """
         for host in hosts_ok:
             if host is not None: 
-                self.state.find(".//host/[@id='"+host.address+"']").set('state', 'OK')
+                if self.kavlan is None:
+                    address = host.address
+                else:
+                    address = kavname_to_basename(host).address
+                self.state.find(".//host/[@id='"+address+"']").set('state', 'OK')
         for host in hosts_ko:
-            self.state.find(".//host/[@id='"+host.address+"']").set('state', 'KO')
+            if self.kavlan is None:
+                address = host.address
+            else:
+                address = kavname_to_basename(host).address
+            self.state.find(".//host/[@id='"+address+"']").set('state', 'KO')
             self.hosts.remove(host)
             if len(self.vms) > 0:
                 distribute_vms(self.vms, self.hosts, self.distribution)
