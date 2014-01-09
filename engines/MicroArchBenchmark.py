@@ -82,7 +82,8 @@ class MicroArchBenchmark( vm5k_engine ):
             else:
                 multi_cpu = False
             
-            n_cpus = 1 if not multi_cpu else [1]*(n_vm-1)+[n_cpu] 
+            n_cpus = 1 if not multi_cpu else [1]*(n_vm-1)+[n_cpu]
+            vm_ids = ['vm-'+str(i+1) for i in range(n_vm)] if not multi_cpu else ['vm-'+str(i+1) for i in range(n_vm-1)]+['vm-multi']  
             vms = define_vms(['vm-'+str(i+1) for i in range(n_vm)], ip_mac = ip_mac, 
                              n_cpu = n_cpus, cpusets = cpusets)
                         
