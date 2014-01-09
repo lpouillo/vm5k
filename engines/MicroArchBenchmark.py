@@ -94,8 +94,14 @@ class MicroArchBenchmark( vm5k_engine ):
             # Create disks, install vms and boot by core 
             logger.info(host+': Creating disks')
             create = create_disks(vms).run()
+            if not create.ok:
+                logger.error(host+': Unable to create the VMS disks %s', slugify(comb))
+                exit()
             logger.info(host+': Installing VMS')
-            install_vms(vms).run()
+            install = install_vms(vms).run()
+            if not install.ok:
+                logger.error(host+': Unable to install the VMS  %s', slugify(comb))
+                exit()
             boot_successfull = boot_vms_by_core(vms)
             if not boot_successfull:
                 logger.error(host+': Unable to boot all the VMS for %s', slugify(comb))
