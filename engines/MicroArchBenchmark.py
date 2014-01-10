@@ -177,7 +177,7 @@ class MicroArchBenchmark( vm5k_engine ):
             else:
                 self.sweeper.cancel( comb )
                 logger.warning(host+': '+slugify(comb)+' has been cancel')
-            logger.info(style.step('%s Remaining', len(self.sweeper.get_remaining()) ))
+            logger.info(style.step('%s Remaining'), len(self.sweeper.get_remaining()))
             
     
     def comb_nvm(self, comb):
