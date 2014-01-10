@@ -105,6 +105,9 @@ hosts.add_argument('-r', '--resources',
                 dest = 'resources',
                 default = 'grid5000',
                 help = 'list of Grid\'5000 elements')
+hosts.add_argument('-b', '--blacklisted',
+                dest = 'blacklisted',
+                help = 'list of Grid\'5000 elements to be blacklisted')
 optenv = hosts.add_mutually_exclusive_group()
 optenv.add_argument('-e', '--env_name', 
                 dest = 'env_name',
@@ -219,20 +222,26 @@ if args.job_id is None:
         subnet = True
         subnets = 'slash_22='+str(int(ceil(len(vms)/1024.)))
 
+    if args.blacklisted is not None:
+        blacklisted = list(set(blacklisted+args.blacklisted.split(',')))
+
     planning = get_planning(elements, vlan = kavlan, subnet = subnet)
     slots = compute_slots(planning, walltime = args.walltime, excluded_elements = blacklisted)
+
     # Test if we need a free slot or a vms slot
     if len( [element for element, n_nodes in elements.iteritems() if n_nodes > 0]) > 0:
-        slot = find_free_slot(slots, elements)
+        slot = find_free_slot(slots, elements, excluded_elements = blacklisted)
         startdate = slot[0]
         resources = distribute_hosts(slot[2], elements)            
     else:
         startdate, resources = get_vms_slot(vms, slots)
-        
+    
+    if startdate is None:
+        logger.error('Unable to find a slot, exiting')
+        exit()
     
     show_resources(resources)
-    logger.info(style.log_header('Deployment will start at  ')+format_date(startdate))
-
+    
     jobs_specs = get_jobs_specs(resources, name = 'VM5K')
     
     for OarSubmission, _ in jobs_specs:
@@ -246,6 +255,7 @@ if args.job_id is None:
     if job_id is None:
         logger.error('Wrong command line ? \n%s', get_oargridsub_commandline(jobs_specs, walltime = args.walltime, 
          additional_options = "-t deploy", reservation_date = startdate))
+    logger.info(style.log_header('Deployment will start at  ')+format_date(startdate))
     
 else:
     logger.info('Using an existing job: %s', style.emph(args.job_id))
