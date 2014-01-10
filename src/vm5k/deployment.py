@@ -227,6 +227,7 @@ class vm5k_deployment(object):
         start_vms(self.vms).run()
         wait_vms_have_started(self.vms)
         
+        
 
     def _create_backing_file(self, from_disk = '/grid5000/images/KVM/squeeze-x64-base.qcow2', to_disk = '/tmp/vm-base.img'):
         """ """
@@ -752,6 +753,7 @@ def get_max_vms(hosts, n_cpu = 1, mem = 512):
    
 def get_vms_slot(vms, slots):
     """Return a slot with enough RAM and CPU """
+    chosen_slot = None
     req_ram = sum( [ vm['mem'] for vm in vms] )
     req_cpu = sum( [ vm['n_cpu'] for vm in vms] ) /3
     
@@ -763,22 +765,30 @@ def get_vms_slot(vms, slots):
                     hosts.append(Host(str(element+'-1.'+get_cluster_site(element)+'.grid5000.fr')))
         attr = get_CPU_RAM_FLOPS(hosts)['TOTAL']
         if 3*attr['CPU'] > req_cpu and attr['RAM'] > req_ram:
+            chosen_slot = slot
             break
         del hosts[:]
+    
+    if chosen_slot is None:
+        return None, None
 
     resources = {}
-    for element, n_hosts in slot[2].iteritems():
-        if element in get_g5k_clusters():
-            attr = get_CPU_RAM_FLOPS([Host(str(element+'-1'))])
-            for i in range(n_hosts-1):
-                req_ram -= attr[str(element+'-1')]['RAM'] 
-                req_cpu -= attr[str(element+'-1')]['CPU']
-                if req_ram < 0 and req_cpu < 0:
-                    break 
-            resources[element] = i+1
+    for element, n_hosts in chosen_slot[2].iteritems():
         if req_ram < 0 and req_cpu < 0:
             break 
-    return slot[0], distribute_hosts(slot[2], resources)
+        if element in get_g5k_clusters() and n_hosts > 0:
+            attr = get_CPU_RAM_FLOPS([Host(str(element+'-1'))])
+            el_hosts = 0
+            for i in range(n_hosts):
+                req_ram -= attr[str(element+'-1')]['RAM'] 
+                req_cpu -= attr[str(element+'-1')]['CPU']
+                el_hosts += 1
+                if req_ram < 0 and req_cpu < 0:
+                    break 
+            resources[element] = el_hosts = 0
+            
+        
+    return chosen_slot[0], distribute_hosts(chosen_slot[2], resources)
     
     
 def print_step(step_desc = None):
