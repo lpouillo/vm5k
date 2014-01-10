@@ -100,7 +100,7 @@ class vm5k_engine( Engine ):
                 threads = {}
                 
                 # Checking that the job is running and not in Error
-                while get_oar_job_info(self.oar_job_id, self.frontend)['state'] != 'Error':
+                while get_oar_job_info(self.oar_job_id, self.frontend)['state'] != 'Error' or len(threads.keys()) > 0:
                     job_is_dead = False
                     while self.options.n_nodes > len(available_hosts):
                         tmp_threads = dict(threads)
@@ -118,7 +118,15 @@ class vm5k_engine( Engine ):
                     
                     # Getting the next combination
                     comb = self.sweeper.get_next()
-                    if not comb: break
+                    if not comb: 
+                        while len(threads.keys()) > 0:
+                            tmp_threads = dict(threads)
+                            for t in tmp_threads:
+                                if not t.is_alive():
+                                    del threads[t]
+                            logger.info('Waiting for threads to complete')
+                            sleep(5)
+                        break
                     
                     used_hosts = available_hosts[0:self.options.n_nodes]
                     available_hosts = available_hosts[self.options.n_nodes:]
