@@ -120,12 +120,13 @@ class vm5k_engine( Engine ):
                     comb = self.sweeper.get_next()
                     if not comb: 
                         while len(threads.keys()) > 0:
+                            
                             tmp_threads = dict(threads)
                             for t in tmp_threads:
                                 if not t.is_alive():
                                     del threads[t]
                             logger.info('Waiting for threads to complete')
-                            sleep(5)
+                            sleep(20)
                         break
                     
                     used_hosts = available_hosts[0:self.options.n_nodes]
