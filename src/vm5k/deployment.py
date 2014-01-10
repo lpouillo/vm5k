@@ -29,7 +29,8 @@ from execo.action import ActionFactory
 from execo.log import style
 from execo.config import SSH, SCP
 from execo_g5k import get_oar_job_nodes, get_oargrid_job_oar_jobs, get_oar_job_subnets, \
-    get_oar_job_kavlan, deploy, Deployment, wait_oar_job_start, wait_oargrid_job_start
+    get_oar_job_kavlan, deploy, Deployment, wait_oar_job_start, wait_oargrid_job_start, \
+    distribute_hosts
 from execo_g5k.config import g5k_configuration, default_frontend_connection_params
 from execo_g5k.api_utils import get_host_cluster, get_g5k_sites, get_g5k_clusters, get_cluster_site, \
     get_host_attributes, get_resource_attributes, get_host_site
@@ -751,8 +752,8 @@ def get_max_vms(hosts, n_cpu = 1, mem = 512):
    
 def get_vms_slot(vms, slots):
     """Return a slot with enough RAM and CPU """
-    ram = sum( [ vm['mem'] for vm in vms] )
-    cpu = sum( [ vm['n_cpu'] for vm in vms] )
+    req_ram = sum( [ vm['mem'] for vm in vms] )
+    req_cpu = sum( [ vm['n_cpu'] for vm in vms] ) /3
     
     for slot in slots:
         hosts = []
@@ -761,12 +762,25 @@ def get_vms_slot(vms, slots):
                 for i in range(n_hosts):
                     hosts.append(Host(str(element+'-1.'+get_cluster_site(element)+'.grid5000.fr')))
         attr = get_CPU_RAM_FLOPS(hosts)['TOTAL']
-        if 3*attr['CPU'] > cpu and attr['RAM'] > ram:
+        if 3*attr['CPU'] > req_cpu and attr['RAM'] > req_ram:
             break
         del hosts[:]
-#    for element, n_hosts in slot[2].iteritems
 
-
+    resources = {}
+    for element, n_hosts in slot[2].iteritems():
+        if element in get_g5k_clusters():
+            attr = get_CPU_RAM_FLOPS([Host(str(element+'-1'))])
+            for i in range(n_hosts-1):
+                req_ram -= attr[str(element+'-1')]['RAM'] 
+                req_cpu -= attr[str(element+'-1')]['CPU']
+                if req_ram < 0 and req_cpu < 0:
+                    break 
+            resources[element] = i+1
+        if req_ram < 0 and req_cpu < 0:
+            break 
+    return slot[0], distribute_hosts(slot[2], resources)
+    
+    
 def print_step(step_desc = None):
     """ """
     logger.info(style.step(' '+step_desc+' ').center(50) )
