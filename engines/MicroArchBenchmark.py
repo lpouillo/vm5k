@@ -147,7 +147,8 @@ class MicroArchBenchmark( vm5k_engine ):
             except:
                 logger.warning(host+': %s already exists, removing existing files', comb_dir)
                 for f in listdir(comb_dir):
-                    remove(f)
+                    remove(comb_dir+f)
+                    
             
             logger.info(host+': Retrieving file from VMs')    
             vms_ip = [vm['ip'] for vm in vms if vm['n_cpu'] == 1]
@@ -169,11 +170,14 @@ class MicroArchBenchmark( vm5k_engine ):
             
             comb_ok = True
         finally:
-            logger.info(host+': '+slugify(comb)+' '+str(comb_ok))
+            
             if comb_ok:
                 self.sweeper.done( comb )
+                logger.info(host+': '+slugify(comb)+' has been done')
             else:
                 self.sweeper.cancel( comb )
+                logger.warning(host+': '+slugify(comb)+' has been cancel')
+            logger.info(style.step('%s Remaining', len(self.sweeper.get_remaining()) ))
             
     
     def comb_nvm(self, comb):
