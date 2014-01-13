@@ -17,11 +17,11 @@ from execo import logger
 from execo.log import style
 from execo.config import TAKTUK, CHAINPUT
 from execo.action import ActionFactory
-from execo.time_utils import Timer
+from execo.time_utils import Timer, format_date
 from execo_g5k import oargridsub, get_g5k_clusters
 from execo_g5k.oargrid import get_oargridsub_commandline
 from execo_g5k.planning import get_planning, compute_slots, show_resources, find_free_slot, \
-    get_jobs_specs
+    get_jobs_specs, distribute_hosts
 from vm5k import vm5k_deployment, define_vms, get_oar_job_vm5k_resources, get_max_vms, \
     get_oargrid_job_vm5k_resources, get_vms_slot, print_step, distribute_vms 
 
@@ -94,6 +94,8 @@ optresa.add_argument('-w', '--walltime',
                 help = 'duration of your reservation')
 optresa.add_argument('-k', '--kavlan',
                 dest = 'kavlan',
+                action = "store_true",
+                default = False,    
                 help = 'Deploy the VM in a KaVLAN' )
 
 ## Hosts configuration
@@ -103,6 +105,9 @@ hosts.add_argument('-r', '--resources',
                 dest = 'resources',
                 default = 'grid5000',
                 help = 'list of Grid\'5000 elements')
+hosts.add_argument('-b', '--blacklisted',
+                dest = 'blacklisted',
+                help = 'list of Grid\'5000 elements to be blacklisted')
 optenv = hosts.add_mutually_exclusive_group()
 optenv.add_argument('-e', '--env_name', 
                 dest = 'env_name',
@@ -217,25 +222,28 @@ if args.job_id is None:
         subnet = True
         subnets = 'slash_22='+str(int(ceil(len(vms)/1024.)))
 
+    if args.blacklisted is not None:
+        blacklisted = list(set(blacklisted+args.blacklisted.split(',')))
+
     planning = get_planning(elements, vlan = kavlan, subnet = subnet)
     slots = compute_slots(planning, walltime = args.walltime, excluded_elements = blacklisted)
+
     # Test if we need a free slot or a vms slot
-    for element, n_nodes in elements.iteritems():
-        if n_nodes > 0:
-            free = True
-            break
-        free = False
-    if free:
-        slot = find_free_slot(slots, elements)
+    if len( [element for element, n_nodes in elements.iteritems() if n_nodes > 0]) > 0:
+        slot = find_free_slot(slots, elements, excluded_elements = blacklisted)
+        startdate = slot[0]
+        resources = distribute_hosts(slot[2], elements)            
     else:
-        slot = get_vms_slot(vms, slots)
-    startdate = slot[1]
-    resources = { cluster: n_nodes for cluster, n_nodes in slot[2].iteritems() if cluster in get_g5k_clusters() }
+        startdate, resources = get_vms_slot(vms, slots)
     
-    ## TODO REDUCE RESOURCES
+    if startdate is None:
+        logger.error('Unable to find a slot, exiting')
+        exit()
     
     show_resources(resources)
-    jobs_specs = get_jobs_specs(resources)
+    
+    jobs_specs = get_jobs_specs(resources, name = 'VM5K')
+    
     for OarSubmission, _ in jobs_specs:
         OarSubmission.resources = 'slash_22=2+'+OarSubmission.resources
     
@@ -247,6 +255,7 @@ if args.job_id is None:
     if job_id is None:
         logger.error('Wrong command line ? \n%s', get_oargridsub_commandline(jobs_specs, walltime = args.walltime, 
          additional_options = "-t deploy", reservation_date = startdate))
+    logger.info(style.log_header('Deployment will start at  ')+format_date(startdate))
     
 else:
     logger.info('Using an existing job: %s', style.emph(args.job_id))
@@ -255,6 +264,7 @@ else:
     else:
         frontend, job_id = None, args.job_id
     
+
 
 
 logger.info('Retrieving hosts and network parameters')
