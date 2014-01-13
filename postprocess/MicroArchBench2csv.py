@@ -82,6 +82,8 @@ def main(argv):
 	    vmOnCell2 = vmOnCell2 + int(nbvmcore)
 	  count_core = count_core + 1
 	  
+	#print "%s %s" % (vmOnCell1, vmOnCell2)
+	
 	count_core = 0
         for nbvmcore in params['multi_cpu']:
 	  count_multi_core += int(nbvmcore)
@@ -89,8 +91,15 @@ def main(argv):
 	    vm_on_core[count_core] = vm_on_core[count_core] + int(nbvmcore)
 	  else:
 	    vm_on_core[count_core] = int(nbvmcore) 
-	  vmOnCell1 = vmOnCell1 + 1
-	  count_core = count_core  + 1
+	  
+	  if int(nbvmcore) > 0:
+	    vmOnCell1 = vmOnCell1 + 1
+	    
+	  count_core = count_core  + 2
+	
+	#print "%s %s" % (vmOnCell1, vmOnCell2)
+	#for nbvmcore in vm_on_core:
+	  #print "%s %s" % (nbvmcore, vm_on_core[nbvmcore])
 	  
         data = {}    
         mdata = {}
@@ -136,6 +145,7 @@ def main(argv):
             local_core = int(str_local_core.split('.')[0])
             cell_number = 0
             
+            
             if (local_core%2 == 0):
 	      cell_number = 0
 	      mdata[vm_ip]['vm_on_cell'] = vmOnCell1
@@ -149,6 +159,9 @@ def main(argv):
             mdata[vm_ip]['cell_number'] = cell_number
 	    mdata[vm_ip]['multi'] = 0
 	    mdata[vm_ip]['vm_id'] = cpt_vm
+	    
+	    #print "%s %s %s %s %s %s" % (cpt_vm, vm_ip, local_core, cell_number, mdata[vm_ip]['vm_on_cell'], vm_on_core[local_core])
+	    
 	    cpt_vm = cpt_vm + 1
 	    
         for inkey in sorted(filevmmultitoint.keys()):
@@ -183,6 +196,8 @@ def main(argv):
 
         raw_data.append( {'active_core': active_core, 'active_cell': active_cell, 'n_vm': total_count_vm, 
                       'dist': params['dist'], 'data': data, 'mdata' : mdata, 'vm_multi': params['multi_cpu']})
+	
+
 
     with open(output_csv, 'wb') as csvfile:
         csvwriter = csv.writer(csvfile)
