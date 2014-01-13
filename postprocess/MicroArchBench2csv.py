@@ -63,12 +63,35 @@ def main(argv):
         count_vm = 0
 	count_multi_core = 0
 	
+	vm_on_core = {}
+	coreIdCell1 = 0
+	coreIdCell2 = 1
+	count_core = 0
+	vmOnCell1 = 0
+	vmOnCell2 = 0
+	
         for nbvmcore in params['dist']:
 	  count_vm += int(nbvmcore)
-        
+	  if count_core < 6:
+	    vm_on_core[coreIdCell1] = int(nbvmcore)
+	    coreIdCell1 = coreIdCell1 + 2
+	    vmOnCell1 = vmOnCell1 + int(nbvmcore)
+	  else:
+	    vm_on_core[coreIdCell2] = int(nbvmcore)
+	    coreIdCell2 = coreIdCell2 + 2
+	    vmOnCell2 = vmOnCell2 + int(nbvmcore)
+	  count_core = count_core + 1
+	  
+	count_core = 0
         for nbvmcore in params['multi_cpu']:
 	  count_multi_core += int(nbvmcore)
-        
+	  if count_core in vm_on_core:
+	    vm_on_core[count_core] = vm_on_core[count_core] + int(nbvmcore)
+	  else:
+	    vm_on_core[count_core] = int(nbvmcore) 
+	  vmOnCell1 = vmOnCell1 + 1
+	  count_core = count_core  + 1
+	  
         data = {}    
         mdata = {}
         cpt_vm = 0
@@ -115,11 +138,14 @@ def main(argv):
             
             if (local_core%2 == 0):
 	      cell_number = 0
+	      mdata[vm_ip]['vm_on_cell'] = vmOnCell1
 	    else:
 	      cell_number = 1
+	      mdata[vm_ip]['vm_on_cell'] = vmOnCell2
 	      second_cell_active = True
 	      
             mdata[vm_ip]['core_number'] = local_core
+            mdata[vm_ip]['vm_on_core'] = vm_on_core[local_core]
             mdata[vm_ip]['cell_number'] = cell_number
 	    mdata[vm_ip]['multi'] = 0
 	    mdata[vm_ip]['vm_id'] = cpt_vm
@@ -139,7 +165,9 @@ def main(argv):
             local_core = int(inkey)
             
             mdata[vm_ip]['core_number'] = local_core
+            mdata[vm_ip]['vm_on_core'] = vm_on_core[local_core]
             mdata[vm_ip]['cell_number'] = 0
+            mdata[vm_ip]['vm_on_cell'] = vmOnCell1
 	    mdata[vm_ip]['multi'] = 1
 	    mdata[vm_ip]['vm_id'] = cpt_vm
 	    cpt_vm = cpt_vm + 1
@@ -154,7 +182,7 @@ def main(argv):
 	  active_cell = 2
 
         raw_data.append( {'active_core': active_core, 'active_cell': active_cell, 'n_vm': total_count_vm, 
-                      'dist': params['dist'], 'data': data, 'mdata' : mdata})
+                      'dist': params['dist'], 'data': data, 'mdata' : mdata, 'vm_multi': params['multi_cpu']})
 
     with open(output_csv, 'wb') as csvfile:
         csvwriter = csv.writer(csvfile)
@@ -164,8 +192,8 @@ def main(argv):
 		  ##print result['dist']
 		  
 		  for ict in range(0,len(result['data'][vm_ip]['sys_start'])):
-		      csvwriter.writerow([result['dist'],result['active_core'],result['active_cell'],result['n_vm'],result['mdata'][vm_ip]['vm_id'],
-				      result['mdata'][vm_ip]['core_number'],result['mdata'][vm_ip]['cell_number'],result['mdata'][vm_ip]['multi'],
+		      csvwriter.writerow([result['dist'],result['vm_multi'],result['active_core'],result['active_cell'],result['n_vm'],result['mdata'][vm_ip]['vm_id'],result['mdata'][vm_ip]['vm_on_core'],
+				      result['mdata'][vm_ip]['vm_on_cell'],result['mdata'][vm_ip]['core_number'],result['mdata'][vm_ip]['cell_number'],result['mdata'][vm_ip]['multi'],
 				      result['data'][vm_ip]['timestamp'][ict],result['data'][vm_ip]['sys_start'][ict], result['data'][vm_ip]['sys_end'][ict], 
 				      result['data'][vm_ip]['user_start'][ict], result['data'][vm_ip]['user_end'][ict], result['data'][vm_ip]['exec_start'][ict], 
 				      result['data'][vm_ip]['exec_end'][ict], result['data'][vm_ip]['flops'][ict]])
