@@ -219,7 +219,7 @@ class vm5k_deployment(object):
             dhcp = False
 
         service_node = get_fastest_host(self.hosts)
-        logger.info('Setting up %s on %s', style.Thread(service), style.host(service_node.address.split('.')[0]))
+        logger.info('Setting up %s on %s', style.emph(service), style.host(service_node.address.split('.')[0]))
         clients = list(self.hosts)
         clients.remove(service_node)
         dnsmasq_server(service_node, clients, self.vms, dhcp)
@@ -236,12 +236,12 @@ class vm5k_deployment(object):
         if disk_location == 'one':
             create_disks(self.vms).run()
         elif disk_location == 'all':
-            create_disks_on_hosts(self.vms, self.hosts)
+            create_disks_on_hosts(self.vms, self.hosts).run()
         logger.info('Installing the virtual machines')
         install_vms(self.vms).run()
         logger.info('Starting the virtual machines')
         start_vms(self.vms).run()
-        wait_vms_have_started(self.vms, self.hosts[0])
+        wait_vms_have_started(self.vms)
         
         
 
@@ -793,7 +793,6 @@ def get_vms_slot(vms, elements, slots, excluded_elements = None):
                 for i in range(n_hosts):
                     hosts.append(Host(str(element+'-1.'+get_cluster_site(element)+'.grid5000.fr')))
         attr = get_CPU_RAM_FLOPS(hosts)['TOTAL']
-        print attr
         if attr['CPU'] > req_cpu and attr['RAM'] > req_ram:
             chosen_slot = slot
             break
