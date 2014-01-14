@@ -23,7 +23,8 @@ from execo_g5k.oargrid import get_oargridsub_commandline
 from execo_g5k.planning import get_planning, compute_slots, show_resources, find_free_slot, \
     get_jobs_specs, distribute_hosts
 from vm5k import vm5k_deployment, define_vms, get_oar_job_vm5k_resources, get_max_vms, \
-    get_oargrid_job_vm5k_resources, get_vms_slot, print_step, distribute_vms 
+    get_oargrid_job_vm5k_resources, get_vms_slot, print_step, distribute_vms, get_fastest_host, \
+    dnsmasq_server, get_kavlan_network
 
 
 ### INITIALIZATION 
@@ -230,11 +231,11 @@ if args.job_id is None:
 
     # Test if we need a free slot or a vms slot
     if len( [element for element, n_nodes in elements.iteritems() if n_nodes > 0]) > 0:
-        slot = find_free_slot(slots, elements, excluded_elements = blacklisted)
+        slot = find_free_slot(slots, elements)
         startdate = slot[0]
         resources = distribute_hosts(slot[2], elements)            
     else:
-        startdate, resources = get_vms_slot(vms, slots)
+        startdate, resources = get_vms_slot(vms, elements, slots)
     
     if startdate is None:
         logger.error('Unable to find a slot, exiting')
@@ -246,8 +247,7 @@ if args.job_id is None:
     
     for OarSubmission, _ in jobs_specs:
         OarSubmission.resources = 'slash_22=2+'+OarSubmission.resources
-    
-    
+
     logger.debug('Jobs specifications %s', pformat(jobs_specs) )
     
     (job_id, _) = oargridsub(jobs_specs, walltime = args.walltime, 
@@ -292,6 +292,18 @@ vm5k.configure_libvirt()
 print_step('Deploying virtual machines')
 logger.info('Maximum number of VMs %s', get_max_vms(vm5k.hosts))
 distribute_vms(vm5k.vms, vm5k.hosts)
+
+service = 'DNS/DHCP' if vm5k.kavlan is not None else 'DNS'
+dhcp = True  if vm5k.kavlan is not None else False
+print_step('Configuring '+service+' server')    
+service_node = get_fastest_host(vm5k.hosts)
+logger.info('Service node: %s', style.host(service_node.address))
+
+clients = list(vm5k.hosts)
+clients.remove(service_node)
+
+dnsmasq_server(service_node, clients, vm5k.vms, dhcp)
+
 vm5k.get_state()
 vm5k.deploy_vms()
 vm5k.get_state()
