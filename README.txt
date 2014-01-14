@@ -35,7 +35,7 @@ Virtual machines deployment with vm5k
 -------------------------------------
 Automate virtual machines deployment on Grid5000 in a global KaVLAN.
      
-## Workflow
+### Workflow
 * define a deployment **topology**:
   * distributed virtual machines using a template and a list of clusters/sites
   * or from a given xml file (see example below)
@@ -55,7 +55,7 @@ Automate virtual machines deployment on Grid5000 in a global KaVLAN.
   * perform installation with virt-install
   * start the virtual machines
 
-## Basic
+### Basic
 The basic usage is to create a certain number of virtual machines on Grid5000.
 To deploy 100 VM on *squeeze-x64-prod* and with the *squeeze-x64-base.qcow2* KVM image
 on any Grid5000 cluster with KaVLAN and hardware virtualization, for 2 hours:
@@ -65,7 +65,7 @@ on any Grid5000 cluster with KaVLAN and hardware virtualization, for 2 hours:
 This will automatically get the list of clusters, determine the total number of nodes required,
 perform the reservation and do setup hosts and VMs automatically.
 
-## Tune the virtual machines
+### Tune the virtual machines
 The script use a default template for the virtual machine `<vm mem="1024" hdd="2" cpu="1" cpuset="auto" />`.
 You can define your own one an one-line XML file and also use a custom backing file:
 
@@ -73,7 +73,7 @@ You can define your own one an one-line XML file and also use a custom backing f
 
 will deploy 20 virtual machines with system and components you want.
 
-## Tune the hosts 
+### Tune the hosts 
 You can also select the hosts by giving a list of cluster or sites and deploy a custom environnement
 
     vm5k.py --n_vm 100 -c hercule griffon graphene --host_env_file path_do_mykadeploy_env
@@ -85,7 +85,7 @@ You may use an existing grid reservation (with a KaVLAN global)
 
 It will retrieve the hosts that you have, deploy and configure it, and finally distribute the VM on them.
    
-## Using an topology file
+### Using an topology file
 To have the finest control on the deployment, you can use an input file that described the topology and VM 
 characteristics. 
 
