@@ -185,8 +185,8 @@ def wait_vms_have_started(vms, host = None):
         logger.debug('%s', nmap.cmd)
         for line in nmap.stdout.split('\n'):
             if 'Nmap scan report for' in line:
-                id = line.split(' ')[4].strip()
-                vm = [ vm for vm in vms if vm['id'] == id]
+                ip = line.split(' ')[4].strip()
+                vm = [ vm for vm in vms if vm['ip'] == ip]
                 if len(vm) > 0:
                     vm[0]['state'] = 'OK'
             if 'Nmap done' in line:
