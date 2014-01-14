@@ -19,7 +19,7 @@ from os import fdopen
 from tempfile import mkstemp
 from execo import logger, SshProcess, Put, Remote, Host, TaktukRemote
 from execo.log import style
-from execo_g5k import get_g5k_sites, default_frontend_connection_params
+from execo_g5k import get_g5k_sites, default_frontend_connection_params, g5k_configuration
 
 
 def vms_lists(vms, server):
@@ -39,7 +39,7 @@ def get_server_ip(host):
     if isinstance(host, Host):
         host = host.address
     logger.debug('Retrieving IP from %s', style.host(host))
-    get_ip = SshProcess('host '+host+' |cut -d \' \' -f 4', 'rennes', 
+    get_ip = SshProcess('host '+host+' |cut -d \' \' -f 4', g5k_configuration['default_frontend'], 
                   connection_params = default_frontend_connection_params).run()
     ip =  get_ip.stdout.strip()
     return ip
