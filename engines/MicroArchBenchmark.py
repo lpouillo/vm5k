@@ -176,7 +176,7 @@ class MicroArchBenchmark( vm5k_engine ):
                 logger.info(host+': '+slugify(comb)+' has been done')
             else:
                 self.sweeper.cancel( comb )
-                logger.warning(host+': '+slugify(comb)+' has been cancel')
+                logger.warning(host+': '+slugify(comb)+' has been canceled')
             logger.info(style.step('%s Remaining'), len(self.sweeper.get_remaining()))
             
     
