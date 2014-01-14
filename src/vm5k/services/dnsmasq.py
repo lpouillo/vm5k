@@ -27,7 +27,7 @@ def vms_lists(vms, server):
     logger.debug('Adding the VM in /etc/hosts ...')
     fd, vms_list = mkstemp(dir = '/tmp/', prefix='vms_')
     f = fdopen(fd, 'w')
-    f.write('\n'.join( [vm['ip']+' \t '+vm['id'] for vm in vms ] ) )
+    f.write('\n'+'\n'.join( [vm['ip']+' \t '+vm['id'] for vm in vms ] ) )
     f.close()
     Put([server], [vms_list], remote_location= '/etc/').run()
     SshProcess('[ -f /etc/hosts.bak ] && cp /etc/hosts.bak /etc/hosts || cp /etc/hosts /etc/hosts.bak', 
