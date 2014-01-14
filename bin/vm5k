@@ -218,17 +218,23 @@ if args.job_id is None:
     if args.kavlan:
         kavlan = True 
         subnet = False
+        elements['kavlan'] = 1
     else:
         kavlan = False
         subnet = True
-        subnets = 'slash_22='+str(int(ceil(len(vms)/1024.)))
+        subnets = 'slash_22='+str(int(ceil(len(vms)/1024.)))        
 
+
+    
+    
     if args.blacklisted is not None:
         blacklisted = list(set(blacklisted+args.blacklisted.split(',')))
 
     planning = get_planning(elements, vlan = kavlan, subnet = subnet)
+    
     slots = compute_slots(planning, walltime = args.walltime, excluded_elements = blacklisted)
-
+    
+        
     # Test if we need a free slot or a vms slot
     if len( [element for element, n_nodes in elements.iteritems() if n_nodes > 0]) > 0:
         slot = find_free_slot(slots, elements)
@@ -241,12 +247,14 @@ if args.job_id is None:
         logger.error('Unable to find a slot, exiting')
         exit()
     
+    
     show_resources(resources)
     
     jobs_specs = get_jobs_specs(resources, name = 'VM5K')
     
-    for OarSubmission, _ in jobs_specs:
-        OarSubmission.resources = 'slash_22=2+'+OarSubmission.resources
+    if not kavlan:
+        for OarSubmission, _ in jobs_specs:
+            OarSubmission.resources = subnets+OarSubmission.resources
 
     logger.debug('Jobs specifications %s', pformat(jobs_specs) )
     
