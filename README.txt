@@ -60,7 +60,7 @@ The basic usage is to create a certain number of virtual machines on Grid5000.
 To deploy 100 VM on *squeeze-x64-prod* and with the *squeeze-x64-base.qcow2* KVM image
 on any Grid5000 cluster with KaVLAN and hardware virtualization, for 2 hours:
 
-    vm5k.py --n_vm 100 -w 2:00:00
+    vm5k --n_vm 100 -w 2:00:00
 
 This will automatically get the list of clusters, determine the total number of nodes required,
 perform the reservation and do setup hosts and VMs automatically.
@@ -69,19 +69,22 @@ perform the reservation and do setup hosts and VMs automatically.
 The script use a default template for the virtual machine `<vm mem="1024" hdd="2" cpu="1" cpuset="auto" />`.
 You can define your own one an one-line XML file and also use a custom backing file:
 
-    vm5k.py --n_vm 20 --vm_template mytemplate.xml --vm_backing_file path_to_my_qcow2_file_on_g5k
+    vm5k --n_vm 20 --vm_template mytemplate.xml --vm_backing_file path_to_my_qcow2_file_on_g5k
 
 will deploy 20 virtual machines with system and components you want.
 
 ### Tune the hosts 
 You can also select the hosts by giving a list of cluster or sites and deploy a custom environnement
 
-    vm5k.py --n_vm 100 -c hercule griffon graphene --host_env_file path_do_mykadeploy_env
-    vm5k.py --n_vm 100 -c hercule griffon graphene --host_env_name wheezy-x64-base
+    vm5k --n_vm 100 -r hercule,griffon,graphene --host_env_file path_do_mykadeploy_env
+    
+or select the number of hosts you want on each element and in a KaVLAN 
+    
+    vm5k --n_vm 100 -r lyon:4,griffon:10 -k
     
 You may use an existing grid reservation (with a KaVLAN global) 
     
-    vm5k.py --n_vm 100 -j 42895
+    vm5k --n_vm 100 -j 42895
 
 It will retrieve the hosts that you have, deploy and configure it, and finally distribute the VM on them.
    
@@ -89,7 +92,7 @@ It will retrieve the hosts that you have, deploy and configure it, and finally d
 To have the finest control on the deployment, you can use an input file that described the topology and VM 
 characteristics. 
 
-    vm5k.py -i topology_file.xml -w 6:00:00
+    vm5k -i topology_file.xml -w 6:00:00
     
 where `topology_file.xml` is:
 
