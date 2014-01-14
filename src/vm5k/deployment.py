@@ -181,12 +181,11 @@ class vm5k_deployment(object):
             self.env_file = None
             self.env_name = env_name
                     
-        logger.info('vm5k_deployment has been initialized \n%s sites %s \n%s clusters %s '+\
-                    '\n%s hosts %s \n%s vms %s',
-                    len(self.sites), ' '.join( [style.emph(site) for site in self.sites] ) , 
-                    len(self.clusters), ' '.join( [style.user1(cluster) for cluster in self.clusters ]), 
-                    len(self.hosts), ' '.join( [style.host(host.address) for host in self.hosts ]), 
-                    len(self.vms), ' '.join( [style.VM(vm['id']) for vm in self.vms ]) )
+        logger.info('vm5k_deployment has been initialized \n%s %s, %s %s %s %s %s %s',
+                    len(self.sites), style.emph('sites'),
+                    len(self.clusters), style.user1('clusters'),
+                    len(self.hosts), style.host('hosts'),
+                    len(self.vms), style.vm('vms'))
         
         
     def run(self):
@@ -537,7 +536,6 @@ class vm5k_deployment(object):
                 vm['ip'], vm['mac'] = self.ip_mac[vm_site][i_vm[vm_site]]
                 i_vm[vm_site] += 1
         else:
-            print len(self.ip_mac)
             i_vm = 0
             for vm in self.vms:
                 vm['ip'], vm['mac'] = self.ip_mac[i_vm]
