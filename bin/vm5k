@@ -13,7 +13,7 @@ from time import strftime
 from logging import INFO, DEBUG, WARN
 from math import ceil
 from xml.etree.ElementTree import fromstring, parse, dump
-from execo import logger
+from execo import logger, Process
 from execo.log import style
 from execo.config import TAKTUK, CHAINPUT
 from execo.action import ActionFactory
@@ -73,6 +73,9 @@ run.add_argument("-o", "--outdir",
                 default = 'vm5k_'+strftime("%Y%m%d_%H%M%S_%z"),
                 help = 'where to store the vm5k log files'+\
                     "\ndefault = %(default)s")
+run.add_argument("-p", "--program", 
+                dest = "program", 
+                help = 'Launch a program at the end of the deployment')
  
 ## Reservation
 mode = parser.add_argument_group( style.host("Mode"), 
@@ -230,9 +233,9 @@ if args.job_id is None:
     if len( [element for element, n_nodes in elements.iteritems() if n_nodes > 0]) > 0:
         slot = find_free_slot(slots, elements)
         startdate = slot[0]
-        resources = distribute_hosts(slot[2], elements)            
+        resources = distribute_hosts(slot[2], elements, excluded_elements = blacklisted)            
     else:
-        startdate, resources = get_vms_slot(vms, elements, slots)
+        startdate, resources = get_vms_slot(vms, elements, slots, excluded_elements = blacklisted)
     
     if startdate is None:
         logger.error('Unable to find a slot, exiting')
@@ -293,3 +296,9 @@ distribute_vms(vm5k.vms, vm5k.hosts)
 vm5k.get_state()
 vm5k.deploy_vms(disk_location = args.vm_disk_location)
 vm5k.get_state()
+
+if args.prog is not None:
+    print_step('Lauching programm')
+    Process(args.prog).run()
+    
+    
