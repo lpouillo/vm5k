@@ -33,10 +33,9 @@ from execo_g5k import get_oar_job_nodes, get_oargrid_job_oar_jobs, get_oar_job_s
     distribute_hosts
 from execo_g5k.config import g5k_configuration, default_frontend_connection_params
 from execo_g5k.api_utils import get_host_cluster, get_g5k_sites, get_g5k_clusters, get_cluster_site, \
-    get_host_attributes, get_resource_attributes, get_host_site
+    get_host_attributes, get_resource_attributes, get_host_site, canonical_host_name
 from execo_g5k.utils import get_kavlan_host_name
 from vm5k.config import default_vm
-from vm5k.services import dns_dhcp_server
 from vm5k.actions import create_disks, install_vms, start_vms, wait_vms_have_started, destroy_vms
 
 
@@ -74,12 +73,11 @@ def get_oargrid_job_vm5k_resources(oargrid_job_id):
     kavlan_global = None
     for site, res in resources.iteritems():
         if res['kavlan'] >= 10:
-            kavlan_global = {'kavlan': res['kavlan'], 'ip_mac': resources[site]['ip_mac'] }
+            kavlan_global = {'kavlan': res['kavlan'], 'ip_mac': resources[site]['ip_mac'], 'site': site }
             break
     if kavlan_global is not None:
         resources['global'] = kavlan_global
     
-    print resources.keys()
     return resources
 
 
@@ -198,12 +196,11 @@ class vm5k_deployment(object):
             self.hosts_deployment()
             print_step('MANAGING PACKAGES')
             self.packages_management()
-            if self.kavlan is not None:
-                
-                service_node = get_fastest_host(self.hosts)
-                print_step('CONFIGURE SERVICE NODE '+service_node)
-                dns_dhcp_server(service_node, self.vms, self.ip_mac, 
-                                get_kavlan_network(self.kavlan, self.sites[0]))
+#            if self.kavlan is not None:
+#                service_node = get_fastest_host(self.hosts)
+#                print_step('CONFIGURE SERVICE NODE '+service_node)
+#                dns_dhcp_server(service_node, self.vms, self.ip_mac, 
+#                                get_kavlan_network(self.kavlan, self.sites[0]))
             print_step('CONFIGURING LIBVIRT')
             self.configure_libvirt()
             print_step('VIRTUAL MACHINES')        
@@ -225,7 +222,7 @@ class vm5k_deployment(object):
         install_vms(self.vms).run()
         logger.info('Starting the virtual machines')
         start_vms(self.vms).run()
-        wait_vms_have_started(self.vms)
+        wait_vms_have_started(self.vms, self.hosts[0])
         
         
 
@@ -300,7 +297,10 @@ class vm5k_deployment(object):
     # Hosts configuration
     def hosts_deployment(self, max_tries = 1, check_deploy = True):
         """Create the execo_g5k.Deployment"""
-        deployment = Deployment( hosts = [ kavname_to_basename(host) for host in self.hosts], 
+        
+        logger.info('Deploying hosts %s', 
+            ', '.join([ style.host(host.address) for host in sorted(self.hosts) ]))
+        deployment = Deployment( hosts = [ canonical_host_name(host) for host in self.hosts], 
             env_file = self.env_file, env_name = self.env_name,
             vlan = self.kavlan)  
         
@@ -309,6 +309,7 @@ class vm5k_deployment(object):
         deployed_hosts, undeployed_hosts = deploy(deployment, out = out, 
                                 num_tries = max_tries, 
                                 check_deployed_command = check_deploy)
+        logger.info('Deployed hosts %s', ', '.join([ style.host(host) for host in sorted(deployed_hosts)]))
         self._update_hosts_state(deployed_hosts, undeployed_hosts)
         
         # Renaming hosts if a kavlan is used
@@ -483,12 +484,14 @@ class vm5k_deployment(object):
             if len(self.sites) == 1:
                 self.ip_mac = resources[self.sites[0]]['ip_mac']
                 if resources[site]['kavlan'] is not None:
-                    self.kavlan = resources[site]['kavlan'] 
+                    self.kavlan = resources[site]['kavlan']
             else:
                 self.ip_mac = { site: resources[site]['ip_mac'] for site in self.sites}
         else:
             self.ip_mac = resources['global']['ip_mac']
             self.kavlan = resources['global']['kavlan']
+            self.kavlan_site = resources['global']['site']
+            
 
         logger.debug('KaVLAN: %s', self.kavlan)
         
@@ -685,10 +688,12 @@ def distribute_vms(vms, hosts, distribution = 'round-robin'):
             remaining = attr[host.address].copy()
             while remaining['RAM'] - vm['mem'] <= 0 \
                 or remaining['CPU'] - vm['n_cpu']/3 <= 0:
+
                 dist_hosts.remove(host)
+                
                 if len(dist_hosts) == 0:
                     req_mem = sum( [ vm['mem'] for vm in vms])
-                    req_cpu = 3*sum( [ vm['n_cpu'] for vm in vms])
+                    req_cpu = sum( [ vm['n_cpu'] for vm in vms])/3
                     logger.error('Not enough ressources ! \n'+'RAM'.rjust(20)+'CPU'.rjust(10)+'\n'+\
                                  'Available'.ljust(15)+'%s Mb'.ljust(15)+'%s \n'+\
                                  'Needed'.ljust(15)+'%s Mb'.ljust(15)+\
@@ -697,6 +702,7 @@ def distribute_vms(vms, hosts, distribution = 'round-robin'):
                 iter_hosts = cycle(dist_hosts)
                 host = iter_hosts.next()
                 remaining = attr[host.address].copy()
+                
             
             vm['host'] = host
             remaining['RAM'] -= vm['mem']
@@ -751,42 +757,46 @@ def get_max_vms(hosts, n_cpu = 1, mem = 512):
     return min(int(3*total['CPU']/n_cpu), int(total['RAM']/mem))
  
    
-def get_vms_slot(vms, slots):
+def get_vms_slot(vms, elements, slots):
     """Return a slot with enough RAM and CPU """
     chosen_slot = None
+    
+    
     req_ram = sum( [ vm['mem'] for vm in vms] )
     req_cpu = sum( [ vm['n_cpu'] for vm in vms] ) /3
+    logger.debug('RAM %s CPU %s', req_ram, req_cpu)
+    
     
     for slot in slots:
         hosts = []
-        for element, n_hosts in slot[2].iteritems():
+        for element in elements:
+            n_hosts = slot[2][element]
             if element in get_g5k_clusters():
                 for i in range(n_hosts):
                     hosts.append(Host(str(element+'-1.'+get_cluster_site(element)+'.grid5000.fr')))
         attr = get_CPU_RAM_FLOPS(hosts)['TOTAL']
-        if 3*attr['CPU'] > req_cpu and attr['RAM'] > req_ram:
+        print attr
+        if attr['CPU'] > req_cpu and attr['RAM'] > req_ram:
             chosen_slot = slot
             break
+        
         del hosts[:]
     
     if chosen_slot is None:
         return None, None
 
     resources = {}
-    for element, n_hosts in chosen_slot[2].iteritems():
+    for host in hosts:
         if req_ram < 0 and req_cpu < 0:
             break 
-        if element in get_g5k_clusters() and n_hosts > 0:
-            attr = get_CPU_RAM_FLOPS([Host(str(element+'-1'))])
-            el_hosts = 0
-            for i in range(n_hosts):
-                req_ram -= attr[str(element+'-1')]['RAM'] 
-                req_cpu -= attr[str(element+'-1')]['CPU']
-                el_hosts += 1
-                if req_ram < 0 and req_cpu < 0:
-                    break 
-            resources[element] = el_hosts = 0
-            
+        attr = get_CPU_RAM_FLOPS([host])
+        req_ram -= attr[host.address]['RAM'] 
+        req_cpu -= attr[host.address]['CPU']
+        cluster = get_host_cluster(host)
+        if not resources.has_key(cluster):
+            resources[element] = 1
+        else:
+            resources[element] += 1
         
     return chosen_slot[0], distribute_hosts(chosen_slot[2], resources)
     
