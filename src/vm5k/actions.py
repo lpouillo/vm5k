@@ -160,7 +160,7 @@ def start_vms(vms):
     
 
 def wait_vms_have_started(vms, host = None):
-    """ Try to make a ls on all vms and return True when all process are ok", need a taktuk gateway"""
+    """ Try to make a ls on all vms and return True when all process are ok0"""
     if host is None:
         host = get_host_site(vms[0]['host'])
         user = default_frontend_connection_params['user']
@@ -185,8 +185,8 @@ def wait_vms_have_started(vms, host = None):
         logger.debug('%s', nmap.cmd)
         for line in nmap.stdout.split('\n'):
             if 'Nmap scan report for' in line:
-                ip = line.split(' ')[4].strip()
-                vm = [ vm for vm in vms if vm['ip'] == ip]
+                id = line.split(' ')[4].strip()
+                vm = [ vm for vm in vms if vm['id'] == id]
                 if len(vm) > 0:
                     vm[0]['state'] = 'OK'
             if 'Nmap done' in line:
