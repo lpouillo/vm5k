@@ -181,7 +181,7 @@ class vm5k_deployment(object):
             self.env_file = None
             self.env_name = env_name
                     
-        logger.info('vm5k_deployment has been initialized \n%s %s, %s %s %s %s %s %s',
+        logger.info('%s %s %s %s %s %s %s %s',
                     len(self.sites), style.emph('sites'),
                     len(self.clusters), style.user1('clusters'),
                     len(self.hosts), style.host('hosts'),
@@ -308,7 +308,7 @@ class vm5k_deployment(object):
         deployed_hosts, undeployed_hosts = deploy(deployment, out = out, 
                                 num_tries = max_tries, 
                                 check_deployed_command = check_deploy)
-        logger.info('Deployed hosts %s', ', '.join([ style.host(host) for host in sorted(deployed_hosts)]))
+        logger.info('Deployed hosts %s', ', '.join([ style.host(host.address) for host in sorted(deployed_hosts)]))
         self._update_hosts_state(deployed_hosts, undeployed_hosts)
         
         # Renaming hosts if a kavlan is used
