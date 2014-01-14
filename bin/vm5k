@@ -23,8 +23,7 @@ from execo_g5k.oargrid import get_oargridsub_commandline
 from execo_g5k.planning import get_planning, compute_slots, show_resources, find_free_slot, \
     get_jobs_specs, distribute_hosts
 from vm5k import vm5k_deployment, define_vms, get_oar_job_vm5k_resources, get_max_vms, \
-    get_oargrid_job_vm5k_resources, get_vms_slot, print_step, distribute_vms, get_fastest_host, \
-    dnsmasq_server, get_kavlan_network
+    get_oargrid_job_vm5k_resources, get_vms_slot, print_step, distribute_vms
 
 
 ### INITIALIZATION 
@@ -93,7 +92,8 @@ optresa.add_argument('-j', '--job_id',
 optresa.add_argument('-w', '--walltime',
                 dest = 'walltime',
                 help = 'duration of your reservation')
-optresa.add_argument('-k', '--kavlan',
+
+mode.add_argument('-k', '--kavlan',
                 dest = 'kavlan',
                 action = "store_true",
                 default = False,    
@@ -282,22 +282,13 @@ print_step('Managing packages')
 vm5k.packages_management(upgrade = True, other_packages = 'hwloc')
 print_step('Configuring libvirt')
 vm5k.configure_libvirt()
-
+print_step('Configuring service node')
+vm5k.configure_service_node()
 
 print_step('Deploying virtual machines')
 logger.info('Maximum number of VMs %s', get_max_vms(vm5k.hosts))
 distribute_vms(vm5k.vms, vm5k.hosts)
 
-service = 'DNS/DHCP' if vm5k.kavlan is not None else 'DNS'
-dhcp = True  if vm5k.kavlan is not None else False
-print_step('Configuring '+service+' server')    
-service_node = get_fastest_host(vm5k.hosts)
-logger.info('Service node: %s', style.host(service_node.address.split('.')[0]))
-
-clients = list(vm5k.hosts)
-clients.remove(service_node)
-
-dnsmasq_server(service_node, clients, vm5k.vms, dhcp)
 
 vm5k.get_state()
 vm5k.deploy_vms(disk_location = args.vm_disk_location)

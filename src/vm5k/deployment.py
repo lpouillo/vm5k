@@ -37,6 +37,7 @@ from execo_g5k.api_utils import get_host_cluster, get_g5k_sites, get_g5k_cluster
 from execo_g5k.utils import get_kavlan_host_name
 from vm5k.config import default_vm
 from vm5k.actions import create_disks, install_vms, start_vms, wait_vms_have_started, destroy_vms, create_disks_on_hosts
+from vm5k.services import dnsmasq_server
 
 
 
@@ -193,19 +194,35 @@ class vm5k_deployment(object):
         try:
             print_step('HOSTS DEPLOYMENT')
             self.hosts_deployment()
+            
             print_step('MANAGING PACKAGES')
             self.packages_management()
-#            if self.kavlan is not None:
-#                service_node = get_fastest_host(self.hosts)
-#                print_step('CONFIGURE SERVICE NODE '+service_node)
-#                dns_dhcp_server(service_node, self.vms, self.ip_mac, 
-#                                get_kavlan_network(self.kavlan, self.sites[0]))
+            
             print_step('CONFIGURING LIBVIRT')
             self.configure_libvirt()
+            
+            print_step('CONFIGURING SERVICE NODE')
+            self.configure_service_node()    
+            
             print_step('VIRTUAL MACHINES')        
             self.deploy_vms()
         finally:
             self.get_state()
+            
+            
+    def configure_service_node(self, dhcp):
+        if self.kavlan:
+            service = 'DNS/DHCP'  
+            dhcp = True 
+        else: 
+            service = 'DNS'
+            dhcp = False
+
+        service_node = get_fastest_host(self.hosts)
+        logger.info('Setting up %s on %s', style.Thread(service), style.host(service_node.address.split('.')[0]))
+        clients = list(self.hosts)
+        clients.remove(service_node)
+        dnsmasq_server(service_node, clients, self.vms, dhcp)
         
     # VMS deployment
     def deploy_vms(self, disk_location = 'one'):
