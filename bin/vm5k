@@ -223,9 +223,6 @@ if args.job_id is None:
         kavlan = False
         subnet = True
         subnets = 'slash_22='+str(int(ceil(len(vms)/1024.)))        
-
-
-    
     
     if args.blacklisted is not None:
         blacklisted = list(set(blacklisted+args.blacklisted.split(',')))
@@ -305,7 +302,7 @@ vm5k.get_state()
 vm5k.deploy_vms(disk_location = args.vm_disk_location)
 vm5k.get_state()
 
-if args.prog is not None:
+if args.program is not None:
     print_step('Lauching programm')
     Process(args.prog).run()
     
