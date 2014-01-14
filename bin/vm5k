@@ -300,5 +300,5 @@ clients.remove(service_node)
 dnsmasq_server(service_node, clients, vm5k.vms, dhcp)
 
 vm5k.get_state()
-vm5k.deploy_vms()
+vm5k.deploy_vms(disk_location = args.vm_disk_location)
 vm5k.get_state()
