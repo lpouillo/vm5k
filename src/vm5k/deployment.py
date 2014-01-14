@@ -210,7 +210,7 @@ class vm5k_deployment(object):
             self.get_state()
             
             
-    def configure_service_node(self, dhcp):
+    def configure_service_node(self):
         if self.kavlan:
             service = 'DNS/DHCP'  
             dhcp = True 
@@ -318,7 +318,7 @@ class vm5k_deployment(object):
         """Create the execo_g5k.Deployment"""
         
         logger.info('Deploying hosts %s', 
-            ', '.join([ style.host(host.address) for host in sorted(self.hosts) ]))
+            ', '.join([ style.host(host.address.split('.')[0]) for host in sorted(self.hosts) ]))
         deployment = Deployment( hosts = [ canonical_host_name(host) for host in self.hosts], 
             env_file = self.env_file, env_name = self.env_name,
             vlan = self.kavlan)  
@@ -328,7 +328,7 @@ class vm5k_deployment(object):
         deployed_hosts, undeployed_hosts = deploy(deployment, out = out, 
                                 num_tries = max_tries, 
                                 check_deployed_command = check_deploy)
-        logger.info('Deployed hosts %s', ', '.join([ style.host(host.address) for host in sorted(deployed_hosts)]))
+        logger.info('Deployed hosts %s', ', '.join([ style.host(host.address.split('.')[0]) for host in sorted(deployed_hosts)]))
         self._update_hosts_state(deployed_hosts, undeployed_hosts)
         
         # Renaming hosts if a kavlan is used
@@ -775,7 +775,7 @@ def get_max_vms(hosts, n_cpu = 1, mem = 512):
     return min(int(3*total['CPU']/n_cpu), int(total['RAM']/mem))
  
    
-def get_vms_slot(vms, elements, slots):
+def get_vms_slot(vms, elements, slots, excluded_elements = None):
     """Return a slot with enough RAM and CPU """
     chosen_slot = None
     
@@ -816,7 +816,7 @@ def get_vms_slot(vms, elements, slots):
         else:
             resources[element] += 1
         
-    return chosen_slot[0], distribute_hosts(chosen_slot[2], resources)
+    return chosen_slot[0], distribute_hosts(chosen_slot[2], resources, excluded_elements)
     
     
 def print_step(step_desc = None):
