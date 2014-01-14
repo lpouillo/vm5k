@@ -66,7 +66,6 @@ def dhcp_conf(server, vms):
     """ """
     logger.debug('Creating dnsmasq.conf')
     ip_mac = [ (vm['ip'], vm['mac']) for vm in vms ]
-    #dhcp_range = 'dhcp-range='+ip_mac[0][0]+','+ip_mac[len(vms)-1][0]+','+netmask+',12h\n'
     dhcp_range = 'dhcp-range='+ip_mac[0][0]+','+ip_mac[len(vms)-1][0]+',12h\n'
     dhcp_router = 'dhcp-option=option:router,'+get_server_ip(server)+'\n'
     dhcp_hosts = ''+'\n'.join( [ 'dhcp-host='+':'+ip_mac[i][1]+','+vms[i]['id']+','+ip_mac[i][0] 
@@ -95,7 +94,7 @@ def dnsmasq_server(server, clients, vms, dhcp = True):
     logger.debug('Installing and configuring a DNS/DHCP server on %s', server)
     cmd ='export DEBIAN_MASTER=noninteractive ; apt-get update ; apt-get -y purge dnsmasq-base ; '+\
          'apt-get install -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confnew" '+\
-         '-y dnsmasq'
+         '-y dnsmasq; echo 1 > /proc/sys/net/ipv4/ip_forward '
     SshProcess(cmd, server).run()
     
     vms_lists(vms, server)
