@@ -174,7 +174,6 @@ if args.walltime is None and args.job_id is None:
                  (style.emph('walltime')+' or -j '+style.emph('job_id')) )
 
 ## Start message
-print_step('INITIALIZATION')
 logger.debug('Options\n'+'\n'.join( [ style.emph(option.ljust(20))+\
                     '= '+str(value).ljust(10) for option, value in vars(args).iteritems() if value is not None ]))
 
@@ -206,14 +205,12 @@ else:
         else: 
             element_uid, n_nodes = element, 0
         elements[element_uid] = int(n_nodes)
-        
-show_resources(elements, 'Resources wanted')
-
 
 # MANAGING RESERVATION
 logger.info(style.log_header('Reservation'))
 frontend = None
 if args.job_id is None:
+    show_resources(elements, 'Resources wanted')
     logger.info('Finding a slot for your reservation')
     if args.kavlan:
         kavlan = True 
@@ -265,8 +262,6 @@ else:
         frontend, job_id = None, args.job_id
     
 
-
-
 logger.info('Retrieving hosts and network parameters')
 if frontend is None:
     vm5k_resources = get_oargrid_job_vm5k_resources(int(job_id))
@@ -297,7 +292,7 @@ service = 'DNS/DHCP' if vm5k.kavlan is not None else 'DNS'
 dhcp = True  if vm5k.kavlan is not None else False
 print_step('Configuring '+service+' server')    
 service_node = get_fastest_host(vm5k.hosts)
-logger.info('Service node: %s', style.host(service_node.address))
+logger.info('Service node: %s', style.host(service_node.address.split('.')[0]))
 
 clients = list(vm5k.hosts)
 clients.remove(service_node)
