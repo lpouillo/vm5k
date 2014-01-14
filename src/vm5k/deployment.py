@@ -36,7 +36,7 @@ from execo_g5k.api_utils import get_host_cluster, get_g5k_sites, get_g5k_cluster
     get_host_attributes, get_resource_attributes, get_host_site, canonical_host_name
 from execo_g5k.utils import get_kavlan_host_name
 from vm5k.config import default_vm
-from vm5k.actions import create_disks, install_vms, start_vms, wait_vms_have_started, destroy_vms
+from vm5k.actions import create_disks, install_vms, start_vms, wait_vms_have_started, destroy_vms, create_disks_on_hosts
 
 
 
@@ -208,7 +208,7 @@ class vm5k_deployment(object):
             self.get_state()
         
     # VMS deployment
-    def deploy_vms(self):
+    def deploy_vms(self, disk_location = 'one'):
         """Destroy the existing VMS, create the virtual disks, install the vms, start them and
         wait for boot"""
         logger.info('Destroying existing virtual machines')
@@ -216,7 +216,10 @@ class vm5k_deployment(object):
         logger.info('Creating the virtual disks ')
         self._remove_existing_disks()
         self._create_backing_file('/grid5000/images/KVM/squeeze-x64-base.qcow2')
-        create_disks(self.vms).run()
+        if disk_location == 'one':
+            create_disks(self.vms).run()
+        elif disk_location == 'all':
+            create_disks_on_hosts(self.vms, self.hosts)
         logger.info('Installing the virtual machines')
         install_vms(self.vms).run()
         logger.info('Starting the virtual machines')
