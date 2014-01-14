@@ -4,7 +4,7 @@
 #    vm5k: Automatic deployment of virtual machine on Grid'5000  
 #     Created by L. Pouilloux and M. Imbert (INRIA, 2013) 
 # 
-#    A great thanks to A. Lèbre and J. Pastor for alpha testing :)
+#    A great thanks to A. Lèbre and J. Pastor for testing :)
 #
 #
 import os, argparse
@@ -251,7 +251,7 @@ if args.job_id is None:
     
     if not kavlan:
         for OarSubmission, _ in jobs_specs:
-            OarSubmission.resources = subnets+OarSubmission.resources
+            OarSubmission.resources = subnets+'+'+OarSubmission.resources
 
     logger.debug('Jobs specifications %s', pformat(jobs_specs) )
     
@@ -296,7 +296,6 @@ vm5k.configure_service_node()
 print_step('Deploying virtual machines')
 logger.info('Maximum number of VMs %s', get_max_vms(vm5k.hosts))
 distribute_vms(vm5k.vms, vm5k.hosts)
-
 
 vm5k.get_state()
 vm5k.deploy_vms(disk_location = args.vm_disk_location)
