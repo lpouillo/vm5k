@@ -110,7 +110,7 @@ class MicroArchBenchmark( vm5k_engine ):
             # Force pinning of vm-multi vcpus
             if multi_cpu:
 				cmd = '; '.join( [ 'virsh vcpupin vm-multi '+str(i)+' '+str(cpu_index[i]) for i in range(n_cpu)] ) 
-				vcpu_pin = SshProcess(cmd, host).run()
+				vcpu_pin = SshProcess(cmd, hosts[0]).run()
 				if not vcpu_pin.ok:
 					logger.error(host+': Unable to pin the vcpus of vm-multi %s', slugify(comb))
 					exit()
