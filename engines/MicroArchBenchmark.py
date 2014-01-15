@@ -77,7 +77,7 @@ class MicroArchBenchmark( vm5k_engine ):
             # Adding the multi_cpu vm if it exists
             n_cpu = sum( [ int(i) for i in comb['multi_cpu'] ])
             if n_cpu > 1:                
-                cpusets.append( ','.join( str(i) for i in range(n_cpu) ) )
+                cpusets.append( ','.join( str(cpu_index[i]) for i in range(n_cpu) ) )
                 multi_cpu = True
             else:
                 multi_cpu = False
@@ -106,6 +106,14 @@ class MicroArchBenchmark( vm5k_engine ):
             if not boot_successfull:
                 logger.error(host+': Unable to boot all the VMS for %s', slugify(comb))
                 exit() 
+            
+            # Force pinning of vm-multi vcpus
+            if multi_cpu:
+				cmd = '; '.join( [ 'virsh vcpupin vm-multi '+str(i)+' '+str(cpu_index[i]) for i in range(n_cpu)] 
+				vcpu_pin = SshProcess(cmd, host).run()
+				if not vcpu_pin.ok:
+					logger.error(host+': Unable to pin the vcpus of vm-multi %s', slugify(comb))
+					exit()
             
             # Prepare virtual machines for experiments
             stress = []
