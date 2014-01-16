@@ -328,7 +328,7 @@ class vm5k_deployment(object):
         deployed_hosts, undeployed_hosts = deploy(deployment, out = out,
                                 num_tries = max_tries,
                                 check_deployed_command = check_deploy)
-        logger.info('Deployed hosts %s \n%s', len(deployed_hosts),
+        logger.info('Deployed %s hosts \n%s', len(deployed_hosts),
             ' '.join([ style.host(host.address.split('.')[0]) for host in sorted(deployed_hosts)]))
         self._update_hosts_state(deployed_hosts, undeployed_hosts)
 
