@@ -1,29 +1,16 @@
 # Copyright 2009-2013 INRIA Rhone-Alpes, Service Experimentation et
 # Developpement
 #
-# This file is part of Execo.
-#
-# Execo is free software: you can redistribute it and/or modify it
-# under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Execo is distributed in the hope that it will be useful, but WITHOUT
-# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-# or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
-# License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Execo.  If not, see <http://www.gnu.org/licenses/>
 from os import fdopen
 from tempfile import mkstemp
-from execo import logger, SshProcess, Put, Remote, Host, TaktukRemote
+from math import ceil, log
+from execo import logger, SshProcess, Put, Remote, Host, TaktukRemote, Process
 from execo.log import style
 from execo_g5k import get_g5k_sites, default_frontend_connection_params, g5k_configuration
 
 
 def vms_lists(vms, server):
-    """ """
+    """Generate the list of virtual machines """
     logger.debug('Adding the VM in /etc/hosts ...')
     fd, vms_list = mkstemp(dir = '/tmp/', prefix='vms_')
     f = fdopen(fd, 'w')
@@ -33,9 +20,10 @@ def vms_lists(vms, server):
     SshProcess('[ -f /etc/hosts.bak ] && cp /etc/hosts.bak /etc/hosts || cp /etc/hosts /etc/hosts.bak',
            server).run()
     Remote('cat /etc/'+vms_list.split('/')[-1]+' >> /etc/hosts', [server]).run()
+    Process('rm '+vms_list).run()
 
 def get_server_ip(host):
-    """ """
+    """Get the server IP"""
     if isinstance(host, Host):
         host = host.address
     logger.debug('Retrieving IP from %s', style.host(host))
@@ -45,25 +33,27 @@ def get_server_ip(host):
     return ip
 
 def get_server_iface(server):
-    """ """
+    """Get the default network interface of the serve """
     logger.debug('Retrieving default interface from %s', style.host(server.address))
     get_if = SshProcess('ip route |grep default |cut -f 5 -d " "', server).run()
     return get_if.stdout.strip()
 
 
 def resolv_conf(server, clients):
-    """ """
+    """Generate the resolv.conf with dhcp parameters and put it on the server"""
     fd, resolv = mkstemp(dir = '/tmp/', prefix='resolv_')
     f = fdopen(fd, 'w')
     f.write('domain grid5000.fr\nsearch grid5000.fr '+\
             ' '.join( [site+'.grid5000.fr' for site in get_g5k_sites()] )
-            +' \nnameserver '+get_server_ip(server)+ '\n')
+            +'\nnameserver '+get_server_ip(server)+\
+            +'\nnameserver ')
     f.close()
     Put(clients, [resolv], remote_location = '/etc/').run()
     TaktukRemote('cd /etc && cp '+resolv.split('/')[-1]+' resolv.conf', clients).run()
+    Process('rm '+resolv).run()
 
 def dhcp_conf(server, vms):
-    """ """
+    """Generate the dnsmasq.conf with dhcp parameters and put it on the server"""
     logger.debug('Creating dnsmasq.conf')
     ip_mac = [ (vm['ip'], vm['mac']) for vm in vms ]
     dhcp_lease = 'dhcp-lease-max=10000\n'
@@ -79,7 +69,21 @@ def dhcp_conf(server, vms):
     f.close()
     Put([server], [dnsmasq], remote_location='/etc/').run()
     SshProcess('cd /etc && cp '+dnsmasq.split('/')[-1]+' dnsmasq.conf', server).run()
+    Process('rm '+dnsmasq).run()
 
+def sysctl_conf(server, vms):
+    """Change the default value of net.ipv4.neigh.default.gc_thresh* to handle n_vm IP"""
+    val = int(2**ceil(log(len(vms), 2)))
+    conf = "\nnet.ipv4.neigh.default.gc_thresh3 = "+str(3*val)+\
+          "\nnet.ipv4.neigh.default.gc_thresh2 = "+str(2*val)+\
+          "\nnet.ipv4.neigh.default.gc_thresh1 = "+str(val)
+    fd, sysctl = mkstemp(dir = '/tmp/', prefix='sysctl_')
+    f = fdopen(fd, 'w')
+    f.write(conf)
+    f.close()
+    Put([server], [sysctl], remote_location='/etc/').run()
+    SshProcess('cd /etc && cat '+sysctl.split('/')[-1]+' >> sysctl.conf && sysctl -p', server).run()
+    Process('rm '+sysctl).run()
 
 
 def dnsmasq_server(server, clients, vms, dhcp = True):
@@ -91,7 +95,7 @@ def dnsmasq_server(server, clients, vms, dhcp = True):
 
     :param vms: list of virtual machines
 
-     """
+    """
     logger.debug('Installing and configuring a DNS/DHCP server on %s', server)
     cmd ='export DEBIAN_MASTER=noninteractive ; apt-get update ; apt-get -y purge dnsmasq-base ; '+\
          'apt-get install -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confnew" '+\
@@ -101,7 +105,9 @@ def dnsmasq_server(server, clients, vms, dhcp = True):
     vms_lists(vms, server)
     resolv_conf(server, clients)
     if dhcp is not None:
+        sysctl_conf(server, vms)
         dhcp_conf(server, vms)
+
 
     logger.debug('Restarting service ...')
     cmd = 'service dnsmasq stop ; rm /var/lib/misc/dnsmasq.leases ; service dnsmasq start',
