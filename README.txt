@@ -8,7 +8,7 @@ It is composed of:
 - a script that deploy virtual machines
 - an experimental engine that conduct user defined workflow for a set of parameters
 
-Developped by the Inria Hemera initiative 2010-2014.
+Developped by the Inria Hemera initiative 2010-2014 https://www.grid5000.fr/mediawiki/index.php/Hemera.
 
 
 Requirements
