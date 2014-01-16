@@ -44,9 +44,8 @@ def resolv_conf(server, clients):
     fd, resolv = mkstemp(dir = '/tmp/', prefix='resolv_')
     f = fdopen(fd, 'w')
     f.write('domain grid5000.fr\nsearch grid5000.fr '+\
-            ' '.join( [site+'.grid5000.fr' for site in get_g5k_sites()] )
-            +'\nnameserver '+get_server_ip(server)+\
-            +'\nnameserver ')
+            ' '.join( [site+'.grid5000.fr' for site in get_g5k_sites()] )+\
+            '\nnameserver '+get_server_ip(server) )
     f.close()
     Put(clients, [resolv], remote_location = '/etc/').run()
     TaktukRemote('cd /etc && cp '+resolv.split('/')[-1]+' resolv.conf', clients).run()
