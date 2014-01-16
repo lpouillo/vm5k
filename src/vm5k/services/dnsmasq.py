@@ -72,7 +72,7 @@ def dhcp_conf(server, vms):
     Process('rm '+dnsmasq).run()
 
 def sysctl_conf(server, vms):
-    """Change the default value of net.ipv4.neigh.default.gc_thresh* to handle n_vm IP"""
+    """Change the default value of net.ipv4.neigh.default.gc_thresh* to handle large number of IP"""
     val = int(2**ceil(log(len(vms), 2)))
     conf = "\nnet.ipv4.neigh.default.gc_thresh3 = "+str(3*val)+\
           "\nnet.ipv4.neigh.default.gc_thresh2 = "+str(2*val)+\
