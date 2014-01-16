@@ -108,7 +108,6 @@ def dnsmasq_server(server, clients, vms, dhcp = True):
         sysctl_conf(server, vms)
         dhcp_conf(server, vms)
 
-
     logger.debug('Restarting service ...')
     cmd = 'service dnsmasq stop ; rm /var/lib/misc/dnsmasq.leases ; service dnsmasq start',
     SshProcess( cmd, server).run()
