@@ -207,7 +207,6 @@ class vm5k_engine( Engine ):
                 logger.error('There are not enough nodes on %s for your experiments, abort ...',
                              self.cluster)
                 exit()
-        logger.info('Startdate: %s, n_nodes: %s', format_date(startdate), str(n_nodes))
         jobs_specs = get_jobs_specs({self.cluster: n_nodes}, name = 'vm5k_engine')
         sub = jobs_specs[0][0]
         tmp = str(sub.resources).replace('\\', '')
@@ -216,6 +215,7 @@ class vm5k_engine( Engine ):
         sub.additional_options = '-t deploy'
         sub.reservation_date = startdate
         (self.oar_job_id, self.frontend) = oarsub(jobs_specs)[0]
+        logger.info('Startdate: %s, n_nodes: %s', format_date(startdate), str(n_nodes))
 
 
     def get_resources(self):
