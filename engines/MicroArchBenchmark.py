@@ -43,6 +43,9 @@ class MicroArchBenchmark( vm5k_engine ):
             mult_cpu_vm.append( '1'*i+'0'*(n_core-i))
         mult_cpu_vm.remove('1'+'0'*(n_core-1))
         
+        # Ugly hack to run only non multi-core
+        #mult_cpu_vm.append( '0'*(n_core))
+        
         parameters = {'dist': dists, 'multi_cpu': mult_cpu_vm}
         logger.debug(parameters)
         
