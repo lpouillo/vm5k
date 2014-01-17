@@ -194,8 +194,6 @@ class vm5k_engine( Engine ):
     def make_reservation(self):
         """Perform """
         logger.info('Performing reservation')
-
-
         starttime = int(time()+timedelta_to_seconds(timedelta(minutes = 1)))
         endtime =int(starttime+timedelta_to_seconds(timedelta(days = 3, minutes = 1)))
         startdate, n_nodes = self._get_nodes(starttime, endtime)
@@ -209,7 +207,7 @@ class vm5k_engine( Engine ):
                 logger.error('There are not enough nodes on %s for your experiments, abort ...',
                              self.cluster)
                 exit()
-
+        logger.info('Startdate: %s, n_nodes: %s', format_date(startdate), str(n_nodes))
         jobs_specs = get_jobs_specs({self.cluster: n_nodes}, name = 'vm5k_engine')
         sub = jobs_specs[0][0]
         tmp = str(sub.resources).replace('\\', '')
