@@ -38,6 +38,8 @@ from execo_g5k.utils import get_kavlan_host_name
 from vm5k.config import default_vm
 from vm5k.actions import create_disks, install_vms, start_vms, wait_vms_have_started, destroy_vms, create_disks_on_hosts
 from vm5k.services import dnsmasq_server
+from vm5k.plots import init_live_plot
+
 
 
 
@@ -142,7 +144,8 @@ class vm5k_deployment(object):
 
     def __init__(self, infile = None, resources = None,
                  env_name = 'wheezy-x64-base', env_file = None,
-                 vms = None, distribution = 'round-robin'):
+                 vms = None, distribution = 'round-robin',
+                 live_plot = False):
         """:params infile: an XML file that describe the topology of the deployment
 
         :param resources: a dict whose keys are Grid'5000 sites and values are
@@ -157,6 +160,8 @@ class vm5k_deployment(object):
 
         :params distribution: how to distribute the vms on the hosts
         (``round-robin`` , ``concentrated``, ``random``)
+
+        :params live_plot: create a figure at the script beginning and add
         """
         print_step('STARTING vm5k_deployment')
         self.state = Element('vm5k')
@@ -187,6 +192,10 @@ class vm5k_deployment(object):
                     len(self.clusters), style.user1('clusters'),
                     len(self.hosts), style.host('hosts'),
                     len(self.vms), style.vm('vms'))
+        if live_plot:
+            self.live_plot = True
+            init_live_plot(self.state)
+        exit()
 
 
     def run(self):
