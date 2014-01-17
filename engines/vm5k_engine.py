@@ -205,6 +205,10 @@ class vm5k_engine( Engine ):
             starttime = endtime
             endtime = int(starttime +timedelta_to_seconds(timedelta(days = 3, minutes = 1)))
             startdate, n_nodes = self._get_nodes(starttime, endtime)
+            if starttime > int(time()+timedelta_to_seconds(timedelta(months = 3))):
+                logger.error('There are not enough nodes on %s for your experiments, abort ...',
+                             self.cluster)
+                exit()
 
         jobs_specs = get_jobs_specs({self.cluster: n_nodes}, name = 'vm5k_engine')
         sub = jobs_specs[0][0]
