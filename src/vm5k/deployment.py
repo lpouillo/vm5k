@@ -59,7 +59,8 @@ def get_oar_job_vm5k_resources(oar_job_id, site):
         kavlan = get_oar_job_kavlan(oar_job_id, site)
         if kavlan is not None:
             ip_mac = get_kavlan_ip_mac(kavlan, site)
-
+    if 'grid5000.fr' in site:
+        site = site.split('.')[0]
     return {site: {'hosts': hosts,'ip_mac': ip_mac, 'kavlan': kavlan}}
 
 def get_oargrid_job_vm5k_resources(oargrid_job_id):
@@ -195,7 +196,6 @@ class vm5k_deployment(object):
         if live_plot:
             self.live_plot = True
             init_live_plot(self.state)
-        exit()
 
 
     def run(self):
@@ -505,7 +505,7 @@ class vm5k_deployment(object):
     # State related methods
     def _init_state(self, resources = None, vms = None, distribution = None, infile = None):
         """Create the topology XML structure describing the vm5k initial state"""
-        logger.debug('ELEMENTS')
+        logger.debug('SITES')
         self.sites = [ site for site in resources.keys() if site != 'global']
 
         logger.debug('IP MAC')
@@ -525,8 +525,7 @@ class vm5k_deployment(object):
         logger.debug('KaVLAN: %s', self.kavlan)
 
 
-        logger.debug('ELEMENTS')
-        self.sites = []
+        logger.debug('CLUSTERS AND HOSTS')
         self.clusters = []
         self.hosts = []
         for site, elements in resources.iteritems():
