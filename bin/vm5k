@@ -76,6 +76,9 @@ run.add_argument("-o", "--outdir",
 run.add_argument("-p", "--program",
                 dest = "program",
                 help = 'Launch a program at the end of the deployment')
+run.add_argument("--live-plot",
+                action = "store_true",
+                help = 'Open a figure to track the deployment process')
 
 ## Reservation
 mode = parser.add_argument_group( style.host("Mode"),
@@ -167,7 +170,6 @@ elif args.quiet:
     logger.setLevel(WARN)
 else:
     logger.setLevel(INFO)
-
 
 if args.n_vm is None and args.infile is None:
     parser.error('Must specify one of the following options: -n %s or -i %s, use -h for help ' %\
@@ -274,10 +276,9 @@ logger.info('Retrieving hosts and network parameters')
 if frontend is None:
     vm5k_resources = get_oargrid_job_vm5k_resources(int(job_id))
 else:
-    vm5k_resources = get_oar_job_vm5k_resources(int(job_id), frontend)
+    vm5k_resources = get_oar_job_vm5k_resources(int(job_id), frontend+'.grid5000.fr')
 
-
-vm5k = vm5k_deployment(resources = vm5k_resources, vms = vms)
+vm5k = vm5k_deployment(resources = vm5k_resources, vms = vms, live_plot = args.live_plot)
 vm5k.fact = ActionFactory(remote_tool = TAKTUK,
                                 fileput_tool = CHAINPUT,
                                 fileget_tool = TAKTUK)
