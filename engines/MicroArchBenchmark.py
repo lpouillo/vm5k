@@ -10,6 +10,10 @@ class MicroArchBenchmark( vm5k_engine ):
         super(MicroArchBenchmark, self).__init__()
         self.env_name = 'wheezy-x64-base'
         self.stress_time = 300
+        self.options_parser.add_option("--mem", dest = "cachebench",
+                    help = "", action = "store_true")
+	self.options_parser.add_option("--nomulti", dest = "nomulti",
+                    help = "", action = "store_true")
 
     def define_parameters(self):
         """ Create the parameters for the engine :
@@ -39,9 +43,12 @@ class MicroArchBenchmark( vm5k_engine ):
                     dists.append(other_cell)
 
         mult_cpu_vm = []
-        for i in range(n_core+1):
-            mult_cpu_vm.append( '1'*i+'0'*(n_core-i))
-        mult_cpu_vm.remove('1'+'0'*(n_core-1))
+        if self.options.nomulti:
+	  mult_cpu_vm.append('0'*(n_core))
+	else:
+	  for i in range(n_core+1):
+	      mult_cpu_vm.append( '1'*i+'0'*(n_core-i))
+	  mult_cpu_vm.remove('1'+'0'*(n_core-1))
 
         parameters = {'dist': dists, 'multi_cpu': mult_cpu_vm}
         logger.debug(parameters)
@@ -120,7 +127,7 @@ class MicroArchBenchmark( vm5k_engine ):
             logger.info(host+': Installing kflops on vms and creating stress action')
             stress.append( self.cpu_kflops([vm for vm in vms if vm['n_cpu'] == 1 ]) )
 
-            if multi_cpu:
+            if multi_cpu and not self.options.cachebench:
                 logger.info(host+': Installing numactl and kflops on multicore vms')
                 cmd =  'export DEBIAN_MASTER=noninteractive ; apt-get update && apt-get install -y  --force-yes numactl'
                 inst_numactl = Remote( cmd, [vm['ip'] for vm in vms if vm['id'] == 'vm-multi']).run()
@@ -143,10 +150,15 @@ class MicroArchBenchmark( vm5k_engine ):
                     logger.error(host+': Unable to start the stress for combination %s', slugify(comb))
                     exit()
 
-            sleep(self.stress_time)
-            logger.info(host+': Killing stress !!')
-            stress_actions.kill()
-
+	    if not self.options.cachebench:
+	      sleep(self.stress_time)
+	      logger.info(host+': Killing stress !!')
+	      stress_actions.kill()
+	    else:
+	      logger.info(host+': Waiting for cachebench to finish.')
+	      for p in stress_actions.processes:
+		while not p.ended:
+		  sleep(1)
 
             # Gathering results
             comb_dir = self.result_dir +'/'+ slugify(comb)+'/'
@@ -162,19 +174,32 @@ class MicroArchBenchmark( vm5k_engine ):
             vms_ip = [vm['ip'] for vm in vms if vm['n_cpu'] == 1]
             vms_out = [vm['ip']+'_'+vm['cpuset'] for vm in vms if vm['n_cpu'] == 1]
             comb_dir = self.result_dir +'/'+ slugify(comb)+'/'
-            get_vms_output = Get(vms_ip, ['{{vms_out}}.out'], local_location = comb_dir).run()
-            for p in get_vms_output.processes:
-                if not p.ok:
-                    logger.error(host+': Unable to retrieve the files for combination %s', slugify(comb))
-                    exit()
-            if multi_cpu:
-                for multi_vm in [vm for vm in vms if vm['id'] == 'vm-multi' ]:
-                    get_multi = Get([multi_vm['ip']], ['vm_multi_'+str(cpu_index[i])+'.out ' for i in range(multi_vm['n_cpu']) ],
-                        local_location = comb_dir).run()
-                    for p in get_multi.processes:
-                        if not p.ok:
-                            logger.error(host+': Unable to retrieve the vm_multi files for combination %s', slugify(comb))
-                            exit()
+            if self.options.cachebench:
+	      get_vms_output = Get(vms_ip, ['{{vms_out}}_rmw.out'], local_location = comb_dir).run()
+	      for p in get_vms_output.processes:
+		  if not p.ok:
+		      logger.error(host+': Unable to retrieve the files for combination %s', slugify(comb))
+		      exit()
+		      
+	      get_vms_output = Get(vms_ip, ['{{vms_out}}_memcpy.out'], local_location = comb_dir).run()
+	      for p in get_vms_output.processes:
+		  if not p.ok:
+		      logger.error(host+': Unable to retrieve the files for combination %s', slugify(comb))
+		      exit()
+	    else:
+	      get_vms_output = Get(vms_ip, ['{{vms_out}}.out'], local_location = comb_dir).run()
+	      for p in get_vms_output.processes:
+		  if not p.ok:
+		      logger.error(host+': Unable to retrieve the files for combination %s', slugify(comb))
+		      exit()
+	      if multi_cpu:
+		  for multi_vm in [vm for vm in vms if vm['id'] == 'vm-multi' ]:
+		      get_multi = Get([multi_vm['ip']], ['vm_multi_'+str(cpu_index[i])+'.out ' for i in range(multi_vm['n_cpu']) ],
+			  local_location = comb_dir).run()
+		      for p in get_multi.processes:
+			  if not p.ok:
+			      logger.error(host+': Unable to retrieve the vm_multi files for combination %s', slugify(comb))
+			      exit()
 
             comb_ok = True
         finally:
@@ -199,11 +224,18 @@ class MicroArchBenchmark( vm5k_engine ):
         """Put kflops.tgz on the hosts, compile it and optionnaly prepare a TaktukRemote"""
         vms_ip = [vm['ip'] for vm in vms]
 
-        ChainPut(vms_ip, ['kflops.tgz'] ).run()
-        TaktukRemote( 'tar -xzf kflops.tgz; cd kflops; make', vms_ip).run()
-        vms_out = [vm['ip']+'_'+vm['cpuset'] for vm in vms]
-        if not install_only:
-            return TaktukRemote('./kflops/kflops > {{vms_out}}.out', vms_ip)
+	if self.options.cachebench:
+	  ChainPut(vms_ip, ['llcbench.tar.gz'] ).run()
+	  TaktukRemote( 'tar -xzf llcbench.tar.gz; cd llcbench; make linux-lam; make cache-bench', vms_ip).run()
+	  vms_out = [vm['ip']+'_'+vm['cpuset'] for vm in vms]
+	  if not install_only:
+	      return TaktukRemote('./llcbench/cachebench/cachebench -m 27 -e 1 -x 2 -d 1 -b > {{vms_out}}_rmw.out; ./llcbench/cachebench/cachebench -m 27 -e 1 -x 2 -d 1 -p > {{vms_out}}_memcpy.out', vms_ip)  
+	else:
+	  ChainPut(vms_ip, ['kflops.tgz'] ).run()
+	  TaktukRemote( 'tar -xzf kflops.tgz; cd kflops; make', vms_ip).run()
+	  vms_out = [vm['ip']+'_'+vm['cpuset'] for vm in vms]
+	  if not install_only:
+	      return TaktukRemote('./kflops/kflops > {{vms_out}}.out', vms_ip)
 
 
 #    def mem_update(self, vms, size, speed):
