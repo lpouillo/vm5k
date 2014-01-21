@@ -328,7 +328,7 @@ class vm5k_deployment(object):
 
         logger.info('Deploying %s hosts \n%s', len(self.hosts),
             ' '.join([ style.host(host.address.split('.')[0]) for host in sorted(self.hosts) ]))
-        deployment = Deployment( hosts = [ canonical_host_name(host) for host in self.hosts],
+        deployment = Deployment( hosts = [ Host(canonical_host_name(host)) for host in self.hosts],
             env_file = self.env_file, env_name = self.env_name,
             vlan = self.kavlan)
 
@@ -667,14 +667,20 @@ class vm5k_deployment(object):
 
     def _update_hosts_state(self, hosts_ok, hosts_ko):
         """ """
+        logger.info(pformat(hosts_ok))
+        logger.info(pformat(hosts_ko))
         for host in hosts_ok:
             if host is not None:
+                if not isinstance(host, Host):
+                    host = Host(host)
                 if self.kavlan is None:
                     address = host.address
                 else:
                     address = kavname_to_basename(host).address
                 self.state.find(".//host/[@id='"+address+"']").set('state', 'OK')
         for host in hosts_ko:
+            if not isinstance(host, Host):
+                host = Host(host)
             if self.kavlan is None:
                 address = host.address
             else:
@@ -693,6 +699,7 @@ class vm5k_deployment(object):
     def _actions_hosts(self, action):
         hosts_ok, hosts_ko = [], []
         for p in action.processes:
+            print p.host, p.ok
             if p.ok:
                 hosts_ok.append(p.host)
             else:
