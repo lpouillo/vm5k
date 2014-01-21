@@ -7,6 +7,8 @@
 #    A great thanks to A. Lèbre and J. Pastor for testing :)
 #
 #
+import matplotlib
+matplotlib.use('GTK')
 import os, argparse
 from pprint import pformat
 from time import strftime

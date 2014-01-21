@@ -252,8 +252,6 @@ class vm5k_deployment(object):
         start_vms(self.vms).run()
         wait_vms_have_started(self.vms)
 
-
-
     def _create_backing_file(self, from_disk = '/grid5000/images/KVM/squeeze-x64-base.qcow2', to_disk = '/tmp/vm-base.img'):
         """ """
         logger.debug("Copying backing file from frontends")

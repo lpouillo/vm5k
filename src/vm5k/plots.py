@@ -37,7 +37,8 @@ def init_live_plot(xml):
                 G.add_edge(cluster.get('id'),host.get('id'))
 
     logger.info('Edges and nodes defined')
-    pos = nx.graphviz_layout(G, prog='neato')
+    # pos = nx.graphviz_layout(G, prog='neato')
+    pos = nx.spring_layout(G)
     logger.info('position defined')
     nx.draw_networkx_nodes(G, pos,
                        node_size = 2000,
@@ -70,7 +71,8 @@ def init_live_plot(xml):
 #                 G.add_node(vm.get('id'))
 #                 G.add_edge(host.get('id'),vm.get('id'))
 
-
+    sleep(30)
+    exit()
 
 
 
