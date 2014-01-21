@@ -689,6 +689,7 @@ class vm5k_deployment(object):
             self.hosts.remove(host)
             if len(self.vms) > 0:
                 distribute_vms(self.vms, self.hosts, self.distribution)
+                self._set_vms_ip_mac()
 
         if len(self.hosts) == 0:
             logger.error('Not enough hosts available, because %s are KO',
