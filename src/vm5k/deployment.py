@@ -329,7 +329,7 @@ class vm5k_deployment(object):
                                 num_tries = max_tries,
                                 check_deployed_command = check_deploy)
         logger.info('Deployed %s hosts \n%s', len(deployed_hosts),
-            ' '.join([ style.host(host.address.split('.')[0]) for host in sorted(deployed_hosts)]))
+            ' '.join([ style.host(host.split('.')[0]) for host in sorted(deployed_hosts)]))
         self._update_hosts_state(deployed_hosts, undeployed_hosts)
 
         # Renaming hosts if a kavlan is used
