@@ -38,6 +38,8 @@ from execo_g5k.utils import get_kavlan_host_name
 from vm5k.config import default_vm
 from vm5k.actions import create_disks, install_vms, start_vms, wait_vms_have_started, destroy_vms, create_disks_on_hosts
 from vm5k.services import dnsmasq_server
+from vm5k.plots import init_live_plot
+
 
 
 
@@ -57,7 +59,8 @@ def get_oar_job_vm5k_resources(oar_job_id, site):
         kavlan = get_oar_job_kavlan(oar_job_id, site)
         if kavlan is not None:
             ip_mac = get_kavlan_ip_mac(kavlan, site)
-
+    if 'grid5000.fr' in site:
+        site = site.split('.')[0]
     return {site: {'hosts': hosts,'ip_mac': ip_mac, 'kavlan': kavlan}}
 
 def get_oargrid_job_vm5k_resources(oargrid_job_id):
@@ -142,7 +145,8 @@ class vm5k_deployment(object):
 
     def __init__(self, infile = None, resources = None,
                  env_name = 'wheezy-x64-base', env_file = None,
-                 vms = None, distribution = 'round-robin'):
+                 vms = None, distribution = 'round-robin',
+                 live_plot = False):
         """:params infile: an XML file that describe the topology of the deployment
 
         :param resources: a dict whose keys are Grid'5000 sites and values are
@@ -157,6 +161,8 @@ class vm5k_deployment(object):
 
         :params distribution: how to distribute the vms on the hosts
         (``round-robin`` , ``concentrated``, ``random``)
+
+        :params live_plot: create a figure at the script beginning and add
         """
         print_step('STARTING vm5k_deployment')
         self.state = Element('vm5k')
@@ -187,6 +193,9 @@ class vm5k_deployment(object):
                     len(self.clusters), style.user1('clusters'),
                     len(self.hosts), style.host('hosts'),
                     len(self.vms), style.vm('vms'))
+        if live_plot:
+            self.live_plot = True
+            init_live_plot(self.state)
 
 
     def run(self):
@@ -496,7 +505,7 @@ class vm5k_deployment(object):
     # State related methods
     def _init_state(self, resources = None, vms = None, distribution = None, infile = None):
         """Create the topology XML structure describing the vm5k initial state"""
-        logger.debug('ELEMENTS')
+        logger.debug('SITES')
         self.sites = [ site for site in resources.keys() if site != 'global']
 
         logger.debug('IP MAC')
@@ -516,8 +525,7 @@ class vm5k_deployment(object):
         logger.debug('KaVLAN: %s', self.kavlan)
 
 
-        logger.debug('ELEMENTS')
-        self.sites = []
+        logger.debug('CLUSTERS AND HOSTS')
         self.clusters = []
         self.hosts = []
         for site, elements in resources.iteritems():
