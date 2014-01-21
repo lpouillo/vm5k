@@ -76,12 +76,9 @@ run.add_argument("-o", "--outdir",
 run.add_argument("-p", "--program",
                 dest = "program",
                 help = 'Launch a program at the end of the deployment')
-<<<<<<< HEAD
-=======
 run.add_argument("--live-plot",
                 action = "store_true",
                 help = 'Open a figure to track the deployment process')
->>>>>>> live_plot
 
 ## Reservation
 mode = parser.add_argument_group( style.host("Mode"),
@@ -203,11 +200,7 @@ if args.infile is not None:
     elements = { cluster.get('id'): len(cluster.findall('./host')) for cluster in vm5k.findall('.//cluster') }
 else:
     logger.info('Using n_vm = %s, \nvm_template = %s and resources %s',
-<<<<<<< HEAD
                 style.emph(args.n_vm), style.emph(args.vm_template), style.emph(args.resources))
-=======
-        style.emph(args.n_vm), style.emph(args.vm_template), style.emph(args.resources))
->>>>>>> live_plot
     vms = define_vms(['vm-'+str(i+1) for i in range(args.n_vm)],
                      template = fromstring(args.vm_template))
     elements = {}
