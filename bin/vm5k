@@ -276,7 +276,7 @@ logger.info('Retrieving hosts and network parameters')
 if frontend is None:
     vm5k_resources = get_oargrid_job_vm5k_resources(int(job_id))
 else:
-    vm5k_resources = get_oar_job_vm5k_resources(int(job_id), frontend+'.grid5000.fr')
+    vm5k_resources = get_oar_job_vm5k_resources(int(job_id), frontend)
 
 vm5k = vm5k_deployment(resources = vm5k_resources, vms = vms, live_plot = args.live_plot)
 vm5k.fact = ActionFactory(remote_tool = TAKTUK,

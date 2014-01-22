@@ -667,8 +667,6 @@ class vm5k_deployment(object):
 
     def _update_hosts_state(self, hosts_ok, hosts_ko):
         """ """
-        logger.info(pformat(hosts_ok))
-        logger.info(pformat(hosts_ko))
         for host in hosts_ok:
             if host is not None:
                 if not isinstance(host, Host):
@@ -700,7 +698,6 @@ class vm5k_deployment(object):
     def _actions_hosts(self, action):
         hosts_ok, hosts_ko = [], []
         for p in action.processes:
-            print p.host, p.ok
             if p.ok:
                 hosts_ok.append(p.host)
             else:
