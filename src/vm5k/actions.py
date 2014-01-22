@@ -19,7 +19,7 @@
 
 from os import fdopen
 from pprint import pformat
-from execo import SshProcess, Put, logger, get_remote, Process, ParallelActions, Host
+from execo import SshProcess, Put, logger, TaktukRemote, Process, ParallelActions, Host
 from execo.log import style
 from execo.time_utils import sleep
 from execo_g5k import default_frontend_connection_params
@@ -96,7 +96,7 @@ def list_vm( host, all = False ):
     cmd = 'virsh --connect qemu:///system list'
     if all :
         cmd += ' --all'
-    list_vm = get_remote(cmd, [host] ).run()
+    list_vm = TaktukRemote(cmd, [host] ).run()
     vms_id = []
     for p in list_vm.processes:
         lines = p.stdout.split('\n')
@@ -119,7 +119,7 @@ def create_disks(vms, backing_file = '/tmp/vm-base.img', backing_file_fmt = 'raw
 
     logger.debug(pformat(hosts_cmds.values()))
 
-    return get_remote('{{hosts_cmds.values()}}', list(hosts_cmds.keys()))
+    return TaktukRemote('{{hosts_cmds.values()}}', list(hosts_cmds.keys()))
 
 def create_disks_on_hosts(vms, hosts, backing_file = '/tmp/vm-base.img', backing_file_fmt = 'raw'):
     """ Return a Parallel action to create the qcow2 disks on all hosts"""
@@ -143,7 +143,7 @@ def install_vms(vms):
         hosts_cmds[vm['host']] = cmd if not hosts_cmds.has_key(vm['host']) else hosts_cmds[vm['host']]+cmd
 
     logger.debug(pformat(hosts_cmds))
-    return get_remote('{{hosts_cmds.values()}}', list(hosts_cmds.keys()))
+    return TaktukRemote('{{hosts_cmds.values()}}', list(hosts_cmds.keys()))
 
 
 def start_vms(vms):
@@ -154,14 +154,14 @@ def start_vms(vms):
         hosts_cmds[vm['host']] = cmd if not hosts_cmds.has_key(vm['host']) else hosts_cmds[vm['host']]+cmd
 
     logger.debug(pformat(hosts_cmds))
-    return get_remote('{{hosts_cmds.values()}}', list(hosts_cmds.keys()))
+    return TaktukRemote('{{hosts_cmds.values()}}', list(hosts_cmds.keys()))
 
 
 #def check_vm_state(vms):
 #    """ """
 
 
-def wait_vms_have_started(vms, host = None):
+def wait_vms_have_started(vms, host = None, callback = None):
     """ Try to make a ls on all vms and return True when all process are ok0"""
     if host is None:
         host = get_host_site(vms[0]['host'])
@@ -201,6 +201,11 @@ def wait_vms_have_started(vms, host = None):
             nmap_tries += 1
         if not ssh_open:
             logger.info(str(nmap_tries)+': '+  started_vms+'/'+str(len(vms)) )
+        if callback is not None:
+            callback()
+
+
+
     SshProcess('rm '+tmpfile.split('/')[-1], host, connection_params = {'user': user}).run()
     Process('rm '+tmpfile).run()
     if ssh_open:
@@ -222,7 +227,7 @@ def migrate_vm(vm, host):
         src = vm['host']
 
     # Check that the disk is here
-    test_disk = get_remote('ls /tmp/'+vm['id']+'.qcow2', [host]).run()
+    test_disk = TaktukRemote('ls /tmp/'+vm['id']+'.qcow2', [host]).run()
     if not test_disk.ok:
         vm['host'] = host
         create_disk_on_dest = create_disks([vm]).run()
@@ -231,7 +236,7 @@ def migrate_vm(vm, host):
 
     cmd = 'virsh --connect qemu:///system migrate '+vm['id']+' --live --copy-storage-inc '+\
             'qemu+ssh://'+host.address+"/system'  "
-    return get_remote(cmd, [src] )
+    return TaktukRemote(cmd, [src] )
 
 
 def destroy_vms( hosts):
@@ -246,12 +251,12 @@ def destroy_vms( hosts):
             hosts_with_vms.append(host)
 
     if len(cmds) > 0:
-        get_remote('{{cmds}}', hosts_with_vms).run()
+        TaktukRemote('{{cmds}}', hosts_with_vms).run()
 
 
 def rm_qcow2_disks( hosts):
     logger.debug('Removing existing disks')
-    get_remote('rm -f /tmp/*.qcow2', hosts).run()
+    TaktukRemote('rm -f /tmp/*.qcow2', hosts).run()
 
 
 

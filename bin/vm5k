@@ -7,26 +7,35 @@
 #    A great thanks to A. Lèbre and J. Pastor for testing :)
 #
 #
-import matplotlib
-matplotlib.use('GTK')
+
+
+
 import os, argparse
 from pprint import pformat
 from time import strftime
 from logging import INFO, DEBUG, WARN
 from math import ceil
 from xml.etree.ElementTree import fromstring, parse, dump
+
+# import matplotlib
+# matplotlib.use('GTK')
+# import matplotlib.pyplot as plt
+# # import networkx as nx
+
+
 from execo import logger, Process
 from execo.log import style
 from execo.config import TAKTUK, CHAINPUT
 from execo.action import ActionFactory
-from execo.time_utils import Timer, format_date
+from execo.time_utils import Timer, format_date, sleep
 from execo_g5k import oargridsub, get_g5k_clusters
 from execo_g5k.oargrid import get_oargridsub_commandline
 from execo_g5k.planning import get_planning, compute_slots, show_resources, find_free_slot, \
     get_jobs_specs, distribute_hosts
 from vm5k import vm5k_deployment, define_vms, get_oar_job_vm5k_resources, get_max_vms, \
-    get_oargrid_job_vm5k_resources, get_vms_slot, print_step, distribute_vms, default_vm
-
+    get_oargrid_job_vm5k_resources, get_vms_slot, print_step, distribute_vms, destroy_vms, \
+    create_disks, install_vms, start_vms, wait_vms_have_started
+from vm5k.plots import init_live_plot
 
 ### INITIALIZATION
 
@@ -190,6 +199,30 @@ try:
 except os.error:
     pass
 
+if args.live_plot:
+    logger.info('Initializing Live plot')
+    dpi = 150
+    plt.figure(1, figsize=(950/dpi, 1200/dpi), dpi=dpi)
+
+    ax_topo = plt.subplot(211)
+    ax_topo.set_title('Topology')
+    ax_vm = plt.subplot(212)
+    ax_vm.set_title('Virtual machines')
+
+    dat = [0]
+    Ln, = ax_vm.plot(dat)
+    xdat = [0,timer.elapsed()]
+    ax_vm.set_data(xdat)
+
+    plt.ion()
+    plt.show()
+    plt.pause(1)
+
+    logger.info('Live plot initialized')
+
+
+
+
 ### DEFINING VMS AND ELEMENTS
 if args.infile is not None:
     logger.info( 'Using an %s for the topology', style.emph(args.infile))
@@ -302,6 +335,24 @@ distribute_vms(vm5k.vms, vm5k.hosts)
 
 vm5k.get_state()
 vm5k.deploy_vms(disk_location = args.vm_disk_location)
+# destroy_vms(vm5k.hosts)
+# logger.info('Creating the virtual disks ')
+# vm5k._remove_existing_disks()
+# vm5k._create_backing_file()
+# create_disks(vm5k.vms).run()
+# logger.info('Installing the virtual machines')
+# install_vms(vm5k.vms).run()
+# logger.info('Starting the virtual machines')
+# start_vms(vm5k.vms).run()
+#
+# def update_plot(n_vm, Ln, xdat, dat, timer):
+#     """ """
+#     dat.append(n_vm)
+#     Ln.set_ydata(dat)
+#     xdat.append(timer.elapsed())
+#     Ln.set_xdata(xdat)
+#
+# wait_vms_have_started(vm5k.vms, callback = lambda: update_plot(n_vm, Ln, xdat, dat, timer)) )
 vm5k.get_state()
 
 if args.program is not None:

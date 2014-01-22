@@ -5,62 +5,72 @@ import random
 from xml.etree.ElementTree import parse
 from execo_g5k.api_utils import get_g5k_sites, get_g5k_clusters
 from execo import logger, sleep
+import matplotlib.pyplot as plt
 try:
     import networkx as nx
-    import matplotlib.pyplot as plt
+
 except:
     pass
 
 
 
-def init_live_plot(xml):
+def init_live_plot():
     """Create  """
     logger.info('Initializing Live plot')
-    plt.figure(figsize=(15, 15))
+    dpi = 150
+    plt.figure(1, figsize=(950/dpi, 1200/dpi), dpi=dpi)
+
+    ax_topo = plt.subplot(211)
+    ax_topo.set_title('Topology')
+    ax_vm = plt.subplot(212)
+    ax_vm.set_title('Virtual machines')
+
+
+
     plt.ion()
     plt.show()
-    G = nx.Graph(name='deployment')
-    site_nodes = []
-    cluster_nodes = []
-    host_nodes = []
-    for site in xml.findall('site'):
-        site_nodes.append(site.get('id').upper())
-        G.add_node(site.get('id').upper())
-        G.add_edge('vm5k', site.get('id').upper())
-        for cluster in site.findall('cluster'):
-            cluster_nodes.append(cluster.get('id').title())
-            G.add_nodes_from([(cluster.get('id'), dict(size=11,color='blue'))])
-            G.add_edge(site.get('id'),cluster.get('id').title())
-            for host in cluster.findall('host'):
-                host_nodes.append(host.get('id'))
-                G.add_node(host.get('id'))
-                G.add_edge(cluster.get('id'),host.get('id'))
-
-    logger.info('Edges and nodes defined')
-    # pos = nx.graphviz_layout(G, prog='neato')
-    pos = nx.spring_layout(G)
-    logger.info('position defined')
-    nx.draw_networkx_nodes(G, pos,
-                       node_size = 2000,
-                       nodelist = ['vm5k'],
-                       node_color = '#FF6363')
-    nx.draw_networkx_nodes(G, pos,
-                       node_size = 1000,
-                       nodelist = site_nodes,
-                       node_color = '#9CF7BC')
-    nx.draw_networkx_nodes(G, pos,
-                       node_size = 500,
-                       nodelist = cluster_nodes,
-                       node_color = '#BFDFF2')
-    nx.draw_networkx_nodes(G, pos,
-                       node_size = 250,
-                       nodelist = host_nodes,
-                       node_color = '#F0F7BE')
+#     G = nx.Graph(name='deployment')
+#     site_nodes = []
+#     cluster_nodes = []
+#     host_nodes = []
+#     for site in xml.findall('site'):
+#         site_nodes.append(site.get('id').upper())
+#         G.add_node(site.get('id').upper())
+#         G.add_edge('vm5k', site.get('id').upper())
+#         for cluster in site.findall('cluster'):
+#             cluster_nodes.append(cluster.get('id').title())
+#             G.add_nodes_from([(cluster.get('id'), dict(size=11,color='blue'))])
+#             G.add_edge(site.get('id'),cluster.get('id').title())
+#             for host in cluster.findall('host'):
+#                 host_nodes.append(host.get('id'))
+#                 G.add_node(host.get('id'))
+#                 G.add_edge(cluster.get('id'),host.get('id'))
+#
+#     logger.info('Edges and nodes defined')
+#     # pos = nx.graphviz_layout(G, prog='neato')
+#     pos = nx.spring_layout(G)
+#     logger.info('position defined')
 #     nx.draw_networkx_nodes(G, pos,
-#                        node_size = 125,
-#                        nodelist = vm_nodes,
-#                        node_color = '#F5C9CD')
-    nx.draw_networkx_edges(G, pos, alpha=0.5, width=2)
+#                        node_size = 2000,
+#                        nodelist = ['vm5k'],
+#                        node_color = '#FF6363')
+#     nx.draw_networkx_nodes(G, pos,
+#                        node_size = 1000,
+#                        nodelist = site_nodes,
+#                        node_color = '#9CF7BC')
+#     nx.draw_networkx_nodes(G, pos,
+#                        node_size = 500,
+#                        nodelist = cluster_nodes,
+#                        node_color = '#BFDFF2')
+#     nx.draw_networkx_nodes(G, pos,
+#                        node_size = 250,
+#                        nodelist = host_nodes,
+#                        node_color = '#F0F7BE')
+# #     nx.draw_networkx_nodes(G, pos,
+# #                        node_size = 125,
+# #                        nodelist = vm_nodes,
+# #                        node_color = '#F5C9CD')
+#     nx.draw_networkx_edges(G, pos, alpha=0.5, width=2)
 
     plt.draw()
 

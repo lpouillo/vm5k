@@ -38,10 +38,6 @@ from execo_g5k.utils import get_kavlan_host_name
 from vm5k.config import default_vm
 from vm5k.actions import create_disks, install_vms, start_vms, wait_vms_have_started, destroy_vms, create_disks_on_hosts
 from vm5k.services import dnsmasq_server
-from vm5k.plots import init_live_plot
-
-
-
 
 
 def get_oar_job_vm5k_resources(oar_job_id, site):
@@ -193,10 +189,6 @@ class vm5k_deployment(object):
                     len(self.clusters), style.user1('clusters'),
                     len(self.hosts), style.host('hosts'),
                     len(self.vms), style.vm('vms'))
-        if live_plot:
-            self.live_plot = True
-            init_live_plot(self.state)
-
 
     def run(self):
         """Launch the deployment and configuration of hosts and virtual machines"""
@@ -234,14 +226,14 @@ class vm5k_deployment(object):
         dnsmasq_server(service_node, clients, self.vms, dhcp)
 
     # VMS deployment
-    def deploy_vms(self, disk_location = 'one'):
+    def deploy_vms(self, disk_location = 'one', from_disk = '/grid5000/images/KVM/squeeze-x64-base.qcow2') :
         """Destroy the existing VMS, create the virtual disks, install the vms, start them and
         wait for boot"""
         logger.info('Destroying existing virtual machines')
         destroy_vms(self.hosts)
         logger.info('Creating the virtual disks ')
         self._remove_existing_disks()
-        self._create_backing_file('/grid5000/images/KVM/squeeze-x64-base.qcow2')
+        self._create_backing_file(from_disk)
         if disk_location == 'one':
             create_disks(self.vms).run()
         elif disk_location == 'all':
@@ -336,7 +328,7 @@ class vm5k_deployment(object):
                                 num_tries = max_tries,
                                 check_deployed_command = check_deploy)
         logger.info('Deployed %s hosts \n%s', len(deployed_hosts),
-            ' '.join([ style.host(host.address.split('.')[0]) for host in sorted(deployed_hosts)]))
+            ' '.join([ style.host(host.split('.')[0]) for host in sorted(deployed_hosts)]))
         self._update_hosts_state(deployed_hosts, undeployed_hosts)
 
         # Renaming hosts if a kavlan is used
@@ -556,6 +548,7 @@ class vm5k_deployment(object):
 
     def _set_vms_ip_mac(self):
         """Not finished """
+        logger.debug(pformat(self.vms))
         if isinstance(self.ip_mac, dict):
             i_vm = {site: 0 for site in self.sites }
             for vm in self.vms:
@@ -567,6 +560,7 @@ class vm5k_deployment(object):
             for vm in self.vms:
                 vm['ip'], vm['mac'] = self.ip_mac[i_vm]
                 i_vm += 1
+        logger.debug(pformat(self.vms))
 
 
     def _get_xml_elements(self):
@@ -666,19 +660,23 @@ class vm5k_deployment(object):
     def _update_hosts_state(self, hosts_ok, hosts_ko):
         """ """
         for host in hosts_ok:
+            if isinstance(host, Host):
+                host = host.address
             if host is not None:
                 if self.kavlan is None:
-                    address = host.address
+                    address = host
                 else:
-                    address = kavname_to_basename(host).address
+                    address = canonical_host_name(host)
                 self.state.find(".//host/[@id='"+address+"']").set('state', 'OK')
         for host in hosts_ko:
+            if isinstance(host, Host):
+                host = host.address
             if self.kavlan is None:
-                address = host.address
+                address = host
             else:
-                address = kavname_to_basename(host).address
+                address = canonical_host_name(host)
             self.state.find(".//host/[@id='"+address+"']").set('state', 'KO')
-            self.hosts.remove(host)
+            self.hosts.remove(Host(host))
             if len(self.vms) > 0:
                 distribute_vms(self.vms, self.hosts, self.distribution)
 
