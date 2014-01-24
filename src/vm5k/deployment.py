@@ -552,10 +552,6 @@ class vm5k_deployment(object):
         else:
             self.vms = []
 
-
-
-
-
     def _set_vms_ip_mac(self):
         """Not finished """
         if isinstance(self.ip_mac, dict):
@@ -685,9 +681,10 @@ class vm5k_deployment(object):
                 address = kavname_to_basename(host).address
             self.state.find(".//host/[@id='"+address+"']").set('state', 'KO')
             self.hosts.remove(host)
-            if len(self.vms) > 0:
-                distribute_vms(self.vms, self.hosts, self.distribution)
-                self._set_vms_ip_mac()
+
+        if len(self.vms) > 0:
+            distribute_vms(self.vms, self.hosts, self.distribution)
+            self._set_vms_ip_mac()
 
         if len(self.hosts) == 0:
             logger.error('Not enough hosts available, because %s are KO',
