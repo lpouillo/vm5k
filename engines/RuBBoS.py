@@ -398,6 +398,26 @@ class RuBBoS( vm5k_engine ):
 	      vms.extend(local_vms)
 	      logger.info(', '.join( [vm['id']+' '+ vm['ip']+' '+str(vm['n_cpu'])+'('+vm['cpuset']+')' for vm in vms]))
 
+	    vm_per_tier = {}
+	    vm_per_tier["vm-http"] = []
+	    vm_per_tier["vm-app"] = []
+	    vm_per_tier["vm-db"] = []
+	    
+	    for vm in vms:
+	      if "vm-http-lb" == vm['id']:
+		vm_per_tier["vm-http-lb"] = vm
+	      elif "vm-app-lb" == vm['id']:
+		vm_per_tier["vm-app-lb"] = vm
+	      elif "vm-db-lb" == vm['id']:
+		vm_per_tier["vm-db-lb"] = vm
+	      elif "vm-http" in vm['id']:
+		vm_per_tier["vm-http"].append(vm)
+	      elif "vm-app" in vm['id']:
+		vm_per_tier["vm-app"].append(vm)
+	      elif "vm-db" in vm['id']:
+		vm_per_tier["vm-db"].append(vm)
+		
+		
             # Create disks, install vms and boot by core
             logger.info(host+': Creating disks')
             create = create_disks(vms).run()
@@ -409,7 +429,7 @@ class RuBBoS( vm5k_engine ):
             if not install.ok:
                 logger.error(host+': Unable to install the VMS  %s', slugify(comb))
                 exit()
-            boot_successfull = boot_vms_by_core(vms)
+            boot_successfull = boot_vms_by_tier(vm_per_tier)
             if not boot_successfull:
                 logger.error(host+': Unable to boot all the VMS for %s', slugify(comb))
                 exit()
@@ -424,7 +444,19 @@ class RuBBoS( vm5k_engine ):
                     exit()
 
             # Contextualize the VM services
-            
+	    for vm in vms:
+	      if "vm-http-lb" == vm['id']:
+
+	      elif "vm-app-lb" == vm['id']:
+
+	      elif "vm-db-lb" == vm['id']:
+
+	      elif "vm-http" in vm['id']:
+
+	      elif "vm-app" in vm['id']:
+
+	      elif "vm-db" in vm['id']:
+
 
             # Gathering results
             comb_dir = self.result_dir +'/'+ slugify(comb)+'/'
@@ -500,3 +532,37 @@ class RuBBoS( vm5k_engine ):
         """Calculate the number of virtual machines in the combination"""
         n_vm = sum( int(comb['nbHTTP']) + int(comb['nbApp']) + int(comb['nbDB']) + 3 )
         return n_vm
+      
+    def boot_vms_by_tier(vms):
+	""" """
+	if boot_vms_list(vms["vm-db"]):
+	  if boot_vms_list(vms["vm-db-lb"]):
+	    if boot_vms_list(vms["vm-app"]):
+	      if boot_vms_list(vms["vm-app-lb"]):
+		  if boot_vms_list(vms["vm-http"]):
+		    if boot_vms_list(vms["vm-http-lb"]):
+		      return True
+		    else:
+		      return False
+		  else:
+		    return False
+		else:
+		  return False
+	      else:
+		return False
+	    else:
+	      return False
+	  else:
+	    return False
+	else:
+	  return False
+
+    def boot_vms_list(vms_to_boot):
+	logger.info(style.Thread(host)+': Starting VMS '+', '.join( [vm['id'] for vm in sorted(vms_to_boot)]))
+	start_vms(vms_to_boot).run()
+	booted = wait_vms_have_started(vms_to_boot)
+	if not booted:
+	    return False
+	booted_vms += len(vms_to_boot)
+	logger.info(style.Thread(host)+': '+style.emph(str(booted_vms)+'/'+str(n_vm)))
+	return True
