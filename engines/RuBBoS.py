@@ -116,12 +116,28 @@ class RuBBoS( vm5k_engine ):
 	    core_vm_db = comb['nbDBMaxCore']
 	    mem_vm_db = comb['nbDBMaxMem']
 	    
+	    allcpusets = []
+	    allncpu = []
+	    allvmids = []
+	    allbackingfile = []
+	    allmem = []
+	    
 	    if comb['mapping'] == 0:
 	      global_index = 0
 	      cpu_index = [item for sublist in self.cpu_topology for item in sublist]
-	      cpuset = []
+	      
 	      
 	      # All VMs of a tier to one host
+	      if (len(hosts) < 3):
+		comb_ok = False
+		logger.error('Not enough hosts for  %s', slugify(comb))
+		exit()
+	
+	      ncpus = []
+	      vm_ids = []
+	      backingfile = []
+	      mems = []
+	      
 	      for i in range(nb_vm_http):
 		if core_vm_http > 1:
 		  cpusets.append( ','.join( str(cpu_index[i]) for i in range(global_index,global_index+core_vm_http) ) )
@@ -129,49 +145,138 @@ class RuBBoS( vm5k_engine ):
 		  index = cpu_index[global_index]
 		  cpusets.append(str(index))
 	        global_index += core_vm_http
+		ncpus.append(core_vm_http)
+		vm_ids.append("vm-http-"+str(i))
+		mems.append(mem_vm_http)
+		backingfile.append('/tmp/vm-http.img')
+		
+		
+	      # Load balancer
+	      index = cpu_index[global_index]
+	      cpusets.append(str(index))
+	      ncpus.append(1)
+	      vm_ids.append("vm-http-lb")
+	      mems.append(1)
+	      backingfile.append('/tmp/vm-http-lb.img')
 	      
-	      cpuset.append(cpusets)
+	      allcpusets.append(cpusets)
+	      allncpu.append(ncpus)
+	      allvmids.append(vmids)
+	      allbackingfile.append(backingfile)
+	      allmem.appends(mems)
 	      
+	      ncups = []
+	      vm_ids = []
+	      backingfile = []
+	      mems = []
+	      
+	      global_index = 0
 	      for i in range(n_vm_app):
-		if core_vm_http > 1:
+		if core_vm_app > 1:
 		  cpusets.append( ','.join( str(cpu_index[i]) for i in range(global_index,global_index+core_vm_app) ) )
 		else:
 		  index = cpu_index[global_index]
 		  cpusets.append(str(index))
 	        global_index += core_vm_app
+		ncpus.append(core_vm_app)
+		vm_ids.append("vm-app-"+str(i))
+		mems.append(mem_vm_app)
+		backingfile.append('/tmp/vm-app.img')
+		
+	      # Load balancer
+	      index = cpu_index[global_index]
+	      cpusets.append(str(index))
+	      ncpus.append(1)
+	      vm_ids.append("vm-app-lb")
+	      mems.append(1)
+	      backingfile.append('/tmp/vm-app-lb.img')
+		
+	      allcpusets.append(cpusets)
+	      allncpu.append(ncpus)
+	      allvmids.append(vmids)
+	      allbackingfile.append(backingfile)
+	      allmem.appends(mems)
+
+	      ncups = []
+	      vm_ids = []
+	      backingfile = []
+	      mems = []
 	      
-	      cpuset.append(cpusets)
-	      
+	      global_index = 0
 	      for i in range(n_vm_db):
-		if core_vm_http > 1:
+		if core_vm_db > 1:
 		  cpusets.append( ','.join( str(cpu_index[i]) for i in range(global_index,global_index+core_vm_db) ) )
 		else:
 		  index = cpu_index[global_index]
 		  cpusets.append(str(index))
 	        global_index += core_vm_db
+	      	ncpus.append(core_vm_db)
+		vm_ids.append("vm-db-"+str(i))
+		mems.append(mem_vm_db)
+		backingfile.append('/tmp/vm-db.img')
+		
+	      # Load balancer
+	      index = cpu_index[global_index]
+	      cpusets.append(str(index))
+	      ncpus.append(1)
+	      vm_ids.append("vm-db-lb")
+	      mems.append(1)
+	      backingfile.append('/tmp/vm-db-lb.img')
 	      
-	      cpuset.append(cpusets)
+	      allcpusets.append(cpusets)
+      	      allncpu.append(ncpus)
+      	      allvmids.append(vmids)
+      	      allbackingfile.append(backingfile)
+      	      allmem.appends(mems)
+	    else:
+	      if (len(hosts) < max(nb_vm_http,nb_vm_app,nb_vm_db):
+		comb_ok = False
+		logger.error('Not enough hosts for  %s', slugify(comb))
+		exit()
+	      
+	      http_id = 0
+	      app_id = 0
+	      db_id = 0
 	      
 	      # All VMs of a tier to different host
+	      for i in range(max(nb_vm_http,nb_vm_app,nb_vm_db)):
+		ncpus = []
+		global_index = 0
+		cpu_index = [item for sublist in self.cpu_topology for item in sublist]
+		cpusets = []
+		
+		if core_vm_http > 1:
+		  cpusets.append( ','.join( str(cpu_index[i]) for i in range(global_index,global_index+core_vm_http) ) )
+		else:
+		  index = cpu_index[global_index]
+		  cpusets.append(str(index))
+	        global_index += core_vm_http
+		cpusets.append(core_vm_http)
+		vm_ids.append("vm-http-"+str(http_id))
+		http_id+=1
+		
+	    	if core_vm_app > 1:
+		  cpusets.append( ','.join( str(cpu_index[i]) for i in range(global_index,global_index+core_vm_app) ) )
+		else:
+		  index = cpu_index[global_index]
+		  cpusets.append(str(index))
+	        global_index += core_vm_app
+	        cpusets.append(core_vm_app)
+	        vm_ids.append("vm-app-"+str(app_id))
+		app_id+=1
+		
+	        if core_vm_db > 1:
+		  cpusets.append( ','.join( str(cpu_index[i]) for i in range(global_index,global_index+core_vm_db) ) )
+		else:
+		  index = cpu_index[global_index]
+		  cpusets.append(str(index))
+	        global_index += core_vm_db
+	        cpusets.append(core_vm_db)
+	        vm_ids.append("vm-db-"+str(db_id))
+		db_id+=1
+		
+	        allcpusets.append(cpusets)
 	      
-
-            # Affecting a cpuset to each virtual machine
-            cpu_index = [item for sublist in self.cpu_topology for item in sublist]
-            cpusets = []
-            for i in range(len(comb['dist'])):
-                index = cpu_index[i]
-                for j in range(int(comb['dist'][i])):
-                    cpusets.append(str(index))
-            # Adding the multi_cpu vm if it exists
-            n_cpu = sum( [ int(i) for i in comb['multi_cpu'] ])
-            if n_cpu > 1:
-                cpusets.append( ','.join( str(cpu_index[i]) for i in range(n_cpu) ) )
-                multi_cpu = True
-            else:
-                multi_cpu = False
-
-            n_cpus = 1 if not multi_cpu else [1]*(n_vm-1)+[n_cpu]
-            vm_ids = ['vm-'+str(i+1) for i in range(n_vm)] if not multi_cpu else ['vm-'+str(i+1) for i in range(n_vm-1)]+['vm-multi']
             vms = define_vms(vm_ids, ip_mac = ip_mac,
                              n_cpu = n_cpus, cpusets = cpusets)
 
