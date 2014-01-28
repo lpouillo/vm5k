@@ -83,7 +83,7 @@ class vm5k_engine( Engine ):
             # Creation of the main iterator which is used for the first control loop.
             # You need have a method called define_parameters, that returns a list of parameter dicts
             self.create_paramsweeper()
-	    exit()
+            
             job_is_dead = False
             # While they are combinations to treat
             while len(self.sweeper.get_remaining()) > 0:

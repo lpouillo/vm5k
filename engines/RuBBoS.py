@@ -1,6 +1,6 @@
 from vm5k_engine import *
 from itertools import product, repeat
-
+from shutil import copy2
 
 class RuBBoS( vm5k_engine ):
     """ An execo engine that performs migration time measurements with
@@ -444,21 +444,56 @@ class RuBBoS( vm5k_engine ):
                     exit()
 
             # Contextualize the VM services
+            tmp_dir = self.result_dir +'/tmp/'
+            try:
+                mkdir(tmp_dir)
+            except:
+                logger.warning('Temporary directory for %s already exists, removing existing files', comb_dir)
+                for f in listdir(tmp_dir):
+                    remove(tmp_dir+f)
+            
 	    for vm in vms:
 	      if "vm-http-lb" == vm['id']:
-
+		generate_http_proxy("conf_template/default_http_lb",tmp_dir+"default_http_lb",vm_per_tier["vm-http"])
+		# Upload file
 	      elif "vm-app-lb" == vm['id']:
-
+		generate_tomcat_proxy("conf_template/default_tomcat_lb",tmp_dir+"default_tomcat_lb",vm_per_tier["vm-app"])
+		# Upload file
 	      elif "vm-db-lb" == vm['id']:
-
+		copy2("conf_template/haproxy.cfg",tmp_dir+"haproxy.cfg")
+		f = open(tmp_dir+"haproxy.cfg",'a')
+		for vm_db in vm_per_tier["vm-db"]:
+		  f.write("server "+vm_db['id']+" "+vm_db['ip']+":3306 check")	
+		f.close()
+		# Upload file
 	      elif "vm-http" in vm['id']:
-
+		grep("conf_template/default_http",tmp_dir+"default_http",HTTP_LOADBALANCER,vm_per_tier["vm-app-lb"]['ip'])
+		# Upload file
 	      elif "vm-app" in vm['id']:
-
-	      elif "vm-db" in vm['id']:
-
-
-            # Gathering results
+		grep("conf_template/mysql.properties",tmp_dir+"mysql.properties",MYSQL_LOADBALANCER,vm_per_tier["vm-db-lb"]['ip'])
+		# Upload file
+	    
+	    # Restarting VMs
+	    # 1. MySQL LB
+	    # 2. Tomcat
+	    # 3. Tomcat LB
+	    # 4. HTTP
+	    # 5. HTTP LB
+	    
+	    # Launch Client VM
+	    
+	    # Generate benchmark configuration file
+	    
+	    # Upload benchmark configuration file
+	    
+	    # Launch benchmark
+		
+		
+	    # Sleep for 10 minutes
+	    
+	    # Kill the benchmark
+		
+            # Gathering results (to rewrite)
             comb_dir = self.result_dir +'/'+ slugify(comb)+'/'
             try:
                 mkdir(comb_dir)
@@ -566,3 +601,43 @@ class RuBBoS( vm5k_engine ):
 	booted_vms += len(vms_to_boot)
 	logger.info(style.Thread(host)+': '+style.emph(str(booted_vms)+'/'+str(n_vm)))
 	return True
+      
+    def grep(infilepath,outfilepath,oldstring,newstring):
+	infile = open(infilepath)
+	outfile = open(outfilepath)
+
+	for line in infile:
+	    line = line.replace(oldstring, newstring)
+	    outfile.write(line)
+	infile.close()
+	outfile.close()
+    
+    def generate_tomcat_proxy(infilepath,outfilepath,vms):
+        infile = open(infilepath)
+	outfile = open(outfilepath)
+
+	cpt_line = 0
+	for line in infile:
+	  if cpt_line == 7:
+	    for vm in vms:
+	      outfile.write("        BalancerMember http://"+vm['ip'])
+	  else:
+	    cpt_line+=1
+	    outfile.write(line)
+	infile.close()
+	outfile.close()
+	
+    def generate_tomcat_proxy(infilepath,outfilepath,vms):
+      	infile = open(infilepath)
+	outfile = open(outfilepath)
+
+	cpt_line = 0
+	for line in infile:
+	  if cpt_line == 7:
+	    for vm in vms:
+	      outfile.write("        BalancerMember http://"+vm['ip']+":8080/rubbos/")
+	  else:
+	    cpt_line+=1
+	    outfile.write(line)
+	infile.close()
+	outfile.close()
