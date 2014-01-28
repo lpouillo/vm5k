@@ -27,9 +27,9 @@ http://execo.gforge.inria.fr/doc/userguide.html
 
 Then you clone the repository and install the package:
 
-   git clone https://github.com/lpouillo/vm5k.git
-   cd vm5k
-   python setup.py install --user
+    git clone https://github.com/lpouillo/vm5k.git
+    cd vm5k
+    python setup.py install --user
 
 
 Usage
