@@ -121,6 +121,7 @@ class RuBBoS( vm5k_engine ):
 	    allvmids = []
 	    allbackingfile = []
 	    allmem = []
+	    global_cpusets = {}
 	    
 	    if comb['mapping'] == 0:
 	      global_index = 0
@@ -128,7 +129,7 @@ class RuBBoS( vm5k_engine ):
 	      
 	      
 	      # All VMs of a tier to one host
-	      if (len(hosts) < 3):
+	      if len(hosts) < 3:
 		comb_ok = False
 		logger.error('Not enough hosts for  %s', slugify(comb))
 		exit()
@@ -139,15 +140,21 @@ class RuBBoS( vm5k_engine ):
 	      mems = []
 	      
 	      for i in range(nb_vm_http):
+		global_cpusets["vm-http-"+str(i)] = []
+		
 		if core_vm_http > 1:
 		  cpusets.append( ','.join( str(cpu_index[i]) for i in range(global_index,global_index+core_vm_http) ) )
+		  for i in range(global_index,global_index+core_vm_http):
+		    global_cpusets["vm-http-"+str(i)].append(str(cpu_index[i]))
 		else:
 		  index = cpu_index[global_index]
 		  cpusets.append(str(index))
+		  global_cpusets["vm-http-"+str(i)].append(str(index))
+		  
 	        global_index += core_vm_http
 		ncpus.append(core_vm_http)
 		vm_ids.append("vm-http-"+str(i))
-		mems.append(mem_vm_http)
+		mems.append(mem_vm_http*1024)
 		backingfile.append('/tmp/vm-http.img')
 		
 		
@@ -156,7 +163,9 @@ class RuBBoS( vm5k_engine ):
 	      cpusets.append(str(index))
 	      ncpus.append(1)
 	      vm_ids.append("vm-http-lb")
-	      mems.append(1)
+	      global_cpusets["vm-http-lb"] = []
+	      global_cpusets["vm-http-lb"].append(str(index))
+	      mems.append(512)
 	      backingfile.append('/tmp/vm-http-lb.img')
 	      
 	      allcpusets.append(cpusets)
@@ -172,15 +181,21 @@ class RuBBoS( vm5k_engine ):
 	      
 	      global_index = 0
 	      for i in range(n_vm_app):
+		global_cpusets["vm-app-"+str(i)] = []
+		
 		if core_vm_app > 1:
 		  cpusets.append( ','.join( str(cpu_index[i]) for i in range(global_index,global_index+core_vm_app) ) )
+		  for i in range(global_index,global_index+core_vm_app):
+		    global_cpusets["vm-app-"+str(i)].append(str(cpu_index[i]))
 		else:
 		  index = cpu_index[global_index]
 		  cpusets.append(str(index))
+		  global_cpusets["vm-app-"+str(i)].append(str(index))
+		  
 	        global_index += core_vm_app
 		ncpus.append(core_vm_app)
 		vm_ids.append("vm-app-"+str(i))
-		mems.append(mem_vm_app)
+		mems.append(mem_vm_app*1024)
 		backingfile.append('/tmp/vm-app.img')
 		
 	      # Load balancer
@@ -188,7 +203,9 @@ class RuBBoS( vm5k_engine ):
 	      cpusets.append(str(index))
 	      ncpus.append(1)
 	      vm_ids.append("vm-app-lb")
-	      mems.append(1)
+	      global_cpusets["vm-app-lb"] = []
+	      global_cpusets["vm-app-lb"].append(str(index))
+	      mems.append(512)
 	      backingfile.append('/tmp/vm-app-lb.img')
 		
 	      allcpusets.append(cpusets)
@@ -204,15 +221,21 @@ class RuBBoS( vm5k_engine ):
 	      
 	      global_index = 0
 	      for i in range(n_vm_db):
+		global_cpusets["vm-db-"+str(i)] = []
+		
 		if core_vm_db > 1:
 		  cpusets.append( ','.join( str(cpu_index[i]) for i in range(global_index,global_index+core_vm_db) ) )
+		  for i in range(global_index,global_index+core_vm_db):
+		    global_cpusets["vm-db-"+str(i)].append(str(cpu_index[i]))
 		else:
 		  index = cpu_index[global_index]
 		  cpusets.append(str(index))
+		  global_cpusets["vm-app-"+str(i)].append(str(index))
+		  
 	        global_index += core_vm_db
 	      	ncpus.append(core_vm_db)
 		vm_ids.append("vm-db-"+str(i))
-		mems.append(mem_vm_db)
+		mems.append(mem_vm_db*1024)
 		backingfile.append('/tmp/vm-db.img')
 		
 	      # Load balancer
@@ -220,16 +243,18 @@ class RuBBoS( vm5k_engine ):
 	      cpusets.append(str(index))
 	      ncpus.append(1)
 	      vm_ids.append("vm-db-lb")
-	      mems.append(1)
+	      global_cpusets["vm-db-lb"] = []
+	      global_cpusets["vm-db-lb"].append(str(index))
+	      mems.append(512)
 	      backingfile.append('/tmp/vm-db-lb.img')
 	      
 	      allcpusets.append(cpusets)
       	      allncpu.append(ncpus)
-      	      allvmids.append(vmids)
+      	      allvmids.append(vm_ids)
       	      allbackingfile.append(backingfile)
       	      allmem.appends(mems)
 	    else:
-	      if (len(hosts) < max(nb_vm_http,nb_vm_app,nb_vm_db):
+	      if len(hosts) < max(nb_vm_http,nb_vm_app,nb_vm_db):
 		comb_ok = False
 		logger.error('Not enough hosts for  %s', slugify(comb))
 		exit()
@@ -238,51 +263,140 @@ class RuBBoS( vm5k_engine ):
 	      app_id = 0
 	      db_id = 0
 	      
+	      firstHost = True
+	      
 	      # All VMs of a tier to different host
 	      for i in range(max(nb_vm_http,nb_vm_app,nb_vm_db)):
 		ncpus = []
-		global_index = 0
-		cpu_index = [item for sublist in self.cpu_topology for item in sublist]
+		vm_ids = []
+	        backingfile = []
+	        mems = []
 		cpusets = []
 		
+		global_index = 0
+		cpu_index = [item for sublist in self.cpu_topology for item in sublist]
+		
+		global_cpusets["vm-http-"+str(i)] = []
 		if core_vm_http > 1:
 		  cpusets.append( ','.join( str(cpu_index[i]) for i in range(global_index,global_index+core_vm_http) ) )
+		  for i in range(global_index,global_index+core_vm_http):
+		    global_cpusets["vm-http-"+str(i)].append(str(cpu_index[i]))
 		else:
 		  index = cpu_index[global_index]
 		  cpusets.append(str(index))
+		  global_cpusets["vm-http-"+str(i)].append(str(index))
+		  
 	        global_index += core_vm_http
 		cpusets.append(core_vm_http)
 		vm_ids.append("vm-http-"+str(http_id))
+		mems.append(mem_vm_http*1024)
+		backingfile.append('/tmp/vm-http.img')
+		ncpus.append(core_vm_http)
 		http_id+=1
 		
+		
+		global_cpusets["vm-app-"+str(i)] = []
 	    	if core_vm_app > 1:
 		  cpusets.append( ','.join( str(cpu_index[i]) for i in range(global_index,global_index+core_vm_app) ) )
+		  for i in range(global_index,global_index+core_vm_app):
+		    global_cpusets["vm-app-"+str(i)].append(str(cpu_index[i]))
 		else:
 		  index = cpu_index[global_index]
 		  cpusets.append(str(index))
+		  global_cpusets["vm-app-"+str(i)].append(str(index))
+		  
 	        global_index += core_vm_app
 	        cpusets.append(core_vm_app)
 	        vm_ids.append("vm-app-"+str(app_id))
+	        mems.append(mem_vm_app*1024)
+	        backingfile.append('/tmp/vm-app.img')
+	        ncpus.append(core_vm_app)
 		app_id+=1
 		
+		
+		global_cpusets["vm-db-"+str(i)] = []
 	        if core_vm_db > 1:
 		  cpusets.append( ','.join( str(cpu_index[i]) for i in range(global_index,global_index+core_vm_db) ) )
+		  for i in range(global_index,global_index+core_vm_db):
+		    global_cpusets["vm-db-"+str(i)].append(str(cpu_index[i]))
 		else:
 		  index = cpu_index[global_index]
 		  cpusets.append(str(index))
+		  global_cpusets["vm-db-"+str(i)].append(str(index))
+		  
 	        global_index += core_vm_db
 	        cpusets.append(core_vm_db)
 	        vm_ids.append("vm-db-"+str(db_id))
+	        mems.append(mem_vm_db*1024)
+		backingfile.append('/tmp/vm-db.img')
+		ncpus.append(core_vm_db)
 		db_id+=1
 		
+		if firstHost:
+		  firstHost = False
+		
+		  # Load balancer
+		  index = cpu_index[global_index]
+		  cpusets.append(str(index))
+		  ncpus.append(1)
+		  vm_ids.append("vm-http-lb")
+		  mems.append(512)
+		  backingfile.append('/tmp/vm-http-lb.img') 
+		  global_cpusets["vm-http-lb"] = []
+		  global_cpusets["vm-http-lb"].append(str(index))
+		  
+		  # Load balancer
+		  index = cpu_index[global_index]
+		  cpusets.append(str(index))
+		  ncpus.append(1)
+		  vm_ids.append("vm-app-lb")
+		  mems.append(512)
+		  backingfile.append('/tmp/vm-app-lb.img')
+		  global_cpusets["vm-app-lb"] = []
+		  global_cpusets["vm-app-lb"].append(str(index))
+		  
+		  # Load balancer
+		  index = cpu_index[global_index]
+		  cpusets.append(str(index))
+		  ncpus.append(1)
+		  vm_ids.append("vm-db-lb")
+		  mems.append(512)
+		  backingfile.append('/tmp/vm-db-lb.img')
+		  global_cpusets["vm-db-lb"] = []
+		  global_cpusets["vm-db-lb"].append(str(index))
+		  
+		
 	        allcpusets.append(cpusets)
+      	        allncpu.append(ncpus)
+      	        allvmids.append(vm_ids)
+      	        allbackingfile.append(backingfile)
+      	        allmem.appends(mems)
 	      
-            vms = define_vms(vm_ids, ip_mac = ip_mac,
-                             n_cpu = n_cpus, cpusets = cpusets)
+	    # For each host, call define_vms
+	    available_ip_mac = ip_mac
+	    vms = []
+	    
+	    for i in range(len(allcpusets)):
+	      cpusets = allcpusets[i]
+	      vm_ids = allvmids[i]
+	      n_cpus = allncpu[i]
+	      mems = allmem[i]
+	      backingfiles = allbackingfile[i]
+	      
+	      local_n_vm = len(vm_ids)+1
+	      
+	      used_ip_mac = available_ip_mac[0:local_n_vm]
+              available_ip_mac = available_ip_mac[local_n_vm:]
+	      
+	      local_vms = define_vms(vm_ids, ip_mac = used_ip_mac,
+                             n_cpu = n_cpus, cpusets = cpusets,
+                             mem = allmem, backing_file = backingfiles)
 
-            for vm in vms:
-                vm['host'] = hosts[0]
-            logger.info(', '.join( [vm['id']+' '+ vm['ip']+' '+str(vm['n_cpu'])+'('+vm['cpuset']+')' for vm in vms]))
+	      for vm in local_vms:
+		  vm['host'] = hosts[i]
+		  
+	      vms.extend(local_vms)
+	      logger.info(', '.join( [vm['id']+' '+ vm['ip']+' '+str(vm['n_cpu'])+'('+vm['cpuset']+')' for vm in vms]))
 
             # Create disks, install vms and boot by core
             logger.info(host+': Creating disks')
@@ -301,50 +415,16 @@ class RuBBoS( vm5k_engine ):
                 exit()
 
             # Force pinning of vm-multi vcpus
-            if multi_cpu:
-                cmd = '; '.join( [ 'virsh vcpupin vm-multi '+str(i)+' '+str(cpu_index[i]) for i in range(n_cpu)] )
-                vcpu_pin = SshProcess(cmd, hosts[0]).run()
+            for vm in vms:
+	      if vm['n_cpu'] > 1:
+                cmd = '; '.join( [ 'virsh vcpupin '+vm['id']+' '+str(i)+' '+str(global_cpusets[vm['id']][i]) for i in range(n_cpu)] )
+                vcpu_pin = SshProcess(cmd, vm['host']).run()
                 if not vcpu_pin.ok:
                     logger.error(host+': Unable to pin the vcpus of vm-multi %s', slugify(comb))
                     exit()
 
-            # Prepare virtual machines for experiments
-            stress = []
-            logger.info(host+': Installing kflops on vms and creating stress action')
-            stress.append( self.cpu_kflops([vm for vm in vms if vm['n_cpu'] == 1 ]) )
-
-            if multi_cpu and not self.options.cachebench:
-                logger.info(host+': Installing numactl and kflops on multicore vms')
-                cmd =  'export DEBIAN_MASTER=noninteractive ; apt-get update && apt-get install -y  --force-yes numactl'
-                inst_numactl = Remote( cmd, [vm['ip'] for vm in vms if vm['id'] == 'vm-multi']).run()
-                if not inst_numactl.ok:
-                    exit()
-                self.cpu_kflops([vm for vm in vms if vm['id'] == 'vm-multi' ], install_only = True)
-                for multi_vm in [vm for vm in vms if vm['id'] == 'vm-multi' ]:
-                    for i in range(multi_vm['n_cpu']):
-                        stress.append( Remote('numactl -C '+str(i)+' ./kflops/kflops > vm_multi_'+str(cpu_index[i])+'.out ',
-                                            [multi_vm['ip']] ) )
-
-            stress_actions = ParallelActions(stress)
-            for p in stress_actions.processes:
-                p.ignore_exit_code = p.nolog_exit_code = True
-
-            logger.info(host+': Starting stress !! \n%s', pformat(stress) )
-            stress_actions.start()
-            for p in stress_actions.processes:
-                if not p.ok:
-                    logger.error(host+': Unable to start the stress for combination %s', slugify(comb))
-                    exit()
-
-	    if not self.options.cachebench:
-	      sleep(self.stress_time)
-	      logger.info(host+': Killing stress !!')
-	      stress_actions.kill()
-	    else:
-	      logger.info(host+': Waiting for cachebench to finish.')
-	      for p in stress_actions.processes:
-		while not p.ended:
-		  sleep(1)
+            # Contextualize the VM services
+            
 
             # Gathering results
             comb_dir = self.result_dir +'/'+ slugify(comb)+'/'
@@ -416,22 +496,7 @@ class RuBBoS( vm5k_engine ):
 	  if not install_only:
 	      return TaktukRemote('./kflops/kflops > {{vms_out}}.out', vms_ip)
 
-
-#    def mem_update(self, vms, size, speed):
-#        """Copy, compile memtouch, calibrate and return memtouch action """
-#
-#        logger.debug('VMS: %s', pformat (vms) )
-#        vms_ip = [Host(vm['ip']) for vm in vms]
-#        #ChainPut(vms_ip, 'memtouch.tgz' ).run()
-#        Put(vms_ip, 'memtouch.tgz' ).run()
-#        Remote('tar -xzf memtouch.tgz; cd memtouch; gcc -O2 -lm -std=gnu99 -Wall memtouch-with-busyloop3.c -o memtouch-with-busyloop3',
-#               vms_ip ).run()
-#        calibration = SshProcess('./memtouch/memtouch-with-busyloop3 --cmd-calibrate '+str(size), vms_ip[0] ).run()
-#        args = None
-#        for line in calibration.stdout().split('\n'):
-#            if '--cpu-speed' in line:
-#                args = line
-#        if args is None:
-#            return False
-#        logger.debug('%s', args)
-#        return Remote('./memtouch/memtouch-with-busyloop3 --cmd-makeload '+args+' '+str(size)+' '+str(speed), vms_ip)
+    def comb_nvm(self, comb):
+        """Calculate the number of virtual machines in the combination"""
+        n_vm = sum( int(comb['nbHTTP']) + int(comb['nbApp']) + int(comb['nbDB']) + 3 )
+        return n_vm
