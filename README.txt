@@ -9,7 +9,6 @@ It is composed of:
 - an experimental engine that conduct user defined workflow for a set of parameters
 
 Developped by the Inria Hemera initiative 2010-2014 
-
 https://www.grid5000.fr/mediawiki/index.php/Hemera
 
 
@@ -21,7 +20,7 @@ The module requires:
 
 Installation
 ============
-You first need to install execo and it's dependencies on any Grid'5000 frontend.
+You first need to install execo and on one of the Grid'5000 frontend.
 
 http://execo.gforge.inria.fr/doc/userguide.html
 
@@ -30,6 +29,8 @@ Then you clone the repository and install the package:
     git clone https://github.com/lpouillo/vm5k.git
     cd vm5k
     python setup.py install --user
+
+Don't forget to configure your PYTHONPATH and your PATH according to http://execo.gforge.inria.fr/doc/userguide.html#installation
 
 
 Usage
