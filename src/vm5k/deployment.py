@@ -745,7 +745,12 @@ def distribute_vms(vms, hosts, distribution = 'round-robin'):
                     host = iter_hosts.next()
 
     elif distribution == 'n_by_hosts':
-        vms_by_host = len(vms)/len(hosts)
+        n_by_host = int(len(vms)/len(hosts))
+        i_vm = 0
+        for host in hosts:
+            for i in range(n_by_host):
+                vm[i_vm]['host'] = host
+                i_vm += 1
 
     logger.debug('Final virtual machines distribution \n%s',
         "\n".join( [ vm['id']+": "+str(vm['host']) for vm in vms ] ) )
