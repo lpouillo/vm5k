@@ -749,7 +749,7 @@ def distribute_vms(vms, hosts, distribution = 'round-robin'):
         i_vm = 0
         for host in hosts:
             for i in range(n_by_host):
-                vm[i_vm]['host'] = host
+                vms[i_vm]['host'] = host
                 i_vm += 1
 
     logger.debug('Final virtual machines distribution \n%s',
