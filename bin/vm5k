@@ -297,7 +297,7 @@ vm5k.configure_service_node()
 
 print_step('Deploying virtual machines')
 logger.info('Maximum number of VMs %s', get_max_vms(vm5k.hosts))
-distribute_vms(vm5k.vms, vm5k.hosts)
+distribute_vms(vm5k.vms, vm5k.hosts, args.vm_distribution)
 
 vm5k.get_state()
 vm5k.deploy_vms(disk_location = args.vm_disk_location)
