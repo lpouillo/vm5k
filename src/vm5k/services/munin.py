@@ -17,12 +17,20 @@
 # along with Execo.  If not, see <http://www.gnu.org/licenses/>
 from os import fdopen
 from tempfile import mkstemp
-from execo import logger, SshProcess, Process, Put
+from execo import logger, SshProcess, Process, Put, TaktukRemote
 from execo.log import style
 
 
+def setup_munin(server, clients, plugins = [ 'cpu', 'memory', 'iostat']):
+    """ """
 
-def _munin_clients(server, clients, plugins = [ 'cpu', 'memory', 'iostat']):
+
+def get_munin_stats(server, destination_directory = '.'):
+    """Retrieve the munin statistics """
+
+
+
+def _munin_clients(server, clients, plugins):
     """ """
 
 
@@ -58,13 +66,11 @@ def _munin_server(server, clients):
     SshProcess('cd /etc && cp '+server_conf.split('/')[-1]+' munin.conf', server).run()
     Process('rm '+server_conf).run()
 
-def setup_munin(server, clients, plugins = [ 'cpu', 'memory', 'iostat']):
 
 
-def get_munin_stats(server, destination_directory = '.'):
-    """Retrieve the munin statistics """
+def add_munin_plugins(hosts, plugins):
+    """Create a symbolic link to activate plugins  """
+    cmd = '; '.join([ 'ln -s /usr/share/munin/plugins/ /etc/munin/plugins'+plugin for plugin in plugins])
+    TaktukRemote(cmd, hosts)
 
 
-
-def add_munin_plugins(plugins, hosts):
-    """ """
