@@ -91,22 +91,22 @@ def define_vms( vms_id, template = None, ip_mac = None, state = None, host = Non
 
 
 
-def list_vm( host, all = False ):
+def list_vm( hosts, all = False ):
     """ Return the list of VMs on host """
     cmd = 'virsh --connect qemu:///system list'
-    if all :
+    if all:
         cmd += ' --all'
-    list_vm = TaktukRemote(cmd, [host] ).run()
-    vms_id = []
+    list_vm = TaktukRemote(cmd, hosts ).run()
+    vms = { host: [] for host in hosts }
     for p in list_vm.processes:
         lines = p.stdout.split('\n')
         for line in lines:
             if 'vm' in line:
                 std = line.split()
-                vms_id.append(std[1])
-    logger.debug('List of VM on host %s\n%s', style.host(host.address),
-                 ' '.join([style.emph(id) for id in vms_id]))
-    return [ {'id': id} for id in vms_id ]
+                vms[p.host.address].append(std[1])
+#     logger.debug('List of VM on host %s\n%s', style.host(host.address),
+#                  ' '.join([style.emph(id) for id in vms_id]))
+    return vms
 
 
 def create_disks(vms, backing_file = '/tmp/vm-base.img', backing_file_fmt = 'raw'):
@@ -138,7 +138,7 @@ def install_vms(vms):
     for vm in vms:
         cmd = 'virt-install -d --import --connect qemu:///system --nographics --noautoconsole --noreboot'+ \
         ' --name=' + vm['id'] + ' --network network=default,mac='+vm['mac']+' --ram='+str(vm['mem'])+ \
-        ' --disk path=/tmp/'+vm['id']+'.qcow2,device=disk,format=qcow2,size='+str(vm['hdd'])+',cache=none '+\
+        ' --disk path=/tmp/'+vm['id']+'.qcow2,device=disk,bus=virtioformat=qcow2,size='+str(vm['hdd'])+',cache=none '+\
         ' --vcpus='+ str(vm['n_cpu'])+' --cpuset='+vm['cpuset']+' ; '
         hosts_cmds[vm['host']] = cmd if not hosts_cmds.has_key(vm['host']) else hosts_cmds[vm['host']]+cmd
 
@@ -239,10 +239,10 @@ def destroy_vms( hosts):
 
     cmds = []
     hosts_with_vms = []
+    vms = list_vm(hosts, all = True)
     for host in hosts:
-        vms = list_vm(host, all = True)
         if len(vms) > 0:
-            cmds.append( '; '.join('virsh destroy '+vm['id']+'; virsh undefine '+vm['id'] for vm in vms))
+            cmds.append( '; '.join('virsh destroy '+vm['id']+'; virsh undefine '+vm['id'] for vm in vms[host]))
             hosts_with_vms.append(host)
 
     if len(cmds) > 0:
