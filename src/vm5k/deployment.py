@@ -44,23 +44,24 @@ from vm5k.plots import init_live_plot
 
 
 
-def get_oar_job_vm5k_resources(oar_job_id, site):
-    """Retrieve the hosts list and (ip, mac) list from an oar_job_id and
+def get_oar_job_vm5k_resources( jobs ):
+    """Retrieve the hosts list and (ip, mac) list from a list of oar_job and
     return the resources dict needed by vm5k_deployment """
     logger.debug('Waiting job start')
-    wait_oar_job_start(oar_job_id, site)
-    logger.debug('Retrieving hosts')
-    hosts = get_oar_job_nodes(oar_job_id, site)
-    logger.debug('Retrieving subnet')
-    ip_mac, _ = get_oar_job_subnets( oar_job_id, site )
-    kavlan = None
-    if len(ip_mac) == 0:
-        logger.debug('Retrieving kavlan')
-        kavlan = get_oar_job_kavlan(oar_job_id, site)
-        if kavlan is not None:
-            ip_mac = get_kavlan_ip_mac(kavlan, site)
-    if 'grid5000.fr' in site:
-        site = site.split('.')[0]
+    for oar_job_id, site in jobs:
+        wait_oar_job_start(oar_job_id, site)
+        logger.debug('Retrieving hosts')
+        hosts = get_oar_job_nodes(oar_job_id, site)
+        logger.debug('Retrieving subnet')
+        ip_mac, _ = get_oar_job_subnets( oar_job_id, site )
+        kavlan = None
+        if len(ip_mac) == 0:
+            logger.debug('Retrieving kavlan')
+            kavlan = get_oar_job_kavlan(oar_job_id, site)
+            if kavlan is not None:
+                ip_mac = get_kavlan_ip_mac(kavlan, site)
+        if 'grid5000.fr' in site:
+            site = site.split('.')[0]
     return {site: {'hosts': hosts,'ip_mac': ip_mac, 'kavlan': kavlan}}
 
 def get_oargrid_job_vm5k_resources(oargrid_job_id):
@@ -234,7 +235,11 @@ class vm5k_deployment(object):
         dnsmasq_server(service_node, clients, self.vms, dhcp)
 
     # VMS deployment
+<<<<<<< HEAD
     def deploy_vms(self, disk_location = 'one', backing_file = '/grid5000/images/KVM/squeeze-x64-base.qcow2'):
+=======
+    def deploy_vms(self, disk_location = 'one', backing_file = '/grid5000/images/KVM/wheezy-x64-base.qcow2'):
+>>>>>>> [lib+bin] starting implementation of multiple oarjobswq
         """Destroy the existing VMS, create the virtual disks, install the vms, start them and
         wait for boot"""
         logger.info('Destroying existing virtual machines')

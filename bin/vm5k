@@ -267,16 +267,22 @@ if args.job_id is None:
 else:
     logger.info('Using an existing job: %s', style.emph(args.job_id))
     if ':' in args.job_id:
-        frontend, job_id = args.job_id.split(':')
+        jobs = []
+        for oar_job in args.job_id.split(','):
+            frontend, job_id = oar_job.job_id.split(':')
+            jobs.append( (frontend, job_id) )
     else:
         frontend, job_id = None, args.job_id
 
 
 logger.info('Retrieving hosts and network parameters')
 if frontend is None:
-    vm5k_resources = get_oargrid_job_vm5k_resources(int(job_id))
+    vm5k_resources = get_oargrid_job_vm5k_resources( job_id, frontend)
 else:
-    vm5k_resources = get_oar_job_vm5k_resources(int(job_id), frontend)
+    vm5k_resources = get_oar_job_vm5k_resources(jobs)
+
+
+logger.debug(vm5k_resources)
 
 
 
