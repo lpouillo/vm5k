@@ -234,14 +234,14 @@ class vm5k_deployment(object):
         dnsmasq_server(service_node, clients, self.vms, dhcp)
 
     # VMS deployment
-    def deploy_vms(self, disk_location = 'one'):
+    def deploy_vms(self, disk_location = 'one', backing_file = '/grid5000/images/KVM/squeeze-x64-base.qcow2'):
         """Destroy the existing VMS, create the virtual disks, install the vms, start them and
         wait for boot"""
         logger.info('Destroying existing virtual machines')
         destroy_vms(self.hosts)
         logger.info('Creating the virtual disks ')
         self._remove_existing_disks()
-        self._create_backing_file('/grid5000/images/KVM/squeeze-x64-base.qcow2')
+        self._create_backing_file(from_disk = backing_file)
         if disk_location == 'one':
             create_disks(self.vms).run()
         elif disk_location == 'all':

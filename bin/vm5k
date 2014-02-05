@@ -300,7 +300,7 @@ logger.info('Maximum number of VMs %s', get_max_vms(vm5k.hosts))
 distribute_vms(vm5k.vms, vm5k.hosts, args.vm_distribution)
 
 vm5k.get_state()
-vm5k.deploy_vms(disk_location = args.vm_disk_location)
+vm5k.deploy_vms(disk_location = args.vm_disk_location, backing_file = args.vm_backing_file)
 vm5k.get_state()
 
 if args.program is not None:

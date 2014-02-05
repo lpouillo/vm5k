@@ -96,16 +96,18 @@ def list_vm( hosts, all = False ):
     cmd = 'virsh --connect qemu:///system list'
     if all:
         cmd += ' --all'
+    logger.debug('Listing Virtual machines on '+pformat(hosts))
     list_vm = TaktukRemote(cmd, hosts ).run()
-    vms = { host: [] for host in hosts }
+    vms = { host.address: [] for host in hosts }
     for p in list_vm.processes:
         lines = p.stdout.split('\n')
         for line in lines:
             if 'vm' in line:
                 std = line.split()
-                vms[p.host.address].append(std[1])
+                vms[p.host.address].append({'id': std[1]})
 #     logger.debug('List of VM on host %s\n%s', style.host(host.address),
 #                  ' '.join([style.emph(id) for id in vms_id]))
+    logger.debug(pformat(vms))
     return vms
 
 
@@ -138,7 +140,7 @@ def install_vms(vms):
     for vm in vms:
         cmd = 'virt-install -d --import --connect qemu:///system --nographics --noautoconsole --noreboot'+ \
         ' --name=' + vm['id'] + ' --network network=default,mac='+vm['mac']+' --ram='+str(vm['mem'])+ \
-        ' --disk path=/tmp/'+vm['id']+'.qcow2,device=disk,bus=virtioformat=qcow2,size='+str(vm['hdd'])+',cache=none '+\
+        ' --disk path=/tmp/'+vm['id']+'.qcow2,device=disk,bus=virtio,format=qcow2,size='+str(vm['hdd'])+',cache=none '+\
         ' --vcpus='+ str(vm['n_cpu'])+' --cpuset='+vm['cpuset']+' ; '
         hosts_cmds[vm['host']] = cmd if not hosts_cmds.has_key(vm['host']) else hosts_cmds[vm['host']]+cmd
 
@@ -242,7 +244,7 @@ def destroy_vms( hosts):
     vms = list_vm(hosts, all = True)
     for host in hosts:
         if len(vms) > 0:
-            cmds.append( '; '.join('virsh destroy '+vm['id']+'; virsh undefine '+vm['id'] for vm in vms[host]))
+            cmds.append( '; '.join('virsh destroy '+vm['id']+'; virsh undefine '+vm['id'] for vm in vms[host.address] ))
             hosts_with_vms.append(host)
 
     if len(cmds) > 0:
