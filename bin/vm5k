@@ -290,7 +290,7 @@ if args.nodeploy:
 
 print_step('Deploying the hosts')
 vm5k.hosts_deployment(max_tries = deployment_tries, check_deploy =  not args.forcedeploy)
-f = open(args.outdir+'/host.list', 'w')
+f = open(args.outdir+'/hosts.list', 'w')
 for host in vm5k.hosts:
     f.write(host.address+'\n')
 f.close()
