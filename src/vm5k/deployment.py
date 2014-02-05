@@ -235,11 +235,9 @@ class vm5k_deployment(object):
         dnsmasq_server(service_node, clients, self.vms, dhcp)
 
     # VMS deployment
-<<<<<<< HEAD
-    def deploy_vms(self, disk_location = 'one', backing_file = '/grid5000/images/KVM/squeeze-x64-base.qcow2'):
-=======
+
     def deploy_vms(self, disk_location = 'one', backing_file = '/grid5000/images/KVM/wheezy-x64-base.qcow2'):
->>>>>>> [lib+bin] starting implementation of multiple oarjobswq
+
         """Destroy the existing VMS, create the virtual disks, install the vms, start them and
         wait for boot"""
         logger.info('Destroying existing virtual machines')
