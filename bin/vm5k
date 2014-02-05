@@ -278,6 +278,8 @@ if frontend is None:
 else:
     vm5k_resources = get_oar_job_vm5k_resources(int(job_id), frontend)
 
+
+
 vm5k = vm5k_deployment(resources = vm5k_resources, vms = vms, live_plot = args.live_plot)
 vm5k.fact = ActionFactory(remote_tool = TAKTUK,
                                 fileput_tool = CHAINPUT,
@@ -288,6 +290,11 @@ if args.nodeploy:
 
 print_step('Deploying the hosts')
 vm5k.hosts_deployment(max_tries = deployment_tries, check_deploy =  not args.forcedeploy)
+f = open(args.outdir+'/host.list', 'w')
+for host in vm5k.hosts:
+    f.write(host.address+'\n')
+f.close()
+
 print_step('Managing packages')
 vm5k.packages_management(upgrade = True, other_packages = 'hwloc')
 print_step('Configuring libvirt')
@@ -298,7 +305,10 @@ vm5k.configure_service_node()
 print_step('Deploying virtual machines')
 logger.info('Maximum number of VMs %s', get_max_vms(vm5k.hosts))
 distribute_vms(vm5k.vms, vm5k.hosts, args.vm_distribution)
-
+f = open(args.outdir+'/vms.list', 'w')
+for host in vm5k.vms:
+    f.write(vm['ip']+'\t'+vm['id']+'\n')
+f.close()
 vm5k.get_state()
 vm5k.deploy_vms(disk_location = args.vm_disk_location, backing_file = args.vm_backing_file)
 vm5k.get_state()
