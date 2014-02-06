@@ -62,7 +62,7 @@ Automate virtual machines deployment on Grid5000 in a global KaVLAN.
 
 ### Basic
 The basic usage is to create a certain number of virtual machines on Grid5000.
-To deploy 100 VM on *squeeze-x64-prod* and with the *squeeze-x64-base.qcow2* KVM image
+To deploy 100 VM on *wheezy-x64-base* and with the *wheezy-x64-base.qcow2* KVM image
 on any Grid5000 cluster with KaVLAN and hardware virtualization, for 2 hours:
 
     vm5k --n_vm 100 -w 2:00:00
@@ -74,7 +74,7 @@ perform the reservation and do setup hosts and VMs automatically.
 The script use a default template for the virtual machine `<vm mem="1024" hdd="2" cpu="1" cpuset="auto" />`.
 You can define your own one an one-line XML file and also use a custom backing file:
 
-    vm5k --n_vm 20 --vm_template mytemplate.xml --vm_backing_file path_to_my_qcow2_file_on_g5k
+    vm5k --n_vm 20 --vm_template '<vm mem="512" hdd="10" cpu="1" cpuset="auto"/>' --vm_backing_file path_to_my_qcow2_file_on_g5k
 
 will deploy 20 virtual machines with system and components you want.
 
