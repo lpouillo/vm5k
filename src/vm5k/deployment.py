@@ -432,7 +432,8 @@ class vm5k_deployment(object):
         return hosts_br
 
     def packages_management(self, upgrade = True, other_packages = None):
-        """This method allow to configure APT to use testing and unstable repository, perform """
+        """This method allow to configure APT to use testing repository, perform upgrade and install 
+        required packages."""
         self._configure_apt()
         if upgrade:
             self._upgrade_hosts()
@@ -448,15 +449,13 @@ class vm5k_deployment(object):
         fd, tmpsource = mkstemp(dir = '/tmp/', prefix='sources.list_')
         f = fdopen(fd, 'w')
         f.write('deb http://ftp.debian.org/debian stable main contrib non-free\n'+\
-                'deb http://ftp.debian.org/debian testing main \n'+\
-                'deb http://ftp.debian.org/debian unstable main \n')
+                'deb http://ftp.debian.org/debian testing main contrib non-free\n')
         f.close()
         # Create preferences file
         fd, tmppref = mkstemp(dir = '/tmp/', prefix='preferences_')
         f = fdopen(fd, 'w')
         f.write('Package: * \nPin: release a=stable \nPin-Priority: 900\n\n'+\
-                'Package: * \nPin: release a=testing \nPin-Priority: 850\n\n'+\
-                'Package: * \nPin: release a=unstable \nPin-Priority: 800\n\n')
+                'Package: * \nPin: release a=testing \nPin-Priority: 850\n\n')
         f.close()
         # Create apt.conf file
         fd, tmpaptconf = mkstemp(dir = '/tmp/', prefix='apt.conf_')
@@ -496,7 +495,7 @@ class vm5k_deployment(object):
         libvirt_packages = 'libvirt-bin virtinst python2.7 python-pycurl python-libxml2 qemu-kvm nmap'
         logger.info('Installing libvirt packages \n%s', style.emph(libvirt_packages))
         cmd = 'export DEBIAN_MASTER=noninteractive ; apt-get update && apt-get install -y --force-yes '+\
-            '-o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" -t unstable '+\
+            '-o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" -t testing '+\
             libvirt_packages
         install_libvirt = self.fact.get_remote(cmd, self.hosts).run()
         self._actions_hosts(install_libvirt)
