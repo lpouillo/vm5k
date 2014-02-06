@@ -4,7 +4,7 @@
 from os import fdopen
 from tempfile import mkstemp
 from math import ceil, log
-from execo import logger, SshProcess, Put, Remote, Host, TaktukRemote, Process
+from execo import logger, SshProcess, Put, Remote, Host, TaktukRemote, Process, ChainPut
 from execo.log import style
 from execo_g5k import get_g5k_sites, default_frontend_connection_params, g5k_configuration
 
@@ -47,7 +47,7 @@ def resolv_conf(server, clients):
             ' '.join( [site+'.grid5000.fr' for site in get_g5k_sites()] )+\
             '\nnameserver '+get_server_ip(server) )
     f.close()
-    Put(clients, [resolv], remote_location = '/etc/').run()
+    ChainPut(clients, [resolv], remote_location = '/etc/').run()
     TaktukRemote('cd /etc && cp '+resolv.split('/')[-1]+' resolv.conf', clients).run()
     Process('rm '+resolv).run()
 
