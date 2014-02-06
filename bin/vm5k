@@ -289,6 +289,7 @@ vm5k = vm5k_deployment(resources = vm5k_resources, vms = vms, live_plot = args.l
 vm5k.fact = ActionFactory(remote_tool = TAKTUK,
                                 fileput_tool = CHAINPUT,
                                 fileget_tool = TAKTUK)
+vm5k.distribution = args.vm_distribution
 
 if args.nodeploy:
     deployment_tries = 0
@@ -306,15 +307,14 @@ print_step('Configuring libvirt')
 vm5k.configure_libvirt()
 print_step('Configuring service node')
 vm5k.configure_service_node()
-
 print_step('Deploying virtual machines')
 logger.info('Maximum number of VMs %s', get_max_vms(vm5k.hosts))
-distribute_vms(vm5k.vms, vm5k.hosts, args.vm_distribution)
 f = open(args.outdir+'/vms.list', 'w')
 for vm in vm5k.vms:
     f.write(vm['ip']+'\t'+vm['id']+'\n')
 f.close()
 vm5k.get_state()
+logger.setLevel(DEBUG)
 vm5k.deploy_vms(disk_location = args.vm_disk_location, backing_file = args.vm_backing_file)
 vm5k.get_state()
 
