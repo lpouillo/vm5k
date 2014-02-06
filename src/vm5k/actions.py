@@ -98,17 +98,33 @@ def list_vm( hosts, all = False ):
         cmd += ' --all'
     logger.debug('Listing Virtual machines on '+pformat(hosts))
     list_vm = TaktukRemote(cmd, hosts ).run()
-    vms = { host.address: [] for host in hosts }
+    hosts_vms = { host.address: [] for host in hosts }
     for p in list_vm.processes:
         lines = p.stdout.split('\n')
         for line in lines:
             if 'vm' in line:
                 std = line.split()
-                vms[p.host.address].append({'id': std[1]})
+                hosts_vms[p.host.address].append({'id': std[1]})
 #     logger.debug('List of VM on host %s\n%s', style.host(host.address),
 #                  ' '.join([style.emph(id) for id in vms_id]))
-    logger.debug(pformat(vms))
-    return vms
+    logger.debug(pformat(hosts_vms))
+    return hosts_vms
+
+def destroy_vms( hosts):
+    """Destroy all the VM on the hosts"""
+
+    cmds = []
+    hosts_with_vms = []
+    hosts_vms = list_vm(hosts, all = True)
+    
+    for host, vms in hosts_vms.iteritems():
+        if len(vms) > 0:
+            cmds.append( '; '.join('virsh destroy '+vm['id']+'; virsh undefine '+vm['id'] for vm in vms[host] ))
+            hosts_with_vms.append(host)
+    
+    if len(cmds) > 0:
+        TaktukRemote('{{cmds}}', hosts_with_vms).run()
+
 
 
 def create_disks(vms, backing_file = '/tmp/vm-base.img', backing_file_fmt = 'raw'):
@@ -236,19 +252,7 @@ def migrate_vm(vm, host):
     return TaktukRemote(cmd, [src] )
 
 
-def destroy_vms( hosts):
-    """Destroy all the VM on the hosts"""
 
-    cmds = []
-    hosts_with_vms = []
-    vms = list_vm(hosts, all = True)
-    for host in hosts:
-        if len(vms) > 0:
-            cmds.append( '; '.join('virsh destroy '+vm['id']+'; virsh undefine '+vm['id'] for vm in vms[host.address] ))
-            hosts_with_vms.append(host)
-
-    if len(cmds) > 0:
-        TaktukRemote('{{cmds}}', hosts_with_vms).run()
 
 
 def rm_qcow2_disks( hosts):
