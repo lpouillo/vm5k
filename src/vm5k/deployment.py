@@ -61,7 +61,7 @@ def get_oar_job_vm5k_resources( jobs ):
         if len(ip_mac) == 0:
             logger.debug('Retrieving kavlan')
             kavlan = get_oar_job_kavlan(oar_job_id, site)
-            if kavlan is not None:
+            if kavlan:
                 ip_mac = get_kavlan_ip_mac(kavlan, site)
         if 'grid5000.fr' in site:
             site = site.split('.')[0]
@@ -81,7 +81,7 @@ def get_oargrid_job_vm5k_resources(oargrid_job_id):
         if res['kavlan'] >= 10:
             kavlan_global = {'kavlan': res['kavlan'], 'ip_mac': resources[site]['ip_mac'], 'site': site }
             break
-    if kavlan_global is not None:
+    if kavlan_global:
         resources['global'] = kavlan_global
 
     return resources
@@ -146,7 +146,7 @@ class vm5k_deployment(object):
     """
 
     def __init__(self, infile = None, resources = None,
-                 env_name = 'wheezy-x64-base', env_file = None,
+                 env_name = None, env_file = None,
                  vms = None, distribution = 'round-robin',
                  live_plot = False):
         """:params infile: an XML file that describe the topology of the deployment
@@ -174,7 +174,7 @@ class vm5k_deployment(object):
         self.distribution = distribution
         self.kavlan = None
 
-        if infile is None:
+        if infile:
             self._init_state(resources, vms, infile)
         else:
             self.state = parse(infile)
@@ -183,12 +183,15 @@ class vm5k_deployment(object):
             self._set_vms_ip_mac()
             self._add_xml_vms()
 
-        if env_file is not None:
+        if env_file:
             self.env_file = env_file
             self.env_name = None
         else:
             self.env_file = None
-            self.env_name = env_name
+            if env_name:
+                self.env_name = env_name
+            else:
+                self.env_name = 'wheezy-x64-base'
 
         logger.info('%s %s %s %s %s %s %s %s',
                     len(self.sites), style.emph('sites'),
@@ -346,7 +349,7 @@ class vm5k_deployment(object):
         self._update_hosts_state(deployed_hosts, undeployed_hosts)
 
         # Renaming hosts if a kavlan is used
-        if self.kavlan is not None:
+        if self.kavlan:
             self.hosts = [ Host(get_kavlan_host_name(host, self.kavlan)) for host in self.hosts]
 
         # Configuring SSH with precopy of id_rsa and id_rsa.pub keys on all hosts to allow TakTuk connection
@@ -498,7 +501,7 @@ class vm5k_deployment(object):
         install_libvirt = self.fact.get_remote(cmd, self.hosts).run()
         self._actions_hosts(install_libvirt)
 
-        if other_packages is not None:
+        if other_packages:
             logger.info('Installing extra packages \n%s', style.emph(other_packages))
             cmd = 'export DEBIAN_MASTER=noninteractive ; apt-get update && '+\
                 'apt-get install -y --force-yes '+other_packages
@@ -516,7 +519,7 @@ class vm5k_deployment(object):
         if not resources.has_key('global'):
             if len(self.sites) == 1:
                 self.ip_mac = resources[self.sites[0]]['ip_mac']
-                if resources[site]['kavlan'] is not None:
+                if resources[site]['kavlan']:
                     self.kavlan = resources[site]['kavlan']
             else:
                 self.ip_mac = { site: resources[site]['ip_mac'] for site in self.sites}
@@ -548,7 +551,7 @@ class vm5k_deployment(object):
 
         logger.debug('Virtual Machines')
         max_vms = get_max_vms(self.hosts)
-        if vms is not None:
+        if vms:
             self.vms = vms if len(vms) <= max_vms else vms[0:max_vms]
             distribute_vms(vms, self.hosts, self.distribution)
             self._set_vms_ip_mac()
@@ -669,7 +672,7 @@ class vm5k_deployment(object):
     def _update_hosts_state(self, hosts_ok, hosts_ko):
         """ """
         for host in hosts_ok:
-            if host is not None:
+            if host:
                 if not isinstance(host, Host):
                     host = Host(host)
                 if self.kavlan is None:
