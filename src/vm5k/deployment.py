@@ -792,21 +792,19 @@ def get_fastest_host(hosts):
                 fastest_host = host
         return fastest_host
 
-def get_max_vms(hosts, n_cpu = 1, mem = 512):
-    """Return the maximum number of virtual machines that can be created on the host"""
+def get_max_vms(hosts, mem = 512):
+    """Return the maximum number of virtual machines that can be created on the hosts"""
     total = get_CPU_RAM_FLOPS(hosts)['TOTAL']
-    return min(int(3*total['CPU']/n_cpu), int(total['RAM']/mem-1))
+    return int(total['RAM']/mem-1)
 
 
 def get_vms_slot(vms, elements, slots, excluded_elements = None):
     """Return a slot with enough RAM and CPU """
     chosen_slot = None
 
-
     req_ram = sum( [ vm['mem'] for vm in vms] )
     req_cpu = sum( [ vm['n_cpu'] for vm in vms] ) /3
     logger.debug('RAM %s CPU %s', req_ram, req_cpu)
-
 
     for slot in slots:
         hosts = []
