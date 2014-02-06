@@ -286,7 +286,7 @@ logger.debug(vm5k_resources)
 
 
 vm5k = vm5k_deployment(resources = vm5k_resources, vms = vms, live_plot = args.live_plot,
-                 env_name = args.env_name, env_file = args.env_file)
+                 env_name = args.env_name, env_file = args.env_file, outdir = args.outdir)
 vm5k.fact = ActionFactory(remote_tool = TAKTUK,
                                 fileput_tool = CHAINPUT,
                                 fileget_tool = TAKTUK)

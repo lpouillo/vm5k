@@ -148,7 +148,7 @@ class vm5k_deployment(object):
     def __init__(self, infile = None, resources = None,
                  env_name = None, env_file = None,
                  vms = None, distribution = 'round-robin',
-                 live_plot = False):
+                 outdir = None, live_plot = False):
         """:params infile: an XML file that describe the topology of the deployment
 
         :param resources: a dict whose keys are Grid'5000 sites and values are
@@ -167,6 +167,10 @@ class vm5k_deployment(object):
         :params live_plot: create a figure at the script beginning and add
         """
         print_step('STARTING vm5k_deployment')
+        if outdir:
+            self.outdir = outdir
+        else:
+            self.outdir = 'vm5k_'+strftime("%Y%m%d_%H%M%S_%z")
         self.state = Element('vm5k')
         self.fact = ActionFactory(remote_tool = SSH,
                                 fileput_tool = SCP,
@@ -630,7 +634,7 @@ class vm5k_deployment(object):
         """ """
 
         if output:
-            output = 'vm5k_'+strftime('%Y%m%d_%H%M%S',localtime())+'.xml'
+            output = self.outdir+'/vm5k_'+strftime('%Y%m%d_%H%M%S',localtime())+'.xml'
             f = open(output, 'w')
             f.write(prettify(self.state))
             f.close()
