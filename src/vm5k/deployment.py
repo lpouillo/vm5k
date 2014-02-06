@@ -174,7 +174,7 @@ class vm5k_deployment(object):
         self.distribution = distribution
         self.kavlan = None
 
-        if infile:
+        if not infile:
             self._init_state(resources, vms, infile)
         else:
             self.state = parse(infile)
@@ -183,12 +183,12 @@ class vm5k_deployment(object):
             self._set_vms_ip_mac()
             self._add_xml_vms()
 
-        if env_file:
+        if env_file is not None:
             self.env_file = env_file
             self.env_name = None
         else:
             self.env_file = None
-            if env_name:
+            if env_name is not None:
                 self.env_name = env_name
             else:
                 self.env_name = 'wheezy-x64-base'
