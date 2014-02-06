@@ -269,8 +269,8 @@ else:
     if ':' in args.job_id:
         jobs = []
         for oar_job in args.job_id.split(','):
-            frontend, job_id = oar_job.job_id.split(':')
-            jobs.append( (frontend, job_id) )
+            frontend, job_id = oar_job.split(':')
+            jobs.append( (job_id, frontend) )
     else:
         frontend, job_id = None, args.job_id
 
@@ -283,7 +283,6 @@ else:
 
 
 logger.debug(vm5k_resources)
-
 
 
 vm5k = vm5k_deployment(resources = vm5k_resources, vms = vms, live_plot = args.live_plot)

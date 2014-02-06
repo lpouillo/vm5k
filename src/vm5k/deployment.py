@@ -47,8 +47,11 @@ from vm5k.plots import init_live_plot
 def get_oar_job_vm5k_resources( jobs ):
     """Retrieve the hosts list and (ip, mac) list from a list of oar_job and
     return the resources dict needed by vm5k_deployment """
+    resources = {}
     logger.debug('Waiting job start')
     for oar_job_id, site in jobs:
+        logger.debug('Retrieving resources from %s:%s', site, oar_job_id)
+        oar_job_id = int(oar_job_id)
         wait_oar_job_start(oar_job_id, site)
         logger.debug('Retrieving hosts')
         hosts = get_oar_job_nodes(oar_job_id, site)
@@ -62,7 +65,8 @@ def get_oar_job_vm5k_resources( jobs ):
                 ip_mac = get_kavlan_ip_mac(kavlan, site)
         if 'grid5000.fr' in site:
             site = site.split('.')[0]
-    return {site: {'hosts': hosts,'ip_mac': ip_mac, 'kavlan': kavlan}}
+        resources[site] = {'hosts': hosts,'ip_mac': ip_mac, 'kavlan': kavlan}
+    return resources
 
 def get_oargrid_job_vm5k_resources(oargrid_job_id):
     """Retrieve the hosts list and (ip, mac) list by sites from an oargrid_job_id and
