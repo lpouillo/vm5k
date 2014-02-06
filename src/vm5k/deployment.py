@@ -191,7 +191,7 @@ class vm5k_deployment(object):
             if env_file is not None:
                 self.env_file = env_file
             else:
-                self.env_file = '/home/lpouilloux/synced/environments/vm5k/vm5k_20140206.tgz'
+                self.env_file = '/home/lpouilloux/synced/environments/vm5k/vm5k.env'
         
         logger.info('%s %s %s %s %s %s %s %s',
                     len(self.sites), style.emph('sites'),
