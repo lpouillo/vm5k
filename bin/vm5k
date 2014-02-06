@@ -314,7 +314,6 @@ for vm in vm5k.vms:
     f.write(vm['ip']+'\t'+vm['id']+'\n')
 f.close()
 vm5k.get_state()
-logger.setLevel(DEBUG)
 vm5k.deploy_vms(disk_location = args.vm_disk_location, backing_file = args.vm_backing_file)
 vm5k.get_state()
 
