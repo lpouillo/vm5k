@@ -72,13 +72,10 @@ def get_oargrid_job_vm5k_resources(oargrid_job_id):
     """Retrieve the hosts list and (ip, mac) list by sites from an oargrid_job_id and
     return the resources dict needed by vm5k_deployment, with kavlan-global if used in
     the oargrid job """
+    oargrid_job_id = int(oargrid_job_id) 
     logger.debug('Waiting job start')
     wait_oargrid_job_start(oargrid_job_id)
-    logger.debug('Retrieving hosts')
-    resources = {}
-    for oar_job_id, site in get_oargrid_job_oar_jobs(oargrid_job_id):
-        logger.debug('%s: %s', site, oar_job_id)
-        resources.update(get_oar_job_vm5k_resources(oar_job_id, site))
+    resources = get_oar_job_vm5k_resources( [ (oar_job_id, site) for oar_job_id, site in get_oargrid_job_oar_jobs(oargrid_job_id) ])
     kavlan_global = None
     for site, res in resources.iteritems():
         if res['kavlan'] >= 10:
