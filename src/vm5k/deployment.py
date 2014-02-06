@@ -642,6 +642,7 @@ class vm5k_deployment(object):
         logger.info('State %s', log)
 
     def _print_state_compact(self):
+        """Display in a compact form the distribution of vms on hosts."""
         dist = {}
         max_len_host = 0
         for vm in self.vms:
@@ -653,12 +654,12 @@ class vm5k_deployment(object):
             else:
                 dist[host][vm['id']] = vm['state']
         log = ''
-        for host, vms in dist.iteritems():
+        for host in sorted(dist.keys(), key = lambda x: (x.split('.')[0].split('-')[0], int(x.split('.')[0].split('-')[1]))):
             log += '\n'+style.host(host)+': '.ljust(max_len_host+2-len(host))
-            for vm in sorted(vms.keys()):
-                if vms[vm] == 'OK':
+            for vm in sorted(dist[host].keys(), key = lambda x: (x.split('.')[0].split('-')[0], int(x.split('.')[0].split('-')[1]))):
+                if dist[host][vm] == 'OK':
                     log += style.OK(vm)
-                elif vms[vm] == 'KO':
+                elif dist[host][vm] == 'KO':
                     log += style.KO(vm)
                 else:
                     log += style.Unknown(vm)
