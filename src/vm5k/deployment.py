@@ -183,16 +183,16 @@ class vm5k_deployment(object):
             self._set_vms_ip_mac()
             self._add_xml_vms()
 
-        if env_file is not None:
-            self.env_file = env_file
-            self.env_name = None
-        else:
+        if env_name is not None:
+            self.env_name = env_name
             self.env_file = None
-            if env_name is not None:
-                self.env_name = env_name
+        else:
+            self.env_name = None
+            if env_file is not None:
+                self.env_file = env_file
             else:
-                self.env_name = 'wheezy-x64-base'
-
+                self.env_file = '/home/lpouilloux/synced/environments/vm5k/vm5k_20140206.tgz'
+        
         logger.info('%s %s %s %s %s %s %s %s',
                     len(self.sites), style.emph('sites'),
                     len(self.clusters), style.user1('clusters'),
