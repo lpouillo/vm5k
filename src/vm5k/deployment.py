@@ -44,42 +44,44 @@ from vm5k.plots import init_live_plot
 
 
 
-def get_oar_job_vm5k_resources(oar_job_id, site):
-    """Retrieve the hosts list and (ip, mac) list from an oar_job_id and
+def get_oar_job_vm5k_resources( jobs ):
+    """Retrieve the hosts list and (ip, mac) list from a list of oar_job and
     return the resources dict needed by vm5k_deployment """
+    resources = {}
     logger.debug('Waiting job start')
-    wait_oar_job_start(oar_job_id, site)
-    logger.debug('Retrieving hosts')
-    hosts = get_oar_job_nodes(oar_job_id, site)
-    logger.debug('Retrieving subnet')
-    ip_mac, _ = get_oar_job_subnets( oar_job_id, site )
-    kavlan = None
-    if len(ip_mac) == 0:
-        logger.debug('Retrieving kavlan')
-        kavlan = get_oar_job_kavlan(oar_job_id, site)
-        if kavlan is not None:
-            ip_mac = get_kavlan_ip_mac(kavlan, site)
-    if 'grid5000.fr' in site:
-        site = site.split('.')[0]
-    return {site: {'hosts': hosts,'ip_mac': ip_mac, 'kavlan': kavlan}}
+    for oar_job_id, site in jobs:
+        logger.debug('Retrieving resources from %s:%s', site, oar_job_id)
+        oar_job_id = int(oar_job_id)
+        wait_oar_job_start(oar_job_id, site)
+        logger.debug('Retrieving hosts')
+        hosts = get_oar_job_nodes(oar_job_id, site)
+        logger.debug('Retrieving subnet')
+        ip_mac, _ = get_oar_job_subnets( oar_job_id, site )
+        kavlan = None
+        if len(ip_mac) == 0:
+            logger.debug('Retrieving kavlan')
+            kavlan = get_oar_job_kavlan(oar_job_id, site)
+            if kavlan:
+                ip_mac = get_kavlan_ip_mac(kavlan, site)
+        if 'grid5000.fr' in site:
+            site = site.split('.')[0]
+        resources[site] = {'hosts': hosts,'ip_mac': ip_mac, 'kavlan': kavlan}
+    return resources
 
 def get_oargrid_job_vm5k_resources(oargrid_job_id):
     """Retrieve the hosts list and (ip, mac) list by sites from an oargrid_job_id and
     return the resources dict needed by vm5k_deployment, with kavlan-global if used in
     the oargrid job """
+    oargrid_job_id = int(oargrid_job_id) 
     logger.debug('Waiting job start')
     wait_oargrid_job_start(oargrid_job_id)
-    logger.debug('Retrieving hosts')
-    resources = {}
-    for oar_job_id, site in get_oargrid_job_oar_jobs(oargrid_job_id):
-        logger.debug('%s: %s', site, oar_job_id)
-        resources.update(get_oar_job_vm5k_resources(oar_job_id, site))
+    resources = get_oar_job_vm5k_resources( [ (oar_job_id, site) for oar_job_id, site in get_oargrid_job_oar_jobs(oargrid_job_id) ])
     kavlan_global = None
     for site, res in resources.iteritems():
         if res['kavlan'] >= 10:
             kavlan_global = {'kavlan': res['kavlan'], 'ip_mac': resources[site]['ip_mac'], 'site': site }
             break
-    if kavlan_global is not None:
+    if kavlan_global:
         resources['global'] = kavlan_global
 
     return resources
@@ -144,9 +146,9 @@ class vm5k_deployment(object):
     """
 
     def __init__(self, infile = None, resources = None,
-                 env_name = 'wheezy-x64-base', env_file = None,
+                 env_name = None, env_file = None,
                  vms = None, distribution = 'round-robin',
-                 live_plot = False):
+                 outdir = None, live_plot = False):
         """:params infile: an XML file that describe the topology of the deployment
 
         :param resources: a dict whose keys are Grid'5000 sites and values are
@@ -165,6 +167,10 @@ class vm5k_deployment(object):
         :params live_plot: create a figure at the script beginning and add
         """
         print_step('STARTING vm5k_deployment')
+        if outdir:
+            self.outdir = outdir
+        else:
+            self.outdir = 'vm5k_'+strftime("%Y%m%d_%H%M%S_%z")
         self.state = Element('vm5k')
         self.fact = ActionFactory(remote_tool = SSH,
                                 fileput_tool = SCP,
@@ -172,7 +178,7 @@ class vm5k_deployment(object):
         self.distribution = distribution
         self.kavlan = None
 
-        if infile is None:
+        if not infile:
             self._init_state(resources, vms, infile)
         else:
             self.state = parse(infile)
@@ -181,13 +187,16 @@ class vm5k_deployment(object):
             self._set_vms_ip_mac()
             self._add_xml_vms()
 
-        if env_file is not None:
-            self.env_file = env_file
-            self.env_name = None
-        else:
-            self.env_file = None
+        if env_name is not None:
             self.env_name = env_name
-
+            self.env_file = None
+        else:
+            self.env_name = None
+            if env_file is not None:
+                self.env_file = env_file
+            else:
+                self.env_file = '/home/lpouilloux/synced/environments/vm5k/vm5k.env'
+        
         logger.info('%s %s %s %s %s %s %s %s',
                     len(self.sites), style.emph('sites'),
                     len(self.clusters), style.user1('clusters'),
@@ -234,14 +243,16 @@ class vm5k_deployment(object):
         dnsmasq_server(service_node, clients, self.vms, dhcp)
 
     # VMS deployment
-    def deploy_vms(self, disk_location = 'one'):
+
+    def deploy_vms(self, disk_location = 'one', backing_file = '/grid5000/images/KVM/wheezy-x64-base.qcow2'):
+
         """Destroy the existing VMS, create the virtual disks, install the vms, start them and
         wait for boot"""
         logger.info('Destroying existing virtual machines')
         destroy_vms(self.hosts)
         logger.info('Creating the virtual disks ')
         self._remove_existing_disks()
-        self._create_backing_file('/grid5000/images/KVM/squeeze-x64-base.qcow2')
+        self._create_backing_file(from_disk = backing_file)
         if disk_location == 'one':
             create_disks(self.vms).run()
         elif disk_location == 'all':
@@ -342,7 +353,7 @@ class vm5k_deployment(object):
         self._update_hosts_state(deployed_hosts, undeployed_hosts)
 
         # Renaming hosts if a kavlan is used
-        if self.kavlan is not None:
+        if self.kavlan:
             self.hosts = [ Host(get_kavlan_host_name(host, self.kavlan)) for host in self.hosts]
 
         # Configuring SSH with precopy of id_rsa and id_rsa.pub keys on all hosts to allow TakTuk connection
@@ -425,7 +436,8 @@ class vm5k_deployment(object):
         return hosts_br
 
     def packages_management(self, upgrade = True, other_packages = None):
-        """This method allow to configure APT to use testing and unstable repository, perform """
+        """This method allow to configure APT to use testing repository, perform upgrade and install 
+        required packages."""
         self._configure_apt()
         if upgrade:
             self._upgrade_hosts()
@@ -441,15 +453,13 @@ class vm5k_deployment(object):
         fd, tmpsource = mkstemp(dir = '/tmp/', prefix='sources.list_')
         f = fdopen(fd, 'w')
         f.write('deb http://ftp.debian.org/debian stable main contrib non-free\n'+\
-                'deb http://ftp.debian.org/debian testing main \n'+\
-                'deb http://ftp.debian.org/debian unstable main \n')
+                'deb http://ftp.debian.org/debian testing main contrib non-free\n')
         f.close()
         # Create preferences file
         fd, tmppref = mkstemp(dir = '/tmp/', prefix='preferences_')
         f = fdopen(fd, 'w')
         f.write('Package: * \nPin: release a=stable \nPin-Priority: 900\n\n'+\
-                'Package: * \nPin: release a=testing \nPin-Priority: 850\n\n'+\
-                'Package: * \nPin: release a=unstable \nPin-Priority: 800\n\n')
+                'Package: * \nPin: release a=testing \nPin-Priority: 850\n\n')
         f.close()
         # Create apt.conf file
         fd, tmpaptconf = mkstemp(dir = '/tmp/', prefix='apt.conf_')
@@ -489,12 +499,12 @@ class vm5k_deployment(object):
         libvirt_packages = 'libvirt-bin virtinst python2.7 python-pycurl python-libxml2 qemu-kvm nmap'
         logger.info('Installing libvirt packages \n%s', style.emph(libvirt_packages))
         cmd = 'export DEBIAN_MASTER=noninteractive ; apt-get update && apt-get install -y --force-yes '+\
-            '-o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" -t unstable '+\
+            '-o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" -t testing '+\
             libvirt_packages
         install_libvirt = self.fact.get_remote(cmd, self.hosts).run()
         self._actions_hosts(install_libvirt)
 
-        if other_packages is not None:
+        if other_packages:
             logger.info('Installing extra packages \n%s', style.emph(other_packages))
             cmd = 'export DEBIAN_MASTER=noninteractive ; apt-get update && '+\
                 'apt-get install -y --force-yes '+other_packages
@@ -512,7 +522,7 @@ class vm5k_deployment(object):
         if not resources.has_key('global'):
             if len(self.sites) == 1:
                 self.ip_mac = resources[self.sites[0]]['ip_mac']
-                if resources[site]['kavlan'] is not None:
+                if resources[site]['kavlan']:
                     self.kavlan = resources[site]['kavlan']
             else:
                 self.ip_mac = { site: resources[site]['ip_mac'] for site in self.sites}
@@ -544,17 +554,13 @@ class vm5k_deployment(object):
 
         logger.debug('Virtual Machines')
         max_vms = get_max_vms(self.hosts)
-        if vms is not None:
+        if vms:
             self.vms = vms if len(vms) <= max_vms else vms[0:max_vms]
             distribute_vms(vms, self.hosts, self.distribution)
             self._set_vms_ip_mac()
             self._add_xml_vms()
         else:
             self.vms = []
-
-
-
-
 
     def _set_vms_ip_mac(self):
         """Not finished """
@@ -628,7 +634,7 @@ class vm5k_deployment(object):
         """ """
 
         if output:
-            output = 'vm5k_'+strftime('%Y%m%d_%H%M%S',localtime())+'.xml'
+            output = self.outdir+'/vm5k_'+strftime('%Y%m%d_%H%M%S',localtime())+'.xml'
             f = open(output, 'w')
             f.write(prettify(self.state))
             f.close()
@@ -642,6 +648,7 @@ class vm5k_deployment(object):
         logger.info('State %s', log)
 
     def _print_state_compact(self):
+        """Display in a compact form the distribution of vms on hosts."""
         dist = {}
         max_len_host = 0
         for vm in self.vms:
@@ -653,12 +660,12 @@ class vm5k_deployment(object):
             else:
                 dist[host][vm['id']] = vm['state']
         log = ''
-        for host, vms in dist.iteritems():
+        for host in sorted(dist.keys(), key = lambda x: (x.split('.')[0].split('-')[0], int(x.split('.')[0].split('-')[1]))):
             log += '\n'+style.host(host)+': '.ljust(max_len_host+2-len(host))
-            for vm in sorted(vms.keys()):
-                if vms[vm] == 'OK':
+            for vm in sorted(dist[host].keys(), key = lambda x: (x.split('.')[0].split('-')[0], int(x.split('.')[0].split('-')[1]))):
+                if dist[host][vm] == 'OK':
                     log += style.OK(vm)
-                elif vms[vm] == 'KO':
+                elif dist[host][vm] == 'KO':
                     log += style.KO(vm)
                 else:
                     log += style.Unknown(vm)
@@ -668,7 +675,7 @@ class vm5k_deployment(object):
     def _update_hosts_state(self, hosts_ok, hosts_ko):
         """ """
         for host in hosts_ok:
-            if host is not None:
+            if host:
                 if not isinstance(host, Host):
                     host = Host(host)
                 if self.kavlan is None:
@@ -685,9 +692,10 @@ class vm5k_deployment(object):
                 address = kavname_to_basename(host).address
             self.state.find(".//host/[@id='"+address+"']").set('state', 'KO')
             self.hosts.remove(host)
-            if len(self.vms) > 0:
-                distribute_vms(self.vms, self.hosts, self.distribution)
-                self._set_vms_ip_mac()
+
+        if len(self.vms) > 0:
+            distribute_vms(self.vms, self.hosts, self.distribution)
+            self._set_vms_ip_mac()
 
         if len(self.hosts) == 0:
             logger.error('Not enough hosts available, because %s are KO',
@@ -748,7 +756,12 @@ def distribute_vms(vms, hosts, distribution = 'round-robin'):
                     host = iter_hosts.next()
 
     elif distribution == 'n_by_hosts':
-        vms_by_host = len(vms)/len(hosts)
+        n_by_host = int(len(vms)/len(hosts))
+        i_vm = 0
+        for host in hosts:
+            for i in range(n_by_host):
+                vms[i_vm]['host'] = host
+                i_vm += 1
 
     logger.debug('Final virtual machines distribution \n%s',
         "\n".join( [ vm['id']+": "+str(vm['host']) for vm in vms ] ) )
@@ -783,21 +796,19 @@ def get_fastest_host(hosts):
                 fastest_host = host
         return fastest_host
 
-def get_max_vms(hosts, n_cpu = 1, mem = 512):
-    """Return the maximum number of virtual machines that can be created on the host"""
+def get_max_vms(hosts, mem = 512):
+    """Return the maximum number of virtual machines that can be created on the hosts"""
     total = get_CPU_RAM_FLOPS(hosts)['TOTAL']
-    return min(int(3*total['CPU']/n_cpu), int(total['RAM']/mem-1))
+    return int(total['RAM']/mem-1)
 
 
 def get_vms_slot(vms, elements, slots, excluded_elements = None):
     """Return a slot with enough RAM and CPU """
     chosen_slot = None
 
-
     req_ram = sum( [ vm['mem'] for vm in vms] )
     req_cpu = sum( [ vm['n_cpu'] for vm in vms] ) /3
     logger.debug('RAM %s CPU %s', req_ram, req_cpu)
-
 
     for slot in slots:
         hosts = []

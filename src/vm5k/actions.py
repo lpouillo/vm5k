@@ -19,7 +19,7 @@
 
 from os import fdopen
 from pprint import pformat
-from execo import SshProcess, Put, logger, get_remote, Process, ParallelActions, Host
+from execo import SshProcess, Put, logger, TaktukRemote, Process, ParallelActions, Host
 from execo.log import style
 from execo.time_utils import sleep
 from execo_g5k import default_frontend_connection_params
@@ -91,22 +91,40 @@ def define_vms( vms_id, template = None, ip_mac = None, state = None, host = Non
 
 
 
-def list_vm( host, all = False ):
+def list_vm( hosts, all = False ):
     """ Return the list of VMs on host """
     cmd = 'virsh --connect qemu:///system list'
-    if all :
+    if all:
         cmd += ' --all'
-    list_vm = get_remote(cmd, [host] ).run()
-    vms_id = []
+    logger.debug('Listing Virtual machines on '+pformat(hosts))
+    list_vm = TaktukRemote(cmd, hosts ).run()
+    hosts_vms = { host.address: [] for host in hosts }
     for p in list_vm.processes:
         lines = p.stdout.split('\n')
         for line in lines:
             if 'vm' in line:
                 std = line.split()
-                vms_id.append(std[1])
-    logger.debug('List of VM on host %s\n%s', style.host(host.address),
-                 ' '.join([style.emph(id) for id in vms_id]))
-    return [ {'id': id} for id in vms_id ]
+                hosts_vms[p.host.address].append({'id': std[1]})
+#     logger.debug('List of VM on host %s\n%s', style.host(host.address),
+#                  ' '.join([style.emph(id) for id in vms_id]))
+    logger.debug(pformat(hosts_vms))
+    return hosts_vms
+
+def destroy_vms( hosts):
+    """Destroy all the VM on the hosts"""
+
+    cmds = []
+    hosts_with_vms = []
+    hosts_vms = list_vm(hosts, all = True)
+    
+    for host, vms in hosts_vms.iteritems():
+        if len(vms) > 0:
+            cmds.append( '; '.join('virsh destroy '+vm['id']+'; virsh undefine '+vm['id'] for vm in vms[host] ))
+            hosts_with_vms.append(host)
+    
+    if len(cmds) > 0:
+        TaktukRemote('{{cmds}}', hosts_with_vms).run()
+
 
 
 def create_disks(vms, backing_file = '/tmp/vm-base.img', backing_file_fmt = 'raw'):
@@ -119,7 +137,7 @@ def create_disks(vms, backing_file = '/tmp/vm-base.img', backing_file_fmt = 'raw
 
     logger.debug(pformat(hosts_cmds.values()))
 
-    return get_remote('{{hosts_cmds.values()}}', list(hosts_cmds.keys()))
+    return TaktukRemote('{{hosts_cmds.values()}}', list(hosts_cmds.keys()))
 
 def create_disks_on_hosts(vms, hosts, backing_file = '/tmp/vm-base.img', backing_file_fmt = 'raw'):
     """ Return a Parallel action to create the qcow2 disks on all hosts"""
@@ -138,12 +156,12 @@ def install_vms(vms):
     for vm in vms:
         cmd = 'virt-install -d --import --connect qemu:///system --nographics --noautoconsole --noreboot'+ \
         ' --name=' + vm['id'] + ' --network network=default,mac='+vm['mac']+' --ram='+str(vm['mem'])+ \
-        ' --disk path=/tmp/'+vm['id']+'.qcow2,device=disk,format=qcow2,size='+str(vm['hdd'])+',cache=none '+\
+        ' --disk path=/tmp/'+vm['id']+'.qcow2,device=disk,bus=virtio,format=qcow2,size='+str(vm['hdd'])+',cache=none '+\
         ' --vcpus='+ str(vm['n_cpu'])+' --cpuset='+vm['cpuset']+' ; '
         hosts_cmds[vm['host']] = cmd if not hosts_cmds.has_key(vm['host']) else hosts_cmds[vm['host']]+cmd
 
     logger.debug(pformat(hosts_cmds))
-    return get_remote('{{hosts_cmds.values()}}', list(hosts_cmds.keys()))
+    return TaktukRemote('{{hosts_cmds.values()}}', list(hosts_cmds.keys()))
 
 
 def start_vms(vms):
@@ -154,7 +172,7 @@ def start_vms(vms):
         hosts_cmds[vm['host']] = cmd if not hosts_cmds.has_key(vm['host']) else hosts_cmds[vm['host']]+cmd
 
     logger.debug(pformat(hosts_cmds))
-    return get_remote('{{hosts_cmds.values()}}', list(hosts_cmds.keys()))
+    return TaktukRemote('{{hosts_cmds.values()}}', list(hosts_cmds.keys()))
 
 
 #def check_vm_state(vms):
@@ -222,7 +240,7 @@ def migrate_vm(vm, host):
         src = vm['host']
 
     # Check that the disk is here
-    test_disk = get_remote('ls /tmp/'+vm['id']+'.qcow2', [host]).run()
+    test_disk = TaktukRemote('ls /tmp/'+vm['id']+'.qcow2', [host]).run()
     if not test_disk.ok:
         vm['host'] = host
         create_disk_on_dest = create_disks([vm]).run()
@@ -231,27 +249,15 @@ def migrate_vm(vm, host):
 
     cmd = 'virsh --connect qemu:///system migrate '+vm['id']+' --live --copy-storage-inc '+\
             'qemu+ssh://'+host.address+"/system'  "
-    return get_remote(cmd, [src] )
+    return TaktukRemote(cmd, [src] )
 
 
-def destroy_vms( hosts):
-    """Destroy all the VM on the hosts"""
 
-    cmds = []
-    hosts_with_vms = []
-    for host in hosts:
-        vms = list_vm(host, all = True)
-        if len(vms) > 0:
-            cmds.append( '; '.join('virsh destroy '+vm['id']+'; virsh undefine '+vm['id'] for vm in vms))
-            hosts_with_vms.append(host)
-
-    if len(cmds) > 0:
-        get_remote('{{cmds}}', hosts_with_vms).run()
 
 
 def rm_qcow2_disks( hosts):
     logger.debug('Removing existing disks')
-    get_remote('rm -f /tmp/*.qcow2', hosts).run()
+    TaktukRemote('rm -f /tmp/*.qcow2', hosts).run()
 
 
 

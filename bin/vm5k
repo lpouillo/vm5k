@@ -18,7 +18,7 @@ from execo.log import style
 from execo.config import TAKTUK, CHAINPUT
 from execo.action import ActionFactory
 from execo.time_utils import Timer, format_date
-from execo_g5k import oargridsub, get_g5k_clusters
+from execo_g5k import oargridsub
 from execo_g5k.oargrid import get_oargridsub_commandline
 from execo_g5k.planning import get_planning, compute_slots, show_resources, find_free_slot, \
     get_jobs_specs, distribute_hosts
@@ -142,7 +142,7 @@ vms.add_argument('-t', '--vm_template',
                     default = '<vm mem="1024" hdd="10" cpu="1" cpuset="auto"/>')
 vms.add_argument('-f', '--vm_backing_file',
                     dest = 'vm_backing_file',
-                    default = '/grid5000/images/KVM/squeeze-x64-base.qcow2',
+                    default = '/grid5000/images/KVM/wheezy-x64-base.qcow2',
                     help = 'backing file for your virtual machines')
 vms.add_argument('-l', '--vm_disk_location',
                     default = 'one',
@@ -267,40 +267,55 @@ if args.job_id is None:
 else:
     logger.info('Using an existing job: %s', style.emph(args.job_id))
     if ':' in args.job_id:
-        frontend, job_id = args.job_id.split(':')
+        jobs = []
+        for oar_job in args.job_id.split(','):
+            frontend, job_id = oar_job.split(':')
+            jobs.append( (job_id, frontend) )
     else:
         frontend, job_id = None, args.job_id
 
 
 logger.info('Retrieving hosts and network parameters')
 if frontend is None:
-    vm5k_resources = get_oargrid_job_vm5k_resources(int(job_id))
+    vm5k_resources = get_oargrid_job_vm5k_resources( job_id)
 else:
-    vm5k_resources = get_oar_job_vm5k_resources(int(job_id), frontend)
+    vm5k_resources = get_oar_job_vm5k_resources(jobs)
 
-vm5k = vm5k_deployment(resources = vm5k_resources, vms = vms, live_plot = args.live_plot)
+
+logger.debug(vm5k_resources)
+
+
+vm5k = vm5k_deployment(resources = vm5k_resources, vms = vms, live_plot = args.live_plot,
+                 env_name = args.env_name, env_file = args.env_file, outdir = args.outdir)
 vm5k.fact = ActionFactory(remote_tool = TAKTUK,
                                 fileput_tool = CHAINPUT,
                                 fileget_tool = TAKTUK)
+vm5k.distribution = args.vm_distribution
 
 if args.nodeploy:
     deployment_tries = 0
 
 print_step('Deploying the hosts')
 vm5k.hosts_deployment(max_tries = deployment_tries, check_deploy =  not args.forcedeploy)
+f = open(args.outdir+'/hosts.list', 'w')
+for host in vm5k.hosts:
+    f.write(host.address+'\n')
+f.close()
+
 print_step('Managing packages')
 vm5k.packages_management(upgrade = True, other_packages = 'hwloc')
 print_step('Configuring libvirt')
 vm5k.configure_libvirt()
 print_step('Configuring service node')
 vm5k.configure_service_node()
-
 print_step('Deploying virtual machines')
 logger.info('Maximum number of VMs %s', get_max_vms(vm5k.hosts))
-distribute_vms(vm5k.vms, vm5k.hosts)
-
+f = open(args.outdir+'/vms.list', 'w')
+for vm in vm5k.vms:
+    f.write(vm['ip']+'\t'+vm['id']+'\n')
+f.close()
 vm5k.get_state()
-vm5k.deploy_vms(disk_location = args.vm_disk_location)
+vm5k.deploy_vms(disk_location = args.vm_disk_location, backing_file = args.vm_backing_file)
 vm5k.get_state()
 
 if args.program is not None:

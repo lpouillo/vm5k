@@ -9,7 +9,6 @@ It is composed of:
 - an experimental engine that conduct user defined workflow for a set of parameters
 
 Developped by the Inria Hemera initiative 2010-2014 
-
 https://www.grid5000.fr/mediawiki/index.php/Hemera
 
 
@@ -21,7 +20,7 @@ The module requires:
 
 Installation
 ============
-You first need to install execo and it's dependencies on any Grid'5000 frontend.
+You first need to install execo and on one of the Grid'5000 frontend.
 
 http://execo.gforge.inria.fr/doc/userguide.html
 
@@ -30,6 +29,8 @@ Then you clone the repository and install the package:
     git clone https://github.com/lpouillo/vm5k.git
     cd vm5k
     python setup.py install --user
+
+Don't forget to configure your PYTHONPATH and your PATH according to http://execo.gforge.inria.fr/doc/userguide.html#installation
 
 
 Usage
@@ -61,7 +62,7 @@ Automate virtual machines deployment on Grid5000 in a global KaVLAN.
 
 ### Basic
 The basic usage is to create a certain number of virtual machines on Grid5000.
-To deploy 100 VM on *squeeze-x64-prod* and with the *squeeze-x64-base.qcow2* KVM image
+To deploy 100 VM on *wheezy-x64-base* and with the *wheezy-x64-base.qcow2* KVM image
 on any Grid5000 cluster with KaVLAN and hardware virtualization, for 2 hours:
 
     vm5k --n_vm 100 -w 2:00:00
@@ -73,7 +74,7 @@ perform the reservation and do setup hosts and VMs automatically.
 The script use a default template for the virtual machine `<vm mem="1024" hdd="2" cpu="1" cpuset="auto" />`.
 You can define your own one an one-line XML file and also use a custom backing file:
 
-    vm5k --n_vm 20 --vm_template mytemplate.xml --vm_backing_file path_to_my_qcow2_file_on_g5k
+    vm5k --n_vm 20 --vm_template '<vm mem="512" hdd="10" cpu="1" cpuset="auto"/>' --vm_backing_file path_to_my_qcow2_file_on_g5k
 
 will deploy 20 virtual machines with system and components you want.
 
