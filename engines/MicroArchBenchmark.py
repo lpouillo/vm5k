@@ -10,6 +10,7 @@ class MicroArchBenchmark( vm5k_engine ):
         super(MicroArchBenchmark, self).__init__()
         self.env_name = 'wheezy-x64-base'
         self.stress_time = 300
+        self.default_memory = 512
         self.options_parser.add_option("--mem", dest = "cachebench",
                     help = "", action = "store_true")
 	self.options_parser.add_option("--nomulti", dest = "nomulti",
@@ -77,22 +78,28 @@ class MicroArchBenchmark( vm5k_engine ):
             # Affecting a cpuset to each virtual machine
             cpu_index = [item for sublist in self.cpu_topology for item in sublist]
             cpusets = []
+            n_mem = []
             for i in range(len(comb['dist'])):
                 index = cpu_index[i]
                 for j in range(int(comb['dist'][i])):
                     cpusets.append(str(index))
+                    n_mem.append(str(self.default_memory))
             # Adding the multi_cpu vm if it exists
             n_cpu = sum( [ int(i) for i in comb['multi_cpu'] ])
             if n_cpu > 1:
                 cpusets.append( ','.join( str(cpu_index[i]) for i in range(n_cpu) ) )
                 multi_cpu = True
+                n_mem.append(str(self.default_memory*n_cpu))
             else:
                 multi_cpu = False
 
             n_cpus = 1 if not multi_cpu else [1]*(n_vm-1)+[n_cpu]
             vm_ids = ['vm-'+str(i+1) for i in range(n_vm)] if not multi_cpu else ['vm-'+str(i+1) for i in range(n_vm-1)]+['vm-multi']
-            vms = define_vms(vm_ids, ip_mac = ip_mac,
-                             n_cpu = n_cpus, cpusets = cpusets)
+            if not self.options.cachebench:
+		vms = define_vms(vm_ids, ip_mac = ip_mac,
+				n_cpu = n_cpus, cpusets = cpusets, mem = n_mem)
+	    else:
+	      
 
             for vm in vms:
                 vm['host'] = hosts[0]
@@ -121,6 +128,16 @@ class MicroArchBenchmark( vm5k_engine ):
                 if not vcpu_pin.ok:
                     logger.error(host+': Unable to pin the vcpus of vm-multi %s', slugify(comb))
                     exit()
+                    
+            if self.options.cachebench:
+		# Force pinning of VM memory to CPU sets
+		for vm in vms:
+		  cmd = '; '.join( [ 'virsh numatune '+str(vm['id'])' --mode strict --nodeset '+vm['cpuset']+' --live --current'] )
+		  vcpu_pin = SshProcess(cmd, hosts[0]).run()
+		  if not vcpu_pin.ok:
+		      logger.error(host+': Unable to pin the memory for vm %s  %s', (vm['id'], slugify(comb)))
+		      exit()
+
 
             # Prepare virtual machines for experiments
             stress = []
@@ -222,6 +239,7 @@ class MicroArchBenchmark( vm5k_engine ):
 
     def cpu_kflops(self, vms, install_only = False):
         """Put kflops.tgz on the hosts, compile it and optionnaly prepare a TaktukRemote"""
+	mem_size = [str(27+int(vm['n_cpu'])) for vm in vms]
         vms_ip = [vm['ip'] for vm in vms]
 
 	if self.options.cachebench:
@@ -229,13 +247,15 @@ class MicroArchBenchmark( vm5k_engine ):
 	  TaktukRemote( 'tar -xzf llcbench.tar.gz; cd llcbench; make linux-lam; make cache-bench', vms_ip).run()
 	  vms_out = [vm['ip']+'_'+vm['cpuset'] for vm in vms]
 	  if not install_only:
-	      return TaktukRemote('./llcbench/cachebench/cachebench -m 27 -e 1 -x 2 -d 1 -b > {{vms_out}}_rmw.out; ./llcbench/cachebench/cachebench -m 27 -e 1 -x 2 -d 1 -p > {{vms_out}}_memcpy.out', vms_ip)  
+	      return TaktukRemote('./llcbench/cachebench/cachebench -m {{memsize}} -e 1 -x 2 -d 1 -b > {{vms_out}}_rmw.out; ./llcbench/cachebench/cachebench -m {{memsize}} -e 1 -x 2 -d 1 -p > {{vms_out}}_memcpy.out', mem_size, vms_ip)  
 	else:
 	  ChainPut(vms_ip, ['kflops.tgz'] ).run()
 	  TaktukRemote( 'tar -xzf kflops.tgz; cd kflops; make', vms_ip).run()
 	  vms_out = [vm['ip']+'_'+vm['cpuset'] for vm in vms]
 	  if not install_only:
 	      return TaktukRemote('./kflops/kflops > {{vms_out}}.out', vms_ip)
+	    
+
 
 
 #    def mem_update(self, vms, size, speed):
