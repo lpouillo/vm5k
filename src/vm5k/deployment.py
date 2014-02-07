@@ -337,8 +337,12 @@ class vm5k_deployment(object):
     def hosts_deployment(self, max_tries = 1, check_deploy = True):
         """Create the execo_g5k.Deployment"""
 
+        for host in self.hosts:
+            if isinstance(host, Host):
+                host = host.address
+            
         logger.info('Deploying %s hosts \n%s', len(self.hosts),
-            ' '.join([ style.host(host.address.split('.')[0]) for host in sorted(self.hosts) ]))
+            ' '.join([ style.host(host.split('.')[0]) for host in sorted(self.hosts) ]))
         deployment = Deployment( hosts = [ Host(canonical_host_name(host)) for host in self.hosts],
             env_file = self.env_file, env_name = self.env_name,
             vlan = self.kavlan)
@@ -348,6 +352,7 @@ class vm5k_deployment(object):
         deployed_hosts, undeployed_hosts = deploy(deployment, out = out,
                                 num_tries = max_tries,
                                 check_deployed_command = check_deploy)
+    
         logger.info('Deployed %s hosts \n%s', len(deployed_hosts),
             ' '.join([ style.host(host.split('.')[0]) for host in sorted(deployed_hosts)]))
         self._update_hosts_state(deployed_hosts, undeployed_hosts)
