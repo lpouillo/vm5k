@@ -220,7 +220,7 @@ class vm5k_engine( Engine ):
 
     def get_resources(self):
         """ """
-        self.resources = get_oar_job_vm5k_resources(self.oar_job_id, self.frontend)
+        self.resources = get_oar_job_vm5k_resources([ (self.oar_job_id, self.frontend) ] )
         self.hosts = self.resources[get_cluster_site(self.cluster)]['hosts']
         self.ip_mac = self.resources[get_cluster_site(self.cluster)]['ip_mac']
 
