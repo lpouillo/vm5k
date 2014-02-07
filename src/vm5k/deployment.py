@@ -353,6 +353,9 @@ class vm5k_deployment(object):
                                 num_tries = max_tries,
                                 check_deployed_command = check_deploy)
     
+        for host in deployed_hosts:
+            if isinstance(host, Host):
+                host = host.address
         logger.info('Deployed %s hosts \n%s', len(deployed_hosts),
             ' '.join([ style.host(host.split('.')[0]) for host in sorted(deployed_hosts)]))
         self._update_hosts_state(deployed_hosts, undeployed_hosts)
