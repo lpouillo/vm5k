@@ -15,7 +15,7 @@ class MicroArchBenchmark( vm5k_engine ):
                     help = "", action = "store_true")
 	self.options_parser.add_option("--membw", dest = "mbw",
                     help = "", action = "store_true")
-	self.options_parser.add_option("--nomulti", dest = "nomulti",
+        self.options_parser.add_option("--nomulti", dest = "nomulti",
                     help = "", action = "store_true")
 
     def define_parameters(self):
@@ -47,11 +47,11 @@ class MicroArchBenchmark( vm5k_engine ):
 
         mult_cpu_vm = []
         if self.options.nomulti:
-	  mult_cpu_vm.append('0'*(n_core))
-	else:
-	  for i in range(n_core+1):
-	      mult_cpu_vm.append( '1'*i+'0'*(n_core-i))
-	  mult_cpu_vm.remove('1'+'0'*(n_core-1))
+            mult_cpu_vm.append('0'*(n_core))
+        else:
+            for i in range(n_core+1):
+                mult_cpu_vm.append( '1'*i+'0'*(n_core-i))
+            mult_cpu_vm.remove('1'+'0'*(n_core-1))
 
         parameters = {'dist': dists, 'multi_cpu': mult_cpu_vm}
         logger.debug(parameters)
@@ -97,12 +97,20 @@ class MicroArchBenchmark( vm5k_engine ):
 
             n_cpus = 1 if not multi_cpu else [1]*(n_vm-1)+[n_cpu]
             vm_ids = ['vm-'+str(i+1) for i in range(n_vm)] if not multi_cpu else ['vm-'+str(i+1) for i in range(n_vm-1)]+['vm-multi']
-	    vms = define_vms(vm_ids, ip_mac = ip_mac,
-				n_cpu = n_cpus, cpusets = cpusets, mem = n_mem)
-	   
+#<<<<<<< HEAD
+            vms = define_vms(vm_ids, ip_mac = ip_mac,
+                             n_cpu = n_cpus, cpusets = cpusets, mem = n_mem)
 
             for vm in vms:
                 vm['host'] = hosts[0]
+#=======
+            #if not self.options.cachebench:
+                #vms = define_vms(vm_ids, ip_mac = ip_mac,
+                #n_cpu = n_cpus, cpusets = cpusets, mem = n_mem)
+            #else:
+                #for vm in vms:
+                    #vm['host'] = hosts[0]
+#>>>>>>> c7fd7f7a6d401181fa4e0aa8ea11cb2cb6b6d874
             logger.info(', '.join( [vm['id']+' '+ vm['ip']+' '+str(vm['n_cpu'])+'('+vm['cpuset']+')' for vm in vms]))
 
             # Create disks, install vms and boot by core
@@ -130,13 +138,23 @@ class MicroArchBenchmark( vm5k_engine ):
                     exit()
                     
             if self.options.cachebench:
-		# Force pinning of VM memory to CPU sets
-		for vm in vms:
-		  cmd = '; '.join( [ 'virsh numatune '+str(vm['id'])+' --mode strict --nodeset '+vm['cpuset']+' --live --current'] )
-		  vcpu_pin = SshProcess(cmd, hosts[0]).run()
-		  if not vcpu_pin.ok:
-		      logger.error(host+': Unable to pin the memory for vm %s  %s', (vm['id'], slugify(comb)))
-		      exit()
+#<<<<<<< HEAD
+		## Force pinning of VM memory to CPU sets
+		#for vm in vms:
+		  #cmd = '; '.join( [ 'virsh numatune '+str(vm['id'])+' --mode strict --nodeset '+vm['cpuset']+' --live --current'] )
+		  #vcpu_pin = SshProcess(cmd, hosts[0]).run()
+		  #if not vcpu_pin.ok:
+		      #logger.error(host+': Unable to pin the memory for vm %s  %s', (vm['id'], slugify(comb)))
+		      #exit()
+#=======
+            ## Force pinning of VM memory to CPU sets
+                for vm in vms:
+                    cmd = '; '.join( [ 'virsh numatune '+str(vm['id'])+' --mode strict --nodeset '+vm['cpuset']+' --live --current'] )
+                    vcpu_pin = SshProcess(cmd, hosts[0]).run()
+                    if not vcpu_pin.ok:
+                        logger.error(host+': Unable to pin the memory for vm %s  %s', (vm['id'], slugify(comb)))
+                        exit()
+#>>>>>>> c7fd7f7a6d401181fa4e0aa8ea11cb2cb6b6d874
 
 
             # Prepare virtual machines for experiments
@@ -171,15 +189,15 @@ class MicroArchBenchmark( vm5k_engine ):
                     logger.error(host+': Unable to start the stress for combination %s', slugify(comb))
                     exit()
 
-	    if not self.options.cachebench:
-	      sleep(self.stress_time)
-	      logger.info(host+': Killing stress !!')
-	      stress_actions.kill()
-	    else:
-	      logger.info(host+': Waiting for cachebench to finish.')
-	      for p in stress_actions.processes:
-		while not p.ended:
-		  sleep(1)
+            if not self.options.cachebench:
+                sleep(self.stress_time)
+                logger.info(host+': Killing stress !!')
+                stress_actions.kill()
+            else:
+                logger.info(host+': Waiting for cachebench to finish.')
+                for p in stress_actions.processes:
+                    while not p.ended:
+                        sleep(1)
 
             # Gathering results
             comb_dir = self.result_dir +'/'+ slugify(comb)+'/'
@@ -196,31 +214,30 @@ class MicroArchBenchmark( vm5k_engine ):
             vms_out = [vm['ip']+'_'+vm['cpuset'] for vm in vms if vm['n_cpu'] == 1]
             comb_dir = self.result_dir +'/'+ slugify(comb)+'/'
             if self.options.cachebench:
-	      get_vms_output = Get(vms_ip, ['{{vms_out}}_rmw.out'], local_location = comb_dir).run()
-	      for p in get_vms_output.processes:
-		  if not p.ok:
-		      logger.error(host+': Unable to retrieve the files for combination %s', slugify(comb))
-		      exit()
-		      
-	      get_vms_output = Get(vms_ip, ['{{vms_out}}_memcpy.out'], local_location = comb_dir).run()
-	      for p in get_vms_output.processes:
-		  if not p.ok:
-		      logger.error(host+': Unable to retrieve the files for combination %s', slugify(comb))
-		      exit()
-	    else:
-	      get_vms_output = Get(vms_ip, ['{{vms_out}}.out'], local_location = comb_dir).run()
-	      for p in get_vms_output.processes:
-		  if not p.ok:
-		      logger.error(host+': Unable to retrieve the files for combination %s', slugify(comb))
-		      exit()
-	      if multi_cpu:
-		  for multi_vm in [vm for vm in vms if vm['id'] == 'vm-multi' ]:
-		      get_multi = Get([multi_vm['ip']], ['vm_multi_'+str(cpu_index[i])+'.out ' for i in range(multi_vm['n_cpu']) ],
-			  local_location = comb_dir).run()
-		      for p in get_multi.processes:
-			  if not p.ok:
-			      logger.error(host+': Unable to retrieve the vm_multi files for combination %s', slugify(comb))
-			      exit()
+                get_vms_output = Get(vms_ip, ['{{vms_out}}_rmw.out'], local_location = comb_dir).run()
+                for p in get_vms_output.processes:
+                    if not p.ok:
+                        logger.error(host+': Unable to retrieve the files for combination %s', slugify(comb))
+                        exit()
+                get_vms_output = Get(vms_ip, ['{{vms_out}}_memcpy.out'], local_location = comb_dir).run()
+                for p in get_vms_output.processes:
+                    if not p.ok:
+                        logger.error(host+': Unable to retrieve the files for combination %s', slugify(comb))
+                        exit()
+            else:
+                get_vms_output = Get(vms_ip, ['{{vms_out}}.out'], local_location = comb_dir).run()
+                for p in get_vms_output.processes:
+                    if not p.ok:
+                        logger.error(host+': Unable to retrieve the files for combination %s', slugify(comb))
+                        exit()
+            if multi_cpu:
+                for multi_vm in [vm for vm in vms if vm['id'] == 'vm-multi' ]:
+                    get_multi = Get([multi_vm['ip']], ['vm_multi_'+str(cpu_index[i])+'.out ' for i in range(multi_vm['n_cpu']) ],
+                    local_location = comb_dir).run()
+                    for p in get_multi.processes:
+                        if not p.ok:
+                            logger.error(host+': Unable to retrieve the vm_multi files for combination %s', slugify(comb))
+                            exit()
 
             comb_ok = True
         finally:
@@ -243,22 +260,22 @@ class MicroArchBenchmark( vm5k_engine ):
 
     def cpu_kflops(self, vms, install_only = False):
         """Put kflops.tgz on the hosts, compile it and optionnaly prepare a TaktukRemote"""
-	mem_size = [str(27+int(vm['n_cpu'])) for vm in vms]
+        mem_size = [str(27+int(vm['n_cpu'])) for vm in vms]
         vms_ip = [vm['ip'] for vm in vms]
 
-	if self.options.cachebench:
-	  ChainPut(vms_ip, ['llcbench.tar.gz'] ).run()
-	  TaktukRemote( 'tar -xzf llcbench.tar.gz; cd llcbench; make linux-lam; make cache-bench', vms_ip).run()
-	  vms_out = [vm['ip']+'_'+vm['cpuset'] for vm in vms]
-	  if not install_only:
-	      return TaktukRemote('./llcbench/cachebench/cachebench -m {{memsize}} -e 1 -x 2 -d 1 -b > {{vms_out}}_rmw.out; ./llcbench/cachebench/cachebench -m {{memsize}} -e 1 -x 2 -d 1 -p > {{vms_out}}_memcpy.out', mem_size, vms_ip)  
-	else:
-	  ChainPut(vms_ip, ['kflops.tgz'] ).run()
-	  TaktukRemote( 'tar -xzf kflops.tgz; cd kflops; make', vms_ip).run()
-	  vms_out = [vm['ip']+'_'+vm['cpuset'] for vm in vms]
-	  if not install_only:
-	      return TaktukRemote('./kflops/kflops > {{vms_out}}.out', vms_ip)
-	    
+        if self.options.cachebench:
+            ChainPut(vms_ip, ['llcbench.tar.gz'] ).run()
+            TaktukRemote( 'tar -xzf llcbench.tar.gz; cd llcbench; make linux-lam; make cache-bench', vms_ip).run()
+            vms_out = [vm['ip']+'_'+vm['cpuset'] for vm in vms]
+            if not install_only:
+                return TaktukRemote('./llcbench/cachebench/cachebench -m {{memsize}} -e 1 -x 2 -d 1 -b > {{vms_out}}_rmw.out; ./llcbench/cachebench/cachebench -m {{memsize}} -e 1 -x 2 -d 1 -p > {{vms_out}}_memcpy.out', mem_size, vms_ip)  
+            else:
+                ChainPut(vms_ip, ['kflops.tgz'] ).run()
+                TaktukRemote( 'tar -xzf kflops.tgz; cd kflops; make', vms_ip).run()
+        vms_out = [vm['ip']+'_'+vm['cpuset'] for vm in vms]
+        if not install_only:
+            return TaktukRemote('./kflops/kflops > {{vms_out}}.out', vms_ip)
+        
 
 
 
