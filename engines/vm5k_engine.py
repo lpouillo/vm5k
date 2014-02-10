@@ -269,7 +269,7 @@ def get_cpu_topology(cluster, dir = None):
         ((job_id, _), ) = oarsub([(submission, frontend)])
         wait_oar_job_start( job_id, frontend )
         host = get_oar_job_nodes( job_id, frontend )[0]
-        capa = SshProcess('unset LIBVIRT_DEFAULT_URI ; virsh capabilities', host,
+        capa = SshProcess('virsh capabilities', host,
                           connection_params = {'user': default_frontend_connection_params['user'] }).run()
         oardel( [ (job_id, frontend) ] )
         root = fromstring( capa.stdout )
