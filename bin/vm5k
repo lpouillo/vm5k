@@ -23,7 +23,8 @@ from execo_g5k.oargrid import get_oargridsub_commandline
 from execo_g5k.planning import get_planning, compute_slots, show_resources, find_free_slot, \
     get_jobs_specs, distribute_hosts
 from vm5k import vm5k_deployment, define_vms, get_oar_job_vm5k_resources, get_max_vms, \
-    get_oargrid_job_vm5k_resources, get_vms_slot, print_step, distribute_vms, default_vm
+    get_oargrid_job_vm5k_resources, get_vms_slot, print_step, distribute_vms, default_vm,\
+    get_CPU_RAM_FLOPS
 
 
 ### INITIALIZATION
@@ -179,8 +180,9 @@ if args.walltime is None and args.job_id is None:
                  (style.emph('walltime')+' or -j '+style.emph('job_id')) )
 
 ## Start message
-logger.debug('Options\n'+'\n'.join( [ style.emph(option.ljust(20))+\
-                    '= '+str(value).ljust(10) for option, value in vars(args).iteritems() if value is not None ]))
+print_step('VM5K: automatic deployement of VMs on Grid\'5000')
+logger.info('Options\n'+'\n'.join( [ style.emph(option.ljust(20))+\
+            '= '+str(vars(args)[option]).ljust(10) for option in sorted(vars(args).keys()) if vars(args)[option] ]))
 
 ## Create output directory
 try:
@@ -199,8 +201,6 @@ if args.infile is not None:
         dump(vm5k)
     elements = { cluster.get('id'): len(cluster.findall('./host')) for cluster in vm5k.findall('.//cluster') }
 else:
-    logger.info('Using n_vm = %s, \nvm_template = %s and resources %s',
-                style.emph(args.n_vm), style.emph(args.vm_template), style.emph(args.resources))
     vms = define_vms(['vm-'+str(i+1) for i in range(args.n_vm)],
                      template = fromstring(args.vm_template))
     elements = {}
@@ -212,7 +212,7 @@ else:
         elements[element_uid] = int(n_nodes)
 
 # MANAGING RESERVATION
-logger.info(style.log_header('Reservation'))
+print_step('Reservation')
 frontend = None
 if args.job_id is None:
     show_resources(elements, 'Resources wanted')
@@ -246,7 +246,6 @@ if args.job_id is None:
         logger.error('Unable to find a slot, exiting')
         exit()
 
-
     show_resources(resources)
 
     jobs_specs = get_jobs_specs(resources, name = 'VM5K')
@@ -275,18 +274,16 @@ else:
         frontend, job_id = None, args.job_id
 
 
-logger.info('Retrieving hosts and network parameters')
+print_step('Ressources')
 if frontend is None:
     vm5k_resources = get_oargrid_job_vm5k_resources( job_id)
 else:
     vm5k_resources = get_oar_job_vm5k_resources(jobs)
-
-
 logger.debug(vm5k_resources)
 
 
-vm5k = vm5k_deployment(resources = vm5k_resources, vms = vms, live_plot = args.live_plot,
-                 env_name = args.env_name, env_file = args.env_file, outdir = args.outdir)
+vm5k = vm5k_deployment(resources = vm5k_resources, vms = vms, 
+            env_name = args.env_name, env_file = args.env_file, outdir = args.outdir)
 vm5k.fact = ActionFactory(remote_tool = TAKTUK,
                                 fileput_tool = CHAINPUT,
                                 fileget_tool = TAKTUK)
@@ -299,7 +296,7 @@ print_step('Deploying the hosts')
 vm5k.hosts_deployment(max_tries = deployment_tries, check_deploy =  not args.forcedeploy)
 f = open(args.outdir+'/hosts.list', 'w')
 for host in vm5k.hosts:
-    f.write(host.address+'\n')
+    f.write(host+'\n')
 f.close()
 
 print_step('Managing packages')
