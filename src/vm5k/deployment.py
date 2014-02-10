@@ -1,4 +1,4 @@
-    # Copyright 2009-2012 INRIA Rhone-Alpes, Service Experimentation et
+# Copyright 2009-2012 INRIA Rhone-Alpes, Service Experimentation et
 # Developpement
 #
 # This file is part of Execo.
@@ -37,7 +37,7 @@ from vm5k.actions import create_disks, install_vms, start_vms, wait_vms_have_sta
     create_disks_on_hosts, distribute_vms
 from vm5k.services import dnsmasq_server
 from vm5k.utils import prettify, print_step, get_max_vms, get_fastest_host, hosts_list
-from random import randint
+
 
 
 

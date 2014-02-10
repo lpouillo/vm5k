@@ -30,6 +30,7 @@ from execo.exception import ActionsFailed
 from vm5k.config import default_vm
 from vm5k.utils import get_CPU_RAM_FLOPS
 from itertools import cycle
+from random import randint
 
 
 def show_vms(vms):
@@ -119,7 +120,6 @@ def distribute_vms(vms, hosts, distribution = 'round-robin'):
                 host = iter_hosts.next()
                 remaining = attr[host].copy()
 
-
             vm['host'] = host
             remaining['RAM'] -= vm['mem']
             remaining['CPU'] -= vm['n_cpu']/3
@@ -156,7 +156,7 @@ def list_vm( hosts, all = False ):
         for line in lines:
             if 'vm' in line:
                 std = line.split()
-                hosts_vms[p.host].append({'id': std[1]})
+                hosts_vms[p.host.address].append({'id': std[1]})
 #     logger.debug('List of VM on host %s\n%s', style.host(host),
 #                  ' '.join([style.emph(id) for id in vms_id]))
     logger.debug(pformat(hosts_vms))
