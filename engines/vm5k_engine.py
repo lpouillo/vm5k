@@ -292,8 +292,10 @@ def boot_vms_by_core(vms):
     n_vm = len(vms)
     if n_vm == 0:
         return True
-
-    host = vms[0]['host'].address.split('.')[0]
+    if isinstance(vms[0]['host'], Host):
+        host = vms[0]['host'].address.split('.')[0]
+    else:
+        host = vms[0]['host'].split('.')[0]
 
     sub_vms = {}
     for i_core in list(set( vm['cpuset'] for vm in vms )):
