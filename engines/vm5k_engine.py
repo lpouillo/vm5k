@@ -238,7 +238,7 @@ class vm5k_engine( Engine ):
         logger.info('Configure libvirt')
         setup.configure_libvirt()
         logger.info('Create backing file')
-        setup._create_backing_file('/grid5000/images/KVM/squeeze-x64-base.qcow2')
+        setup._create_backing_file()
 
 
 def print_step(step_desc = None):
