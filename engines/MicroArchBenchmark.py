@@ -60,7 +60,7 @@ class MicroArchBenchmark( vm5k_engine ):
 
     def workflow(self, comb, hosts, ip_mac):
         """ Perform a cpu stress on the VM """
-        host = style.Thread(hosts[0].address.split('.')[0])
+        host = style.Thread(hosts[0].split('.')[0])
         comb_ok = False
         try:
             logger.info(style.step('Performing combination '+slugify(comb)+' on '+host))
