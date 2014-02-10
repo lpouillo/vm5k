@@ -227,7 +227,7 @@ class vm5k_engine( Engine ):
     def setup_hosts(self):
         """ """
         logger.info('Initialize vm5k_deployment')
-        setup = vm5k_deployment(resources = self.resources)
+        setup = vm5k_deployment(resources = self.resources, env_name = self.options.env_name, env_file = self.options.env_file)
         setup.fact = ActionFactory  (remote_tool = TAKTUK,
                                 fileput_tool = CHAINPUT,
                                 fileget_tool = SCP)

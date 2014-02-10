@@ -149,10 +149,10 @@ class MicroArchBenchmark( vm5k_engine ):
 #=======
             ## Force pinning of VM memory to CPU sets
                 for vm in vms:
-                    cmd = '; '.join( [ 'virsh numatune '+str(vm['id'])+' --mode strict --nodeset '+vm['cpuset']+' --live --current'] )
+                    cmd = '; '.join( [ 'virsh numatune '+str(vm['id'])+' --mode strict --nodeset '+vm['cpuset']+' --live'] )
                     vcpu_pin = SshProcess(cmd, hosts[0]).run()
                     if not vcpu_pin.ok:
-                        logger.error(host+': Unable to pin the memory for vm %s  %s', (vm['id'], slugify(comb)))
+                        logger.error(host+': Unable to pin the memory for vm %s  %s', vm['id'], slugify(comb))
                         exit()
 #>>>>>>> c7fd7f7a6d401181fa4e0aa8ea11cb2cb6b6d874
 
