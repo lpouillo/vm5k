@@ -13,6 +13,8 @@ class MicroArchBenchmark( vm5k_engine ):
         self.default_memory = 512
         self.options_parser.add_option("--mem", dest = "cachebench",
                     help = "", action = "store_true")
+	self.options_parser.add_option("--membw", dest = "mbw",
+                    help = "", action = "store_true")
 	self.options_parser.add_option("--nomulti", dest = "nomulti",
                     help = "", action = "store_true")
 
@@ -95,11 +97,9 @@ class MicroArchBenchmark( vm5k_engine ):
 
             n_cpus = 1 if not multi_cpu else [1]*(n_vm-1)+[n_cpu]
             vm_ids = ['vm-'+str(i+1) for i in range(n_vm)] if not multi_cpu else ['vm-'+str(i+1) for i in range(n_vm-1)]+['vm-multi']
-            if not self.options.cachebench:
-		vms = define_vms(vm_ids, ip_mac = ip_mac,
+	    vms = define_vms(vm_ids, ip_mac = ip_mac,
 				n_cpu = n_cpus, cpusets = cpusets, mem = n_mem)
-	    else:
-	      
+	   
 
             for vm in vms:
                 vm['host'] = hosts[0]
@@ -132,7 +132,7 @@ class MicroArchBenchmark( vm5k_engine ):
             if self.options.cachebench:
 		# Force pinning of VM memory to CPU sets
 		for vm in vms:
-		  cmd = '; '.join( [ 'virsh numatune '+str(vm['id'])' --mode strict --nodeset '+vm['cpuset']+' --live --current'] )
+		  cmd = '; '.join( [ 'virsh numatune '+str(vm['id'])+' --mode strict --nodeset '+vm['cpuset']+' --live --current'] )
 		  vcpu_pin = SshProcess(cmd, hosts[0]).run()
 		  if not vcpu_pin.ok:
 		      logger.error(host+': Unable to pin the memory for vm %s  %s', (vm['id'], slugify(comb)))
@@ -142,7 +142,10 @@ class MicroArchBenchmark( vm5k_engine ):
             # Prepare virtual machines for experiments
             stress = []
             logger.info(host+': Installing kflops on vms and creating stress action')
-            stress.append( self.cpu_kflops([vm for vm in vms if vm['n_cpu'] == 1 ]) )
+            if self.options.cachebench:
+	      stress.append( self.cpu_kflops([vm for vm in vms]) )
+	    else:
+	      stress.append( self.cpu_kflops([vm for vm in vms if vm['n_cpu'] == 1 ]) )
 
             if multi_cpu and not self.options.cachebench:
                 logger.info(host+': Installing numactl and kflops on multicore vms')
@@ -155,6 +158,7 @@ class MicroArchBenchmark( vm5k_engine ):
                     for i in range(multi_vm['n_cpu']):
                         stress.append( Remote('numactl -C '+str(i)+' ./kflops/kflops > vm_multi_'+str(cpu_index[i])+'.out ',
                                             [multi_vm['ip']] ) )
+
 
             stress_actions = ParallelActions(stress)
             for p in stress_actions.processes:
