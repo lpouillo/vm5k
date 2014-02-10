@@ -337,9 +337,9 @@ class vm5k_deployment(object):
     def hosts_deployment(self, max_tries = 1, check_deploy = True):
         """Create the execo_g5k.Deployment"""
 
-        for host in self.hosts:
+        for i, host in enumerate(self.hosts):
             if isinstance(host, Host):
-                host = host.address
+                self.hosts[i] = host.address
             
         logger.info('Deploying %s hosts \n%s', len(self.hosts),
             ' '.join([ style.host(host.split('.')[0]) for host in sorted(self.hosts) ]))
