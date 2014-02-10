@@ -28,8 +28,8 @@ import tempfile
 from copy import deepcopy
 from execo.exception import ActionsFailed
 from vm5k.config import default_vm
-
-
+from vm5k.utils import get_CPU_RAM_FLOPS
+from itertools import cycle
 
 
 def show_vms(vms):
@@ -90,6 +90,58 @@ def define_vms( vms_id, template = None, ip_mac = None, state = None, host = Non
     return vms
 
 
+def distribute_vms(vms, hosts, distribution = 'round-robin'):
+    """ """
+    logger.debug('Initial virtual machines distribution \n%s',
+        "\n".join( [ vm['id']+": "+str(vm['host']) for vm in vms] ))
+    if distribution in ['round-robin', 'concentrated']:
+        attr = get_CPU_RAM_FLOPS(hosts)
+        dist_hosts = hosts[:]
+        iter_hosts = cycle(dist_hosts)
+        host = iter_hosts.next()
+        for vm in vms:
+            
+            remaining = attr[host].copy()
+            while remaining['RAM'] - vm['mem'] <= 0 \
+                or remaining['CPU'] - vm['n_cpu']/3 <= 0:
+
+                dist_hosts.remove(host)
+
+                if len(dist_hosts) == 0:
+                    req_mem = sum( [ vm['mem'] for vm in vms])
+                    req_cpu = sum( [ vm['n_cpu'] for vm in vms])/3
+                    logger.error('Not enough ressources ! \n'+'RAM'.rjust(20)+'CPU'.rjust(10)+'\n'+\
+                                 'Available'.ljust(15)+'%s Mb'.ljust(15)+'%s \n'+\
+                                 'Needed'.ljust(15)+'%s Mb'.ljust(15)+\
+                                 '%s \n', attr['TOTAL']['RAM'], attr['TOTAL']['CPU'],req_mem, req_cpu)
+
+                iter_hosts = cycle(dist_hosts)
+                host = iter_hosts.next()
+                remaining = attr[host].copy()
+
+
+            vm['host'] = host
+            remaining['RAM'] -= vm['mem']
+            remaining['CPU'] -= vm['n_cpu']/3
+            attr[host] = remaining.copy()
+            if distribution == 'round-robin':
+                host = iter_hosts.next()
+                remaining = attr[host].copy()
+            if distribution ==  'random':
+                for i in range(randint(0, len(dist_hosts))):
+                    host = iter_hosts.next()
+
+    elif distribution == 'n_by_hosts':
+        n_by_host = int(len(vms)/len(hosts))
+        i_vm = 0
+        for host in hosts:
+            for i in range(n_by_host):
+                vms[i_vm]['host'] = host
+                i_vm += 1
+
+    logger.debug('Final virtual machines distribution \n%s',
+        "\n".join( [ vm['id']+": "+str(vm['host']) for vm in vms ] ) )
+
 
 def list_vm( hosts, all = False ):
     """ Return the list of VMs on host """
@@ -98,14 +150,14 @@ def list_vm( hosts, all = False ):
         cmd += ' --all'
     logger.debug('Listing Virtual machines on '+pformat(hosts))
     list_vm = TaktukRemote(cmd, hosts ).run()
-    hosts_vms = { host.address: [] for host in hosts }
+    hosts_vms = { host: [] for host in hosts }
     for p in list_vm.processes:
         lines = p.stdout.split('\n')
         for line in lines:
             if 'vm' in line:
                 std = line.split()
-                hosts_vms[p.host.address].append({'id': std[1]})
-#     logger.debug('List of VM on host %s\n%s', style.host(host.address),
+                hosts_vms[p.host].append({'id': std[1]})
+#     logger.debug('List of VM on host %s\n%s', style.host(host),
 #                  ' '.join([style.emph(id) for id in vms_id]))
     logger.debug(pformat(hosts_vms))
     return hosts_vms
@@ -248,7 +300,7 @@ def migrate_vm(vm, host):
             raise ActionsFailed, [create_disk_on_dest]
 
     cmd = 'virsh --connect qemu:///system migrate '+vm['id']+' --live --copy-storage-inc '+\
-            'qemu+ssh://'+host.address+"/system'  "
+            'qemu+ssh://'+host+"/system'  "
     return TaktukRemote(cmd, [src] )
 
 

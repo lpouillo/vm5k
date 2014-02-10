@@ -18,10 +18,7 @@
 
 from os import fdopen
 from pprint import pformat
-from random import randint
 from xml.etree.ElementTree import Element, SubElement, tostring, parse
-from xml.dom import minidom
-from itertools import cycle
 from time import localtime, strftime
 from tempfile import mkstemp
 from execo import logger, SshProcess, SequentialActions, Host, Local, sleep, default_connection_params
@@ -36,104 +33,13 @@ from execo_g5k.api_utils import get_host_cluster, get_g5k_sites, get_g5k_cluster
     get_host_attributes, get_resource_attributes, get_host_site, canonical_host_name
 from execo_g5k.utils import get_kavlan_host_name
 from vm5k.config import default_vm
-from vm5k.actions import create_disks, install_vms, start_vms, wait_vms_have_started, destroy_vms, create_disks_on_hosts
+from vm5k.actions import create_disks, install_vms, start_vms, wait_vms_have_started, destroy_vms, \
+    create_disks_on_hosts, distribute_vms
 from vm5k.services import dnsmasq_server
-from vm5k.plots import init_live_plot
+from vm5k.utils import prettify, print_step, get_max_vms, get_fastest_host, hosts_list
+from random import randint
 
 
-
-
-
-def get_oar_job_vm5k_resources( jobs ):
-    """Retrieve the hosts list and (ip, mac) list from a list of oar_job and
-    return the resources dict needed by vm5k_deployment """
-    resources = {}
-    logger.debug('Waiting job start')
-    for oar_job_id, site in jobs:
-        logger.debug('Retrieving resources from %s:%s', site, oar_job_id)
-        oar_job_id = int(oar_job_id)
-        wait_oar_job_start(oar_job_id, site)
-        logger.debug('Retrieving hosts')
-        hosts = get_oar_job_nodes(oar_job_id, site)
-        logger.debug('Retrieving subnet')
-        ip_mac, _ = get_oar_job_subnets( oar_job_id, site )
-        kavlan = None
-        if len(ip_mac) == 0:
-            logger.debug('Retrieving kavlan')
-            kavlan = get_oar_job_kavlan(oar_job_id, site)
-            if kavlan:
-                ip_mac = get_kavlan_ip_mac(kavlan, site)
-        if 'grid5000.fr' in site:
-            site = site.split('.')[0]
-        resources[site] = {'hosts': hosts,'ip_mac': ip_mac, 'kavlan': kavlan}
-    return resources
-
-def get_oargrid_job_vm5k_resources(oargrid_job_id):
-    """Retrieve the hosts list and (ip, mac) list by sites from an oargrid_job_id and
-    return the resources dict needed by vm5k_deployment, with kavlan-global if used in
-    the oargrid job """
-    oargrid_job_id = int(oargrid_job_id) 
-    logger.debug('Waiting job start')
-    wait_oargrid_job_start(oargrid_job_id)
-    resources = get_oar_job_vm5k_resources( [ (oar_job_id, site) for oar_job_id, site in get_oargrid_job_oar_jobs(oargrid_job_id) ])
-    kavlan_global = None
-    for site, res in resources.iteritems():
-        if res['kavlan'] >= 10:
-            kavlan_global = {'kavlan': res['kavlan'], 'ip_mac': resources[site]['ip_mac'], 'site': site }
-            break
-    if kavlan_global:
-        resources['global'] = kavlan_global
-
-    return resources
-
-
-def get_kavlan_network(kavlan, site):
-    """Retrieve the network parameters for a given kavlan from the API"""
-    network, mask_size = None, None
-    equips = get_resource_attributes('/sites/'+site+'/network_equipments/')
-    for equip in equips['items']:
-        if equip.has_key('vlans') and len(equip['vlans']) >2:
-            all_vlans = equip['vlans']
-    for info in all_vlans.itervalues():
-        if type(info) == type({}) and info.has_key('name') and info['name'] == 'kavlan-'+str(kavlan):
-            network, _, mask_size = info['addresses'][0].partition('/',)
-    logger.debug('network=%s, mask_size=%s', network, mask_size)
-    return network, mask_size
-
-def get_kavlan_ip_mac(kavlan, site):
-    """Retrieve the network parameters for a given kavlan from the API"""
-    network, mask_size = get_kavlan_network(kavlan, site)
-    min_2 = (kavlan-4)*64 + 2 if kavlan < 8 else (kavlan-8)*64 + 2 if kavlan < 10 else 216
-    ips = [ ".".join( [ str(part) for part in ip ]) for ip in [ ip for ip in get_ipv4_range(tuple([ int(part) for part in network.split('.') ]), int(mask_size))
-           if ip[3] not in [ 0, 254, 255 ] and ip[2] >= min_2] ]
-    macs = []
-    for i in range(len(ips)):
-        mac = ':'.join( map(lambda x: "%02x" % x, [ 0x00, 0x020, 0x4e,
-            randint(0x00, 0xff),
-            randint(0x00, 0xff),
-            randint(0x00, 0xff) ] ))
-        while mac in macs:
-            mac = ':'.join( map(lambda x: "%02x" % x, [ 0x00, 0x020, 0x4e,
-                randint(0x00, 0xff),
-                randint(0x00, 0xff),
-                randint(0x00, 0xff) ] ))
-        macs.append(mac)
-    return zip(ips, macs)
-
-
-def get_ipv4_range(network, mask_size):
-    net = ( network[0] << 24
-            | network[1] << 16
-            | network[2] << 8
-            | network[3] )
-    mask = ~(2**(32-mask_size)-1)
-    ip_start = net & mask
-    ip_end = net | ~mask
-    return [ ((ip & 0xff000000) >> 24,
-              (ip & 0xff0000) >> 16,
-              (ip & 0xff00) >> 8,
-              ip & 0xff)
-             for ip in xrange(ip_start, ip_end + 1) ]
 
 class vm5k_deployment(object):
     """ Base class to control a deployment of hosts on Grid'5000
@@ -141,14 +47,13 @@ class vm5k_deployment(object):
     to install and configure libvirt from unstable repository.
 
     The base run() method allows to setup automatically the hosts and
-    virtual machines, using the value of the object state.
-
+    virtual machines, using the value of the object.
     """
 
     def __init__(self, infile = None, resources = None,
                  env_name = None, env_file = None,
                  vms = None, distribution = 'round-robin',
-                 outdir = None, live_plot = False):
+                 outdir = None):
         """:params infile: an XML file that describe the topology of the deployment
 
         :param resources: a dict whose keys are Grid'5000 sites and values are
@@ -164,13 +69,13 @@ class vm5k_deployment(object):
         :params distribution: how to distribute the vms on the hosts
         (``round-robin`` , ``concentrated``, ``random``)
 
-        :params live_plot: create a figure at the script beginning and add
         """
-        print_step('STARTING vm5k_deployment')
+        print_step('Initializing vm5k_deployment')
         if outdir:
             self.outdir = outdir
         else:
             self.outdir = 'vm5k_'+strftime("%Y%m%d_%H%M%S_%z")
+            
         self.state = Element('vm5k')
         self.fact = ActionFactory(remote_tool = SSH,
                                 fileput_tool = SCP,
@@ -202,9 +107,7 @@ class vm5k_deployment(object):
                     len(self.clusters), style.user1('clusters'),
                     len(self.hosts), style.host('hosts'),
                     len(self.vms), style.vm('vms'))
-        if live_plot:
-            self.live_plot = True
-            init_live_plot(self.state)
+
 
 
     def run(self):
@@ -241,8 +144,6 @@ class vm5k_deployment(object):
         clients = list(self.hosts)
         clients.remove(service_node)
         dnsmasq_server(service_node, clients, self.vms, dhcp)
-
-    # VMS deployment
 
     def deploy_vms(self, disk_location = 'one', backing_file = '/grid5000/images/KVM/wheezy-x64-base.qcow2'):
 
@@ -336,13 +237,7 @@ class vm5k_deployment(object):
     # Hosts configuration
     def hosts_deployment(self, max_tries = 1, check_deploy = True):
         """Create the execo_g5k.Deployment"""
-
-        for i, host in enumerate(self.hosts):
-            if isinstance(host, Host):
-                self.hosts[i] = host.address
-            
-        logger.info('Deploying %s hosts \n%s', len(self.hosts),
-            ' '.join([ style.host(host.split('.')[0]) for host in sorted(self.hosts) ]))
+        logger.info('Deploying %s hosts \n%s', len(self.hosts), hosts_list(self.hosts))
         deployment = Deployment( hosts = [ Host(canonical_host_name(host)) for host in self.hosts],
             env_file = self.env_file, env_name = self.env_name,
             vlan = self.kavlan)
@@ -352,17 +247,19 @@ class vm5k_deployment(object):
         deployed_hosts, undeployed_hosts = deploy(deployment, out = out,
                                 num_tries = max_tries,
                                 check_deployed_command = check_deploy)
-    
-        for host in deployed_hosts:
-            if isinstance(host, Host):
-                host = host.address
-        logger.info('Deployed %s hosts \n%s', len(deployed_hosts),
-            ' '.join([ style.host(host.split('.')[0]) for host in sorted(deployed_hosts)]))
-        self._update_hosts_state(deployed_hosts, undeployed_hosts)
-
+        
+        deployed_hosts = list(deployed_hosts)
+        undeployed_hosts = list(undeployed_hosts)
         # Renaming hosts if a kavlan is used
         if self.kavlan:
-            self.hosts = [ Host(get_kavlan_host_name(host, self.kavlan)) for host in self.hosts]
+            for i, host in enumerate(deployed_hosts):
+                deployed_hosts[i] = get_kavlan_host_name(host, self.kavlan) 
+            for i, host in enumerate(undeployed_hosts):
+                undeployed_hosts[i] = get_kavlan_host_name(host, self.kavlan)            
+                
+        logger.info('Deployed %s hosts \n%s', len(deployed_hosts), hosts_list(deployed_hosts))
+        
+        self._update_hosts_state(deployed_hosts, undeployed_hosts)
 
         # Configuring SSH with precopy of id_rsa and id_rsa.pub keys on all hosts to allow TakTuk connection
         if self.fact.remote_tool == 2:
@@ -387,7 +284,7 @@ class vm5k_deployment(object):
             elif br != name:
                 logger.debug('Wrong bridge on host %s, destroying it', style.host(host))
                 SshProcess('ip link set '+br+' down ; brctl delbr '+br, host).run()
-                nobr_hosts.append( host)
+                nobr_hosts.append(host)
             else:
                 logger.debug('Bridge %s is present on host %s', style.emph('name'), style.host(host) )
 
@@ -418,7 +315,7 @@ class vm5k_deployment(object):
             while (not if_up) and nmap_tries < 20:
                 sleep(20)
                 nmap_tries += 1
-                nmap = SshProcess('nmap '+' '.join( [host.address for host in nobr_hosts ])+' -p 22',
+                nmap = SshProcess('nmap '+' '.join( [host for host in nobr_hosts ])+' -p 22',
                                   Host(g5k_configuration['default_frontend']),
                                   connection_params = default_frontend_connection_params ).run()
                 for line in nmap.stdout.split('\n'):
@@ -429,7 +326,7 @@ class vm5k_deployment(object):
 
     def _get_bridge(self, hosts):
         """ """
-        logger.debug('Retrieving bridge on hosts %s', ", ".join( [host.address for host in hosts ]))
+        logger.debug('Retrieving bridge on hosts %s', ", ".join( [host for host in hosts ]))
         cmd = "brctl show |grep -v 'bridge name' | awk '{ print $1 }' |head -1"
         bridge_exists = self.fact.get_remote(cmd, hosts)
         bridge_exists.nolog_exit_code = True
@@ -539,9 +436,7 @@ class vm5k_deployment(object):
             self.kavlan = resources['global']['kavlan']
             self.kavlan_site = resources['global']['site']
 
-
         logger.debug('KaVLAN: %s', self.kavlan)
-
 
         logger.debug('CLUSTERS AND HOSTS')
         self.clusters = []
@@ -550,11 +445,16 @@ class vm5k_deployment(object):
             if site not in self.sites and site in get_g5k_sites():
                 self.sites.append(site)
             if site != 'global':
-                self.hosts += elements['hosts']
+                if self.kavlan:
+                    for host in elements['hosts']:
+                        self.hosts.append(get_kavlan_host_name(host, self.kavlan))
+                else: 
+                    self.hosts += elements['hosts']
 
+        logger.debug( self.hosts)
         self.sites.sort()
-        self.hosts.sort( key = lambda host: (host.address.split('.',1)[0].split('-')[0],
-                                        int( host.address.split('.',1)[0].split('-')[1] )))
+        self.hosts.sort( key = lambda host: (host.split('.',1)[0].split('-')[0],
+                                        int( host.split('.',1)[0].split('-')[1] )))
         self.clusters = list(set([ get_host_cluster(host) for host in self.hosts ]))
         self.clusters.sort()
         self._add_xml_elements()
@@ -569,7 +469,7 @@ class vm5k_deployment(object):
             self._add_xml_vms()
         else:
             self.vms = []
-
+    
     def _set_vms_ip_mac(self):
         """Not finished """
         if isinstance(self.ip_mac, dict):
@@ -620,14 +520,13 @@ class vm5k_deployment(object):
         logger.debug('Clusters added \n %s', prettify(_state))
         for host in self.hosts:
             el_cluster = _state.find(".//cluster/[@id='"+get_host_cluster(host)+"']")
-            SubElement(el_cluster, 'host', attrib = {'id': host.address,
-                                                        'state': 'Undeployed'})
+            SubElement(el_cluster, 'host', attrib = {'id': host, 'state': 'Undeployed'})
         logger.debug('Hosts added \n %s', prettify(_state))
 
     def _add_xml_vms(self):
         """Add vms distributed on hosts to self.state """
         for vm in self.vms:
-            host = self.state.find(".//host/[@id='"+vm['host'].address+"']")
+            host = self.state.find(".//host/[@id='"+vm['host']+"']")
             SubElement(host, 'vm', attrib = {'id': vm['id'],
                                              'ip': vm['ip'],
                                              'mac': vm['mac'],
@@ -684,21 +583,13 @@ class vm5k_deployment(object):
         """ """
         for host in hosts_ok:
             if host:
-                if not isinstance(host, Host):
-                    host = Host(host)
-                if self.kavlan is None:
-                    address = host.address
-                else:
-                    address = kavname_to_basename(host).address
-                self.state.find(".//host/[@id='"+address+"']").set('state', 'OK')
+                if isinstance(host, Host):
+                    host = host.address
+                self.state.find(".//host/[@id='"+host+"']").set('state', 'OK')
         for host in hosts_ko:
-            if not isinstance(host, Host):
-                host = Host(host)
-            if self.kavlan is None:
-                address = host.address
-            else:
-                address = kavname_to_basename(host).address
-            self.state.find(".//host/[@id='"+address+"']").set('state', 'KO')
+            if isinstance(host, Host):
+                host = host.address
+            self.state.find(".//host/[@id='"+host+"']").set('state', 'KO')
             self.hosts.remove(host)
 
         if len(self.vms) > 0:
@@ -707,7 +598,7 @@ class vm5k_deployment(object):
 
         if len(self.hosts) == 0:
             logger.error('Not enough hosts available, because %s are KO',
-                         [ style.host(host.address) for host in hosts_ok])
+                         [ style.host(host) for host in hosts_ok])
 
 
 
@@ -723,148 +614,8 @@ class vm5k_deployment(object):
         self._update_hosts_state(hosts_ok, hosts_ko)
 
 
-def distribute_vms(vms, hosts, distribution = 'round-robin'):
-    """ """
-    logger.debug('Initial virtual machines distribution \n%s',
-        "\n".join( [ vm['id']+": "+str(vm['host']) for vm in vms] ))
-    if distribution in ['round-robin', 'concentrated']:
-        attr = get_CPU_RAM_FLOPS(hosts)
-        dist_hosts = hosts[:]
-        iter_hosts = cycle(dist_hosts)
-        host = iter_hosts.next()
-        for vm in vms:
-            remaining = attr[host.address].copy()
-            while remaining['RAM'] - vm['mem'] <= 0 \
-                or remaining['CPU'] - vm['n_cpu']/3 <= 0:
-
-                dist_hosts.remove(host)
-
-                if len(dist_hosts) == 0:
-                    req_mem = sum( [ vm['mem'] for vm in vms])
-                    req_cpu = sum( [ vm['n_cpu'] for vm in vms])/3
-                    logger.error('Not enough ressources ! \n'+'RAM'.rjust(20)+'CPU'.rjust(10)+'\n'+\
-                                 'Available'.ljust(15)+'%s Mb'.ljust(15)+'%s \n'+\
-                                 'Needed'.ljust(15)+'%s Mb'.ljust(15)+\
-                                 '%s \n', attr['TOTAL']['RAM'], attr['TOTAL']['CPU'],req_mem, req_cpu)
-
-                iter_hosts = cycle(dist_hosts)
-                host = iter_hosts.next()
-                remaining = attr[host.address].copy()
 
 
-            vm['host'] = host
-            remaining['RAM'] -= vm['mem']
-            remaining['CPU'] -= vm['n_cpu']/3
-            attr[host.address] = remaining.copy()
-            if distribution == 'round-robin':
-                host = iter_hosts.next()
-                remaining = attr[host.address].copy()
-            if distribution ==  'random':
-                for i in range(randint(0, len(dist_hosts))):
-                    host = iter_hosts.next()
-
-    elif distribution == 'n_by_hosts':
-        n_by_host = int(len(vms)/len(hosts))
-        i_vm = 0
-        for host in hosts:
-            for i in range(n_by_host):
-                vms[i_vm]['host'] = host
-                i_vm += 1
-
-    logger.debug('Final virtual machines distribution \n%s',
-        "\n".join( [ vm['id']+": "+str(vm['host']) for vm in vms ] ) )
 
 
-def get_CPU_RAM_FLOPS(hosts):
-    """Return the number of CPU and amount RAM for a host list """
-    hosts_attr = {'TOTAL': {'CPU': 0 ,'RAM': 0}}
-    cluster_attr = {}
-    for host in hosts:
-        cluster = get_host_cluster(host)
-        if not cluster_attr.has_key(cluster):
-            attr = get_host_attributes(host)
-            cluster_attr[cluster] = {'CPU': attr['architecture']['smt_size'],
-                                     'RAM': int(attr['main_memory']['ram_size']/10**6),
-                                     'flops': attr['performance']['node_flops'] }
-        hosts_attr[host.address] = cluster_attr[cluster]
-        hosts_attr['TOTAL']['CPU'] += attr['architecture']['smt_size']
-        hosts_attr['TOTAL']['RAM'] += int(attr['main_memory']['ram_size']/10**6)
 
-    logger.debug(pformat(hosts_attr))
-    return hosts_attr
-
-def get_fastest_host(hosts):
-        """ Use the G5K api to have the fastest node"""
-        attr = get_CPU_RAM_FLOPS(hosts)
-        max_flops = 0
-        for host in hosts:
-            flops = attr[host.address]['flops']
-            if  flops > max_flops:
-                max_flops = flops
-                fastest_host = host
-        return fastest_host
-
-def get_max_vms(hosts, mem = 512):
-    """Return the maximum number of virtual machines that can be created on the hosts"""
-    total = get_CPU_RAM_FLOPS(hosts)['TOTAL']
-    return int(total['RAM']/mem-1)
-
-
-def get_vms_slot(vms, elements, slots, excluded_elements = None):
-    """Return a slot with enough RAM and CPU """
-    chosen_slot = None
-
-    req_ram = sum( [ vm['mem'] for vm in vms] )
-    req_cpu = sum( [ vm['n_cpu'] for vm in vms] ) /3
-    logger.debug('RAM %s CPU %s', req_ram, req_cpu)
-
-    for slot in slots:
-        hosts = []
-        for element in elements:
-            n_hosts = slot[2][element]
-            if element in get_g5k_clusters():
-                for i in range(n_hosts):
-                    hosts.append(Host(str(element+'-1.'+get_cluster_site(element)+'.grid5000.fr')))
-        attr = get_CPU_RAM_FLOPS(hosts)['TOTAL']
-        if attr['CPU'] > req_cpu and attr['RAM'] > req_ram:
-            chosen_slot = slot
-            break
-
-        del hosts[:]
-
-    if chosen_slot is None:
-        return None, None
-
-    resources = {}
-    for host in hosts:
-        if req_ram < 0 and req_cpu < 0:
-            break
-        attr = get_CPU_RAM_FLOPS([host])
-        req_ram -= attr[host.address]['RAM']
-        req_cpu -= attr[host.address]['CPU']
-        cluster = get_host_cluster(host)
-        if not resources.has_key(cluster):
-            resources[element] = 1
-        else:
-            resources[element] += 1
-
-    return chosen_slot[0], distribute_hosts(chosen_slot[2], resources, excluded_elements)
-
-
-def print_step(step_desc = None):
-    """ """
-    logger.info(style.step(' '+step_desc+' ').center(50) )
-
-
-def prettify(elem):
-    """Return a pretty-printed XML string for the Element.  """
-    rough_string = tostring(elem, 'utf-8')
-    reparsed = minidom.parseString(rough_string)
-    return reparsed.toprettyxml(indent="  ").replace('<?xml version="1.0" ?>\n', '')
-
-def kavname_to_basename( host):
-    """ """
-    if 'kavlan' in host.address:
-        return Host(host.address.split('kavlan')[0][0:-1]+'.'+'.'.join(host.address.split('.')[1:]))
-    else:
-        return host
