@@ -34,7 +34,7 @@ deployment_tries = 1
 default_action_factory = ActionFactory(remote_tool = TAKTUK,
                     fileput_tool = TAKTUK,
                     fileget_tool = TAKTUK)
-blacklisted = ['graphite', 'helios', 'sagittaire']
+blacklisted = ['helios', 'sagittaire']
 ## Command line options
 prog = 'vm5k'
 desc = 'A tool to deploy and configure nodes and virtual machines with '+\
