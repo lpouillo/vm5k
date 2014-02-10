@@ -210,7 +210,7 @@ class vm5k_engine( Engine ):
         jobs_specs = get_jobs_specs({self.cluster: n_nodes}, name = 'vm5k_engine')
         sub = jobs_specs[0][0]
         tmp = str(sub.resources).replace('\\', '')
-        sub.resources = 'slash_22=2+'+tmp.replace('"', '')
+        sub.resources = 'slash_22=4+'+tmp.replace('"', '')
         sub.walltime = self.options.walltime
         sub.additional_options = '-t deploy'
         sub.reservation_date = startdate
