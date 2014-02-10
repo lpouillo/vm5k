@@ -140,7 +140,7 @@ class vm5k_deployment(object):
             dhcp = False
 
         service_node = get_fastest_host(self.hosts)
-        logger.info('Setting up %s on %s', style.emph(service), style.host(service_node.address.split('.')[0]))
+        logger.info('Setting up %s on %s', style.emph(service), style.host(service_node.split('.')[0]))
         clients = list(self.hosts)
         clients.remove(service_node)
         dnsmasq_server(service_node, clients, self.vms, dhcp)
@@ -289,6 +289,7 @@ class vm5k_deployment(object):
                 logger.debug('Bridge %s is present on host %s', style.emph('name'), style.host(host) )
 
         if len(nobr_hosts) > 0:
+            logger.debug('Creating bridge on %s', hosts_list(nobr_hosts))
             script = 'export br_if=`ip route |grep default |cut -f 5 -d " "`; \n'+\
                 'ifdown $br_if ; \n'+\
                 'sed -i "s/$br_if inet dhcp/$br_if inet manual/g" /etc/network/interfaces ; \n'+\
@@ -308,7 +309,7 @@ class vm5k_deployment(object):
 
             self.fact.get_fileput(nobr_hosts, [br_script]).run()
             self.fact.get_remote( 'nohup sh '+br_script.split('/')[-1], nobr_hosts).run()
-
+            
             logger.debug('Waiting for network restart')
             if_up = False
             nmap_tries = 0
@@ -559,7 +560,7 @@ class vm5k_deployment(object):
         dist = {}
         max_len_host = 0
         for vm in self.vms:
-            host = vm['host'].address.split('.')[0]
+            host = vm['host'].split('.')[0]
             if len(host) > max_len_host:
                 max_len_host = len(host)
             if host not in dist.keys():
