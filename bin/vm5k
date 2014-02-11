@@ -77,9 +77,9 @@ run.add_argument("-o", "--outdir",
 run.add_argument("-p", "--program",
                 dest = "program",
                 help = 'Launch a program at the end of the deployment')
-run.add_argument("--live-plot",
-                action = "store_true",
-                help = 'Open a figure to track the deployment process')
+#run.add_argument("--live-plot",
+#                action = "store_true",
+#                help = 'Open a figure to track the deployment process')
 
 ## Reservation
 mode = parser.add_argument_group( style.host("Mode"),
