@@ -584,15 +584,17 @@ class vm5k_deployment(object):
     def _update_hosts_state(self, hosts_ok, hosts_ko):
         """ """
         for host in hosts_ok:
-            if isinstance(host, Host):
-                host = host.address
-            self.state.find(".//host/[@id='"+host+"']").set('state', 'OK')
+            if host:
+                if isinstance(host, Host):
+                    host = host.address
+                self.state.find(".//host/[@id='"+host+"']").set('state', 'OK')
 
         for host in hosts_ko:
-            if isinstance(host, Host):
-                host = host.address
-            self.state.find(".//host/[@id='"+host+"']").set('state', 'KO')
-            self.hosts.remove(host)
+            if host:
+                if isinstance(host, Host):
+                    host = host.address
+                self.state.find(".//host/[@id='"+host+"']").set('state', 'KO')
+                self.hosts.remove(host)
 
         if len(self.vms) > 0:
             distribute_vms(self.vms, self.hosts, self.distribution)
