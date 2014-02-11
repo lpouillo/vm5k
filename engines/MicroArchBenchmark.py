@@ -17,6 +17,10 @@ class MicroArchBenchmark( vm5k_engine ):
                     help = "", action = "store_true")
         self.options_parser.add_option("--nomulti", dest = "nomulti",
                     help = "", action = "store_true")
+	
+	self.fact = ActionFactory(remote_tool = SSH,
+			fileput_tool = SCP,
+			fileget_tool = SCP)
 
     def define_parameters(self):
         """ Create the parameters for the engine :
@@ -81,6 +85,8 @@ class MicroArchBenchmark( vm5k_engine ):
             cpu_index = [item for sublist in self.cpu_topology for item in sublist]
             cpusets = []
             n_mem = []
+            vm_numatune = {}
+            
             for i in range(len(comb['dist'])):
                 index = cpu_index[i]
                 for j in range(int(comb['dist'][i])):
@@ -103,6 +109,15 @@ class MicroArchBenchmark( vm5k_engine ):
 
             for vm in vms:
                 vm['host'] = hosts[0]
+		vm_cpusets = vm['cpuset'].split(',')
+		if len(vm_cpusets) > 1:
+		  numalist = []
+		  for vcpu in vm_cpusets:
+		    numalist.append(self.cpuToNuma(vcpu))
+		  vm_numatune[vm['id']] = numalist
+		else:
+		  vm_numatune[vm['id']] = [self.cpuToNuma(vm['cpuset'])]
+		logger.info(vm['id']+' is using NUMA node(s) : '+str(vm_numatune[vm['id']]) )     
 #=======
             #if not self.options.cachebench:
                 #vms = define_vms(vm_ids, ip_mac = ip_mac,
@@ -149,7 +164,11 @@ class MicroArchBenchmark( vm5k_engine ):
 #=======
             ## Force pinning of VM memory to CPU sets
                 for vm in vms:
-                    cmd = '; '.join( [ 'virsh numatune '+str(vm['id'])+' --mode strict --nodeset '+vm['cpuset']+' --live'] )
+		    if len(vm_numatune[vm['id']]) > 1:
+		      numaset = vm_numatune[vm['id']][0]
+		    else:
+		      numaset = ','.join( str(vm_numatune[vm['id']][i]) for i in range(len(vm_numatune[vm['id']])) )
+                    cmd = '; '.join( [ 'virsh numatune '+str(vm['id'])+' --mode strict --nodeset '+numaset+' --live'] )
                     vcpu_pin = SshProcess(cmd, hosts[0]).run()
                     if not vcpu_pin.ok:
                         logger.error(host+': Unable to pin the memory for vm %s  %s', vm['id'], slugify(comb))
@@ -260,7 +279,7 @@ class MicroArchBenchmark( vm5k_engine ):
 
     def cpu_kflops(self, vms, install_only = False):
         """Put kflops.tgz on the hosts, compile it and optionnaly prepare a TaktukRemote"""
-        mem_size = [str(27+int(vm['n_cpu'])) for vm in vms]
+        memsize = [str(27+int(vm['n_cpu'])) for vm in vms]
         vms_ip = [vm['ip'] for vm in vms]
 
         if self.options.cachebench:
@@ -268,16 +287,65 @@ class MicroArchBenchmark( vm5k_engine ):
             TaktukRemote( 'tar -xzf llcbench.tar.gz; cd llcbench; make linux-lam; make cache-bench', vms_ip).run()
             vms_out = [vm['ip']+'_'+vm['cpuset'] for vm in vms]
             if not install_only:
-                return TaktukRemote('./llcbench/cachebench/cachebench -m {{memsize}} -e 1 -x 2 -d 1 -b > {{vms_out}}_rmw.out; ./llcbench/cachebench/cachebench -m {{memsize}} -e 1 -x 2 -d 1 -p > {{vms_out}}_memcpy.out', mem_size, vms_ip)  
+                return TaktukRemote('./llcbench/cachebench/cachebench -m {{memsize}} -e 1 -x 2 -d 1 -b > {{vms_out}}_rmw.out; ./llcbench/cachebench/cachebench -m {{memsize}} -e 1 -x 2 -d 1 -p > {{vms_out}}_memcpy.out', vms_ip)  
             else:
                 ChainPut(vms_ip, ['kflops.tgz'] ).run()
                 TaktukRemote( 'tar -xzf kflops.tgz; cd kflops; make', vms_ip).run()
         vms_out = [vm['ip']+'_'+vm['cpuset'] for vm in vms]
         if not install_only:
             return TaktukRemote('./kflops/kflops > {{vms_out}}.out', vms_ip)
+	  
+    def configure_cgroup(self):
+        from_disk = "conf_template/mount.sh"
+	copy_file = self.fact.get_fileput(self.hosts, [from_disk], remote_location='/tmp/').run()
+        self._actions_hosts(copy_file)
+
+        from_disk = "conf_template/qemu.conf"
+	copy_file = self.fact.get_fileput(self.hosts, [from_disk], remote_location='/etc/libvirt/').run()
+        self._actions_hosts(copy_file)
+                
+        cmd = 'sh /tmp/mount.sh'
+        convert = self.fact.get_remote(cmd, self.hosts).run()
+        self._actions_hosts(convert)
         
-
-
+        cmd = '/etc/init.d/libvirt-bin restart'
+        convert = self.fact.get_remote(cmd, self.hosts).run()
+        self._actions_hosts(convert)
+        
+    def cpuToNuma(self, cpuId):
+      cellId = -1
+      for cellList in self.cpu_topology:
+	cellId+=1
+	if int(cpuId) in cellList:
+	  return cellId
+      return -1
+        
+    def setup_hosts(self):
+        """ """
+        logger.info('Initialize vm5k_deployment')
+        setup = vm5k_deployment(resources = self.resources, env_name = self.options.env_name, env_file = self.options.env_file)
+        setup.fact = ActionFactory  (remote_tool = TAKTUK,
+                                fileput_tool = CHAINPUT,
+                                fileget_tool = SCP)
+        logger.info('Deploy hosts')
+        setup.hosts_deployment()
+        logger.info('Install packages')
+        setup.packages_management(other_packages='cgroup-bin')
+        logger.info('Configure cgroup')
+        self.configure_cgroup()
+        logger.info('Configure libvirt')
+        setup.configure_libvirt()
+        logger.info('Create backing file')
+        setup._create_backing_file()
+ 
+    def _actions_hosts(self, action):
+        hosts_ok, hosts_ko = [], []
+        for p in action.processes:
+            if p.ok:
+                hosts_ok.append(p.host)
+            else:
+                logger.warn('%s is KO', p.host)
+                hosts_ko.append(p.host)
 
 #    def mem_update(self, vms, size, speed):
 #        """Copy, compile memtouch, calibrate and return memtouch action """
