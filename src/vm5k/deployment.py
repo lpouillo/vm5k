@@ -21,7 +21,7 @@ from pprint import pformat
 from xml.etree.ElementTree import Element, SubElement, tostring, parse
 from time import localtime, strftime
 from tempfile import mkstemp
-from execo import logger, SshProcess, SequentialActions, Host, Local, sleep, default_connection_params
+from execo import logger, SshProcess, SequentialActions, Host, Local, sleep, default_connection_params, TaktukPut
 from execo.action import ActionFactory
 from execo.log import style
 from execo.config import SSH, SCP
@@ -166,7 +166,7 @@ class vm5k_deployment(object):
 
 
 
-    def _create_backing_file(self, from_disk = '/grid5000/images/KVM/squeeze-x64-base.qcow2', to_disk = '/tmp/vm-base.img'):
+    def _create_backing_file(self, from_disk = '/grid5000/images/KVM/wheezy-x64-base.qcow2', to_disk = '/tmp/vm-base.img'):
         """ """
         logger.debug("Copying backing file from frontends")
         copy_file = self.fact.get_fileput(self.hosts, [from_disk], remote_location='/tmp/').run()
@@ -227,7 +227,7 @@ class vm5k_deployment(object):
         logger.debug('Destroying existing network')
         destroy = self.fact.get_remote('virsh net-destroy default; virsh net-undefine default', self.hosts)
         destroy.nolog_exit_code = True
-        put = self.fact.get_fileput(self.hosts, [network_xml], remote_location = '/etc/libvirt/qemu/networks/')
+        put = TaktukPut(self.hosts, [network_xml], remote_location = '/etc/libvirt/qemu/networks/')
         start = self.fact.get_remote('virsh net-define /etc/libvirt/qemu/networks/'+network_xml.split('/')[-1]+' ; '+\
                                      'virsh net-start default; virsh net-autostart default;', self.hosts)
         netconf = SequentialActions( [destroy, put, start] ).run()
@@ -258,9 +258,10 @@ class vm5k_deployment(object):
                 undeployed_hosts[i] = get_kavlan_host_name(host, self.kavlan)            
                 
         logger.info('Deployed %s hosts \n%s', len(deployed_hosts), hosts_list(deployed_hosts))
+        logger.info('Failed %s hosts \n%s', len(undeployed_hosts), hosts_list(undeployed_hosts))
         
         self._update_hosts_state(deployed_hosts, undeployed_hosts)
-
+        
         # Configuring SSH with precopy of id_rsa and id_rsa.pub keys on all hosts to allow TakTuk connection
         if self.fact.remote_tool == 2:
             taktuk_conf = ('-s', '-S', '$HOME/.ssh/id_rsa:$HOME/.ssh/id_rsa,$HOME/.ssh/id_rsa.pub:$HOME/.ssh')
@@ -307,7 +308,7 @@ class vm5k_deployment(object):
             f.write(script)
             f.close()
 
-            self.fact.get_fileput(nobr_hosts, [br_script]).run()
+            TaktukPut(nobr_hosts, [br_script]).run()
             self.fact.get_remote( 'nohup sh '+br_script.split('/')[-1], nobr_hosts).run()
             
             logger.debug('Waiting for network restart')
@@ -373,7 +374,7 @@ class vm5k_deployment(object):
         f.write('APT::Acquire::Retries=20;\n')
         f.close()
 
-        self.fact.get_fileput(self.hosts, [tmpsource, tmppref, tmpaptconf],
+        TaktukPut(self.hosts, [tmpsource, tmppref, tmpaptconf],
                 remote_location = '/etc/apt/').run()
         apt_conf = self.fact.get_remote('cd /etc/apt && '+\
                         'mv '+tmpsource.split('/')[-1]+' sources.list &&'+\
