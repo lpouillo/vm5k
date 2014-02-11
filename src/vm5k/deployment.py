@@ -584,10 +584,10 @@ class vm5k_deployment(object):
     def _update_hosts_state(self, hosts_ok, hosts_ko):
         """ """
         for host in hosts_ok:
-            if host:
-                if isinstance(host, Host):
-                    host = host.address
-                self.state.find(".//host/[@id='"+host+"']").set('state', 'OK')
+            if isinstance(host, Host):
+                host = host.address
+            self.state.find(".//host/[@id='"+host+"']").set('state', 'OK')
+
         for host in hosts_ko:
             if isinstance(host, Host):
                 host = host.address
@@ -596,11 +596,11 @@ class vm5k_deployment(object):
 
         if len(self.vms) > 0:
             distribute_vms(self.vms, self.hosts, self.distribution)
-            self._set_vms_ip_mac()
+            self._set_vms_ip_mac()  
 
         if len(self.hosts) == 0:
-            logger.error('Not enough hosts available, because %s are KO',
-                         [ style.host(host) for host in hosts_ok])
+            logger.error('No hosts available, because %s are KO', hosts_list(hosts_ko))
+            exit()
 
 
 
