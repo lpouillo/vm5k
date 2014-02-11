@@ -150,7 +150,7 @@ vms.add_argument('-l', '--vm_disk_location',
                     dest = 'vm_disk_location',
                     help = 'Where to create the qcow2: one (default) or all)')
 vms.add_argument('-d', '--vm_distribution',
-                    default = 'distributed',
+                    default = 'round-robin',
                     dest = 'vm_distribution',
                     help = 'how to distribute the VM distributed (default) or concentrated')
 vms.add_argument('--vm_packages',
