@@ -17,20 +17,19 @@
 # along with Execo.  If not, see <http://www.gnu.org/licenses/>
 
 from os import fdopen
-from pprint import pformat
-from xml.etree.ElementTree import Element, SubElement, tostring, parse
+from xml.etree.ElementTree import Element, SubElement, parse
 from time import localtime, strftime
 from tempfile import mkstemp
-from execo import logger, SshProcess, SequentialActions, Host, Local, sleep, default_connection_params, TaktukPut
+from execo import logger, SshProcess, SequentialActions, Host, Local, sleep, \
+    default_connection_params, TaktukPut
 from execo.action import ActionFactory
 from execo.log import style
-from execo.config import SSH, SCP
-from execo_g5k import get_oar_job_nodes, get_oargrid_job_oar_jobs, get_oar_job_subnets, \
-    get_oar_job_kavlan, deploy, Deployment, wait_oar_job_start, wait_oargrid_job_start, \
-    distribute_hosts
-from execo_g5k.config import g5k_configuration, default_frontend_connection_params
-from execo_g5k.api_utils import get_host_cluster, get_g5k_sites, get_g5k_clusters, get_cluster_site, \
-    get_host_attributes, get_resource_attributes, get_host_site, canonical_host_name
+from execo.config import TAKTUK, CHAINPUT
+from execo_g5k import deploy, Deployment
+from execo_g5k.config import g5k_configuration, \
+    default_frontend_connection_params
+from execo_g5k.api_utils import get_host_cluster, get_g5k_sites, \
+    get_cluster_site, get_host_site, canonical_host_name
 from execo_g5k.utils import get_kavlan_host_name
 from vm5k.config import default_vm
 from vm5k.actions import create_disks, install_vms, start_vms, wait_vms_have_started, destroy_vms, \
@@ -42,9 +41,10 @@ from vm5k.utils import prettify, print_step, get_max_vms, get_fastest_host, host
 
 
 class vm5k_deployment(object):
-    """ Base class to control a deployment of hosts on Grid'5000
-    The base behavior is to deploy a wheezy-x64-base environment and
-    to install and configure libvirt from unstable repository.
+    """ Base class to control a deployment of hosts and virtual machines on Grid'5000.
+    It helps to  deploy a wheezy-x64-base environment,
+    to install and configure libvirt from testing repository, and to deploy
+    virtual machines.
 
     The base run() method allows to setup automatically the hosts and
     virtual machines, using the value of the object.
@@ -75,11 +75,11 @@ class vm5k_deployment(object):
             self.outdir = outdir
         else:
             self.outdir = 'vm5k_'+strftime("%Y%m%d_%H%M%S_%z")
-            
+
         self.state = Element('vm5k')
-        self.fact = ActionFactory(remote_tool = SSH,
-                                fileput_tool = SCP,
-                                fileget_tool = SCP)
+        self.fact = ActionFactory(remote_tool = TAKTUK,
+                                fileput_tool = CHAINPUT,
+                                fileget_tool = TAKTUK)
         self.distribution = distribution
         self.kavlan = None
 
@@ -101,7 +101,7 @@ class vm5k_deployment(object):
                 self.env_file = env_file
             else:
                 self.env_file = '/home/lpouilloux/synced/environments/vm5k/vm5k.env'
-        
+
         logger.info('%s %s %s %s %s %s %s %s',
                     len(self.sites), style.emph('sites'),
                     len(self.clusters), style.user1('clusters'),
@@ -197,11 +197,13 @@ class vm5k_deployment(object):
         self._actions_hosts(remove)
 
     # libvirt configuration
-    def configure_libvirt(self, bridge = 'br0'):
-        """ """
+    def configure_libvirt(self, bridge = 'br0', libvirt_conf = None):
+        """Enable a bridge if needed on the remote hosts, configure libvirt with a bridged network 
+        for the virtual machines, and restart service."""
         self.enable_bridge()
-        self._libvirt_uniquify()
-        self._libvirt_bridged_network(bridge)
+        if not file:
+            self._libvirt_uniquify()
+            self._libvirt_bridged_network(bridge)
         logger.info('Restarting %s', style.emph('libvirt') )
         self.fact.get_remote('service libvirt-bin restart', self.hosts).run()
 
@@ -256,12 +258,12 @@ class vm5k_deployment(object):
                 deployed_hosts[i] = get_kavlan_host_name(host, self.kavlan) 
             for i, host in enumerate(undeployed_hosts):
                 undeployed_hosts[i] = get_kavlan_host_name(host, self.kavlan)            
-                
+
         logger.info('Deployed %s hosts \n%s', len(deployed_hosts), hosts_list(deployed_hosts))
         logger.info('Failed %s hosts \n%s', len(undeployed_hosts), hosts_list(undeployed_hosts))
-        
+
         self._update_hosts_state(deployed_hosts, undeployed_hosts)
-        
+
         # Configuring SSH with precopy of id_rsa and id_rsa.pub keys on all hosts to allow TakTuk connection
         if self.fact.remote_tool == 2:
             taktuk_conf = ('-s', '-S', '$HOME/.ssh/id_rsa:$HOME/.ssh/id_rsa,$HOME/.ssh/id_rsa.pub:$HOME/.ssh')
@@ -310,7 +312,7 @@ class vm5k_deployment(object):
 
             TaktukPut(nobr_hosts, [br_script]).run()
             self.fact.get_remote( 'nohup sh '+br_script.split('/')[-1], nobr_hosts).run()
-            
+
             logger.debug('Waiting for network restart')
             if_up = False
             nmap_tries = 0
