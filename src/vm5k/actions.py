@@ -27,8 +27,8 @@ from execo_g5k.api_utils import get_host_site
 import tempfile
 from copy import deepcopy
 from execo.exception import ActionsFailed
-from vm5k.config import default_vm
-from vm5k.utils import get_CPU_RAM_FLOPS
+from config import default_vm
+from utils import get_CPU_RAM_FLOPS
 from itertools import cycle
 from random import randint
 

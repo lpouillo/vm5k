@@ -173,7 +173,7 @@ elif args.quiet:
 else:
     logger.setLevel(INFO)
 
-copy_outputs(args.outdir+'/vm5k.log', args.outdir+'/vm5k.log')    
+    
 
 if args.n_vm is None and args.infile is None:
     parser.error('Must specify one of the following options: -n %s or -i %s, use -h for help ' %\
@@ -193,6 +193,7 @@ try:
 except os.error:
     pass
 
+copy_outputs(args.outdir+'/vm5k.log', args.outdir+'/vm5k.log')
 
 ### DEFINING VMS AND ELEMENTS
 if args.infile is not None:

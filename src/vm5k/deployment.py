@@ -31,11 +31,11 @@ from execo_g5k.config import g5k_configuration, \
 from execo_g5k.api_utils import get_host_cluster, get_g5k_sites, \
     get_cluster_site, get_host_site, canonical_host_name
 from execo_g5k.utils import get_kavlan_host_name
-from vm5k.config import default_vm
-from vm5k.actions import create_disks, install_vms, start_vms, \
+from config import default_vm
+from actions import create_disks, install_vms, start_vms, \
     wait_vms_have_started, destroy_vms, create_disks_on_hosts, distribute_vms
-from vm5k.services import dnsmasq_server
-from vm5k.utils import prettify, print_step, get_max_vms, get_fastest_host, \
+from services import dnsmasq_server
+from utils import prettify, print_step, get_max_vms, get_fastest_host, \
     hosts_list
 
 
@@ -598,13 +598,15 @@ class vm5k_deployment(object):
                 self.state.find(".//host/[@id='"+host+"']").set('state', 'KO')
                 self.hosts.remove(host)
 
+        if len(self.hosts) == 0:
+            logger.error('No hosts available, because %s are KO', hosts_list(hosts_ko))
+            exit()
+        
         if len(self.vms) > 0:
             distribute_vms(self.vms, self.hosts, self.distribution)
             self._set_vms_ip_mac()  
 
-        if len(self.hosts) == 0:
-            logger.error('No hosts available, because %s are KO', hosts_list(hosts_ko))
-            exit()
+        
 
 
 
