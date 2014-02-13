@@ -12,8 +12,7 @@ It is composed of:
 Developped by the Inria Hemera initiative 2010-2014 
 https://www.grid5000.fr/mediawiki/index.php/Hemera
 
-See proper documentation on :
-http://vm5k.readthedocs.org
+See documentation on http://vm5k.readthedocs.org
 
 Requirements
 ============
@@ -64,8 +63,8 @@ People
 
 Contributors
 ------------
-* Laurent Pouilloux
 * Daniel Balouek-Thomert
+* Laurent Pouilloux
 
 Grid'5000 technical support
 ---------------------------
