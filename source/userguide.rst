@@ -4,57 +4,53 @@ vm5K user guide
 
 
 
-Usage
 
--=====
 
--
+Virtual machines deployment with vm5k
+=====================================
 
--Virtual machines deployment with vm5k
+Automate virtual machines deployment on Grid5000 in a global KaVLAN.
 
---------------------------------------
 
--Automate virtual machines deployment on Grid5000 in a global KaVLAN.
 
--
+Workflow
+--------
 
--### Workflow
+* define a deployment **topology**:
 
--* define a deployment **topology**:
+  * distributed virtual machines using a template and a list of clusters/sites
 
--  * distributed virtual machines using a template and a list of clusters/sites
-
--  * or from a given xml file (see example below)
+  * or from a given xml file (see example below)
 
 -* manage the **reservation**:
 
--  * find the next window available for the deployment
+  * find the next window available for the deployment
 
--  * or use an existing reservation
+  * or use an existing reservation
 
 -* configure the **network**
 
--  * determine the parameters from the global KaVLAN id
+  * determine the parameters from the global KaVLAN id
 
--  * create MAC address for the VM
+  * create MAC address for the VM
 
--  * generate dnsmasq configuration
+  * generate dnsmasq configuration
 
 -* install the **hosts**
 
--  * deployment of a kadeploy environment name/environment file
+  * deployment of a kadeploy environment name/environment file
 
--  * upgrade the hosts and configure libvirt
+  * upgrade the hosts and configure libvirt
 
--  * create the backing file for the virtual machine
+  * create the backing file for the virtual machine
 
 -* set up the **virtual machines**
 
--  * create the qcow2 disks on the hosts
+  * create the qcow2 disks on the hosts
 
--  * perform installation with virt-install
+  * perform installation with virt-install
 
--  * start the virtual machines
+  * start the virtual machines
 
 -
 
@@ -230,6 +226,6 @@ Usage
 
 -
 
--Automatizing experiments with vm5k_engine
-
+Automatizing experiments with vm5k_engine
 ------------------------------------------
+
