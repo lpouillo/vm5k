@@ -32,17 +32,16 @@ from execo_g5k.api_utils import get_host_cluster, get_g5k_sites, \
     get_cluster_site, get_host_site, canonical_host_name
 from execo_g5k.utils import get_kavlan_host_name
 from vm5k.config import default_vm
-from vm5k.actions import create_disks, install_vms, start_vms, wait_vms_have_started, destroy_vms, \
-    create_disks_on_hosts, distribute_vms
+from vm5k.actions import create_disks, install_vms, start_vms, \
+    wait_vms_have_started, destroy_vms, create_disks_on_hosts, distribute_vms
 from vm5k.services import dnsmasq_server
-from vm5k.utils import prettify, print_step, get_max_vms, get_fastest_host, hosts_list
-
-
+from vm5k.utils import prettify, print_step, get_max_vms, get_fastest_host, \
+    hosts_list
 
 
 class vm5k_deployment(object):
-    """ Base class to control a deployment of hosts and virtual machines on Grid'5000.
-    It helps to  deploy a wheezy-x64-base environment,
+    """ Base class to control a deployment of hosts and virtual machines on
+    Grid'5000. It helps to  deploy a wheezy-x64-base environment,
     to install and configure libvirt from testing repository, and to deploy
     virtual machines.
 
@@ -50,11 +49,12 @@ class vm5k_deployment(object):
     virtual machines, using the value of the object.
     """
 
-    def __init__(self, infile = None, resources = None,
-                 env_name = None, env_file = None,
-                 vms = None, distribution = 'round-robin',
-                 outdir = None):
-        """:params infile: an XML file that describe the topology of the deployment
+    def __init__(self, infile=None, resources=None,
+                 env_name=None, env_file=None,
+                 vms=None, distribution='round-robin',
+                 outdir=None):
+        """:params infile: an XML file that describe the topology of the
+        deployment
 
         :param resources: a dict whose keys are Grid'5000 sites and values are
         dict, whose keys are hosts and ip_mac, where hosts is a list of
@@ -74,12 +74,12 @@ class vm5k_deployment(object):
         if outdir:
             self.outdir = outdir
         else:
-            self.outdir = 'vm5k_'+strftime("%Y%m%d_%H%M%S_%z")
+            self.outdir = 'vm5k_' + strftime("%Y%m%d_%H%M%S_%z")
 
         self.state = Element('vm5k')
-        self.fact = ActionFactory(remote_tool = TAKTUK,
-                                fileput_tool = CHAINPUT,
-                                fileget_tool = TAKTUK)
+        self.fact = ActionFactory(remote_tool=TAKTUK,
+                                fileput_tool=CHAINPUT,
+                                fileget_tool=TAKTUK)
         self.distribution = distribution
         self.kavlan = None
 
@@ -100,7 +100,8 @@ class vm5k_deployment(object):
             if env_file is not None:
                 self.env_file = env_file
             else:
-                self.env_file = '/home/lpouilloux/synced/environments/vm5k/vm5k.env'
+                self.env_file = '/home/lpouilloux/synced/environments/vm5k/' +\
+                'vm5k.env'
 
         logger.info('%s %s %s %s %s %s %s %s',
                     len(self.sites), style.emph('sites'),
@@ -108,10 +109,9 @@ class vm5k_deployment(object):
                     len(self.hosts), style.host('hosts'),
                     len(self.vms), style.vm('vms'))
 
-
-
     def run(self):
-        """Launch the deployment and configuration of hosts and virtual machines"""
+        """Launch the deployment and configuration of hosts and virtual
+        machines"""
         try:
             print_step('HOSTS DEPLOYMENT')
             self.hosts_deployment()
@@ -119,17 +119,16 @@ class vm5k_deployment(object):
             print_step('MANAGING PACKAGES')
             self.packages_management()
 
-            print_step('CONFIGURING LIBVIRT')
-            self.configure_libvirt()
-
             print_step('CONFIGURING SERVICE NODE')
             self.configure_service_node()
+
+            print_step('CONFIGURING LIBVIRT')
+            self.configure_libvirt()
 
             print_step('VIRTUAL MACHINES')
             self.deploy_vms()
         finally:
             self.get_state()
-
 
     def configure_service_node(self):
         if self.kavlan:
@@ -140,20 +139,21 @@ class vm5k_deployment(object):
             dhcp = False
 
         service_node = get_fastest_host(self.hosts)
-        logger.info('Setting up %s on %s', style.emph(service), style.host(service_node.split('.')[0]))
+        logger.info('Setting up %s on %s', style.emph(service),
+                    style.host(service_node.split('.')[0]))
         clients = list(self.hosts)
         clients.remove(service_node)
         dnsmasq_server(service_node, clients, self.vms, dhcp)
 
-    def deploy_vms(self, disk_location = 'one', backing_file = '/grid5000/images/KVM/wheezy-x64-base.qcow2'):
-
-        """Destroy the existing VMS, create the virtual disks, install the vms, start them and
-        wait for boot"""
+    def deploy_vms(self, disk_location='one', boot_retry=None,
+            backing_file='/grid5000/images/KVM/wheezy-x64-base.qcow2'):
+        """Destroy the existing VMS, create the virtual disks, install the vms
+        start them and wait until they have rebooted"""
         logger.info('Destroying existing virtual machines')
         destroy_vms(self.hosts)
         logger.info('Creating the virtual disks ')
         self._remove_existing_disks()
-        self._create_backing_file(from_disk = backing_file)
+        self._create_backing_file(from_disk=backing_file)
         if disk_location == 'one':
             create_disks(self.vms).run()
         elif disk_location == 'all':
