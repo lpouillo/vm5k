@@ -88,10 +88,10 @@ You may use an existing grid reservation (with a KaVLAN global)::
 It will retrieve the hosts that you have, deploy and configure it, and finally distribute the VM on them.
 
 
-Using an topology file
+Using a topology file
 ----------------------
 
-To have the finest control on the deployment, you can use an input file that described the topology and VM
+To have the finest control on the deployment topology, you can use an input file that described the topology and VM
 characteristics::
 
  vm5k -i topology_file.xml -w 6:00:00

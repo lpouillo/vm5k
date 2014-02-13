@@ -35,6 +35,28 @@ Then you clone the repository and install the package:
 Don't forget to configure your PYTHONPATH and your PATH according to http://execo.gforge.inria.fr/doc/userguide.html#installation
 
 
+People
+======
+
+Contributors
+------------
+* Laurent Pouilloux
+* Daniel Balouek-Thomert
+* Flavien Quesnel
+
+
+Grid'5000 technical support
+---------------------------
+* Matthieu Imbert
+* Simon Delamare
+
+Testers
+-------
+* Jonathan Rouzaud-Cornabas
+* Jonathan Pastor
+* Takahiro Hirofuchi
+* Adrien Lèbre
+
 
 
 Publications
@@ -58,23 +80,5 @@ Research Report RR-8026, INRIA, July 2012 [bibtex] [pdf]
 
 
 
-People
-======
 
-Contributors
-------------
-* Daniel Balouek-Thomert
-* Laurent Pouilloux
-
-Grid'5000 technical support
----------------------------
-* Matthieu Imbert
-* Simon Delamare
-
-Testers
--------
-* Jonathan Rouzaud-Cornabas
-* Jonathan Pastor
-* Takahiro Hirofuchi
-* Adrien Lèbre
 
