@@ -1,13 +1,13 @@
 ****************
-vm5K user guide
+vm5k user guide
 ****************
 
 
 
 
 
-Virtual machines deployment with vm5k
-=====================================
+vm5k: automatic virtual machines deployment
+===========================================
 
 Automate virtual machines deployment on Grid5000 in a global KaVLAN.
 
@@ -100,6 +100,6 @@ where `topology_file.xml` is:
 
 .. literalinclude:: infile.xml
   
-Automatizing experiments with vm5k_engine
-=========================================
+vm5k_engine: automatizing experiments 
+=====================================
 
