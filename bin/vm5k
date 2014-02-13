@@ -9,6 +9,7 @@
 #
 import os, argparse
 from pprint import pformat
+from progressbar import ProgressBar
 from time import strftime
 from logging import INFO, DEBUG, WARN
 from math import ceil
@@ -17,148 +18,149 @@ from execo import logger, Process
 from execo.log import style
 from execo.config import TAKTUK, CHAINPUT
 from execo.action import ActionFactory
-from execo.time_utils import Timer, format_date
+from execo.time_utils import Timer, format_date, sleep
 from execo_g5k import oargridsub
 from execo_g5k.oargrid import get_oargridsub_commandline
-from execo_g5k.planning import get_planning, compute_slots, show_resources, find_free_slot, \
-    get_jobs_specs, distribute_hosts
-from execo_engine import redirect_outputs, copy_outputs
-from vm5k import vm5k_deployment, define_vms, get_oar_job_vm5k_resources, get_max_vms, \
-    get_oargrid_job_vm5k_resources, get_vms_slot, print_step, distribute_vms, default_vm,\
-    get_CPU_RAM_FLOPS
-
-
-
+from execo_g5k.planning import get_planning, compute_slots, show_resources, \
+    find_free_slot, get_jobs_specs, distribute_hosts
+from execo_engine import copy_outputs
+from vm5k import vm5k_deployment, define_vms, get_oar_job_vm5k_resources, \
+    get_max_vms, get_oargrid_job_vm5k_resources, get_vms_slot, print_step
 
 ### INITIALIZATION
 
 ## Constants
 deployment_tries = 1
-default_action_factory = ActionFactory(remote_tool = TAKTUK,
-                    fileput_tool = TAKTUK,
-                    fileget_tool = TAKTUK)
 blacklisted = ['helios', 'sagittaire']
+
 ## Command line options
 prog = 'vm5k'
-desc = 'A tool to deploy and configure nodes and virtual machines with '+\
-    style.log_header('Debian')+' and '+style.log_header('libvirt')+'\non the '+\
-    style.log_header('Grid5000')+' platform in a '+style.log_header('KaVLAN')+\
-    '.\nYou must select one of these options combinations:'+\
-    '\n - '+style.host('n_vm + oargrid_job_id')+\
-    ' = use an existing reservation and specify number of VMs'+\
-    '\n - '+style.host('infile + oargrid_job_id')+\
-    ' = use an existing reservation and specify vm placement XML file'+\
-    '\n - '+style.host('n_vm + walltime')+\
-    ' = perform a reservation that has enough RAM'+\
-    '\n - '+style.host('infile + walltime')+\
-    ' = perform a reservation according to the placement XML infile'+\
-    '.\nBased on execo-2.2, '+style.emph('http://execo.gforge.inria.fr/doc/')
-epilog = style.host('Examples:')+'\nDeploy 100 VM with the default environnements for 3h '+\
-    style.command('\n  %(prog)s -n 100 -w 3:00:00 \n')+\
-    'Issues/features requests can be reported to '+style.emph('https://github.com/lpouillo/vm5k')
+desc = 'A tool to deploy and configure nodes and virtual machines with ' + \
+    style.log_header('Debian') + ' and ' + style.log_header('libvirt') + \
+    '\non the ' + style.log_header('Grid5000') + ' platform in a ' + \
+    style.log_header('KaVLAN') + \
+    '.\nYou must select one of these options combinations:' + \
+    '\n - ' + style.host('n_vm + oargrid_job_id') + \
+    ' = use an existing reservation and specify number of VMs' + \
+    '\n - ' + style.host('infile + oargrid_job_id') + \
+    ' = use an existing reservation and specify vm placement XML file' + \
+    '\n - ' + style.host('n_vm + walltime') + \
+    ' = perform a reservation that has enough RAM' + \
+    '\n - ' + style.host('infile + walltime') + \
+    ' = perform a reservation according to the placement XML infile' + \
+    '.\nBased on execo-2.2, ' + style.emph('http://execo.gforge.inria.fr/doc/')
+epilog = style.host('Examples:') + '\nDeploy 100 VM with the default ' + \
+    'environnements for 3h ' + \
+    style.command('\n %(prog)s -n 100 -w 3:00:00') + \
+    'Issues/features requests can be reported to ' + \
+    style.emph('https://github.com/lpouillo/vm5k')
 
-parser = argparse.ArgumentParser(prog = prog, description = desc, epilog = epilog,
-                formatter_class = argparse.RawTextHelpFormatter, add_help = False)
+parser = argparse.ArgumentParser(prog=prog, description=desc, epilog=epilog,
+            formatter_class=argparse.RawTextHelpFormatter, add_help=False)
 ## Run options
 run = parser.add_argument_group(style.host('Execution'),
                 "Manage how %(prog)s is executed")
 run.add_argument("-h", "--help",
-                action = "help",
-                help = "show this help message and exit")
+                action="help",
+                help="show this help message and exit")
 optio = run.add_mutually_exclusive_group()
 optio.add_argument("-v", "--verbose",
-                action = "store_true",
-                help = 'print debug messages')
+                action="store_true",
+                help='print debug messages')
 optio.add_argument("-q", "--quiet",
-                action = "store_true",
-                help = 'print only warning and error messages')
+                action="store_true",
+                help='print only warning and error messages')
 run.add_argument("-o", "--outdir",
-                dest = "outdir",
-                default = 'vm5k_'+strftime("%Y%m%d_%H%M%S_%z"),
-                help = 'where to store the vm5k log files'+\
-                    "\ndefault = %(default)s")
+                dest="outdir",
+                default='vm5k_'+strftime("%Y%m%d_%H%M%S_%z"),
+                help='where to store the vm5k log files'+\
+                    "\ndefault=%(default)s")
 run.add_argument("-p", "--program",
-                dest = "program",
-                help = 'Launch a program at the end of the deployment')
+                dest="program",
+                help='Launch a program at the end of the deployment')
 #run.add_argument("--live-plot",
-#                action = "store_true",
-#                help = 'Open a figure to track the deployment process')
+#                action="store_true",
+#                help='Open a figure to track the deployment process')
 
 ## Reservation
-mode = parser.add_argument_group( style.host("Mode"),
+mode = parser.add_argument_group(style.host("Mode"),
                 "Define the mode of %(prog)s")
 optnvm = mode.add_mutually_exclusive_group()
 optnvm.add_argument('-n', '--n_vm',
-                dest = 'n_vm',
-                type = int,
-                help = 'number of virtual machines' )
+                dest='n_vm',
+                type=int,
+                help='number of virtual machines')
 optnvm.add_argument('-i', '--infile',
-                dest = "infile",
-                help = 'XML file describing the placement of VM on G5K sites and clusters' )
+                dest="infile",
+                help='XML file describing the placement of VM ' + \
+                    'on G5K sites and clusters')
 optresa = mode.add_mutually_exclusive_group()
 optresa.add_argument('-j', '--job_id',
-                dest = 'job_id',
-                help = 'use the hosts from a oargrid_job or a oar_job.' )
+                dest='job_id',
+                help='use the hosts from a oargrid_job or a oar_job.')
 optresa.add_argument('-w', '--walltime',
-                dest = 'walltime',
-                help = 'duration of your reservation')
+                dest='walltime',
+                help='duration of your reservation')
 
 mode.add_argument('-k', '--kavlan',
-                dest = 'kavlan',
-                action = "store_true",
-                default = False,
-                help = 'Deploy the VM in a KaVLAN' )
+                dest='kavlan',
+                action="store_true",
+                default=False,
+                help='Deploy the VM in a KaVLAN')
 
 ## Hosts configuration
-hosts =  parser.add_argument_group(style.host('Physical hosts'),
+hosts = parser.add_argument_group(style.host('Physical hosts'),
             "Tune the physical hosts.")
 hosts.add_argument('-r', '--resources',
-                dest = 'resources',
-                default = 'grid5000',
-                help = 'list of Grid\'5000 elements')
+                dest='resources',
+                default='grid5000',
+                help='list of Grid\'5000 elements')
 hosts.add_argument('-b', '--blacklisted',
-                dest = 'blacklisted',
-                help = 'list of Grid\'5000 elements to be blacklisted')
+                dest='blacklisted',
+                help='list of Grid\'5000 elements to be blacklisted')
 optenv = hosts.add_mutually_exclusive_group()
 optenv.add_argument('-e', '--env_name',
-                dest = 'env_name',
-                help = 'Kadeploy environment name')
+                dest='env_name',
+                help='Kadeploy environment name')
 optenv.add_argument('-a', '--env_file',
-                dest = 'env_file',
-                help = 'path to the Kadeploy environment file')
+                dest='env_file',
+                help='path to the Kadeploy environment file')
 optdeploy = hosts.add_mutually_exclusive_group()
 optdeploy.add_argument('--forcedeploy',
-                action = "store_true",
-                help = 'force the deployment of the hosts')
+                action="store_true",
+                help='force the deployment of the hosts')
 optdeploy.add_argument('--nodeploy',
-                action = "store_true",
-                help = 'consider that hosts are already deployed')
+                action="store_true",
+                help='consider that hosts are already deployed')
 hosts.add_argument('--host_packages',
-                dest = 'host_packages',
-                help = 'comma separated list of packages to be installed on the hosts')
+                dest='host_packages',
+                help='comma separated list of packages to be installed ' + \
+                    'on the hosts')
 
 ## VMs configuration
 vms = parser.add_argument_group(style.host('Virtual machines'),
                 "Tune the virtual machines.")
 vms.add_argument('-t', '--vm_template',
-                    dest = 'vm_template',
-                    help = 'XML string describing the virtual machine',
-                    default = '<vm mem="1024" hdd="10" cpu="1" cpuset="auto"/>')
+                    dest='vm_template',
+                    help='XML string describing the virtual machine',
+                    default='<vm mem="1024" hdd="10" cpu="1" cpuset="auto"/>')
 vms.add_argument('-f', '--vm_backing_file',
-                    dest = 'vm_backing_file',
-                    default = '/grid5000/images/KVM/wheezy-x64-base.qcow2',
-                    help = 'backing file for your virtual machines')
+                    dest='vm_backing_file',
+                    default='/grid5000/images/KVM/wheezy-x64-base.qcow2',
+                    help='backing file for your virtual machines')
 vms.add_argument('-l', '--vm_disk_location',
-                    default = 'one',
-                    dest = 'vm_disk_location',
-                    help = 'Where to create the qcow2: one (default) or all)')
+                    default='one',
+                    dest='vm_disk_location',
+                    help='Where to create the qcow2: one (default) or all)')
 vms.add_argument('-d', '--vm_distribution',
-                    default = 'round-robin',
-                    dest = 'vm_distribution',
-                    help = 'how to distribute the VM distributed (default) or concentrated')
+                    default='round-robin',
+                    dest='vm_distribution',
+                    help='how to distribute the VM distributed (default) ' + \
+                        'or concentrated')
 vms.add_argument('--vm_packages',
-                dest = 'vm_packages',
-                help = 'comma separated list of packages to be installed on the vms')
+                dest='vm_packages',
+                help='comma separated list of packages to be installed ' + \
+                'on the vms')
 
 args = parser.parse_args()
 
@@ -175,19 +177,21 @@ elif args.quiet:
 else:
     logger.setLevel(INFO)
 
-    
 
 if args.n_vm is None and args.infile is None:
-    parser.error('Must specify one of the following options: -n %s or -i %s, use -h for help ' %\
-                 ( style.emph('n_vm'), style.emph('infile')) )
+    parser.error('Must specify one of the following options: -n %s ' + \
+                 'or -i %s, use -h for help ' %\
+                 (style.emph('n_vm'), style.emph('infile')))
 if args.walltime is None and args.job_id is None:
-    parser.error('Must specify one of the following options: -w %s or -j, see -h for help' % \
-                 (style.emph('walltime')+' or -j '+style.emph('job_id')) )
+    parser.error('Must specify one of the following options: -w %s ' + \
+                 'or -j, see -h for help' %\
+                 (style.emph('walltime') + ' or -j ' + style.emph('job_id')))
 
 ## Start message
 print_step('VM5K: automatic deployement of VMs on Grid\'5000')
-logger.info('Options\n'+'\n'.join( [ style.emph(option.ljust(20))+\
-            '= '+str(vars(args)[option]).ljust(10) for option in sorted(vars(args).keys()) if vars(args)[option] ]))
+logger.info('Options\n' + '\n'.join([style.emph(option.ljust(20)) + \
+            '= ' + str(vars(args)[option]).ljust(10)
+            for option in sorted(vars(args).keys()) if vars(args)[option]]))
 
 ## Create output directory
 try:
@@ -195,21 +199,23 @@ try:
 except os.error:
     pass
 
-copy_outputs(args.outdir+'/vm5k.log', args.outdir+'/vm5k.log')
+copy_outputs(args.outdir + '/vm5k.log', args.outdir + '/vm5k.log')
 
 ### DEFINING VMS AND ELEMENTS
 if args.infile is not None:
-    logger.info( 'Using an %s for the topology', style.emph(args.infile))
+    # parse the XML file given in arguments
+    logger.info('Using an %s for the topology', style.emph(args.infile))
     vm5k = parse(args.infile).getroot()
     vms = []
     for vm in vm5k.findall('.//vm'):
-        vms.append( define_vms([vm.get('id')], template = vm)[0])
+        vms.append(define_vms([vm.get('id')], template=vm)[0])
     if logger.getEffectiveLevel() <= 10:
         dump(vm5k)
-    elements = { cluster.get('id'): len(cluster.findall('./host')) for cluster in vm5k.findall('.//cluster') }
+    elements = {cluster.get('id'): len(cluster.findall('./host'))
+                for cluster in vm5k.findall('.//cluster')}
 else:
-    vms = define_vms(['vm-'+str(i+1) for i in range(args.n_vm)],
-                     template = fromstring(args.vm_template))
+    vms = define_vms(['vm-' + str(i + 1) for i in range(args.n_vm)],
+                     template=fromstring(args.vm_template))
     elements = {}
     for element in args.resources.split(','):
         if ':' in element:
@@ -231,23 +237,25 @@ if args.job_id is None:
     else:
         kavlan = False
         subnet = True
-        subnets = 'slash_22='+str(int(ceil(len(vms)/1024.)))
+        subnets = 'slash_22=' + str(int(ceil(len(vms) / 1024.)))
 
     if args.blacklisted is not None:
-        blacklisted = list(set(blacklisted+args.blacklisted.split(',')))
+        blacklisted = list(set(blacklisted + args.blacklisted.split(',')))
 
-    planning = get_planning(elements, vlan = kavlan, subnet = subnet)
-
-    slots = compute_slots(planning, walltime = args.walltime, excluded_elements = blacklisted)
-
+    planning = get_planning(elements, vlan=kavlan, subnet=subnet)
+    slots = compute_slots(planning, walltime=args.walltime,
+                          excluded_elements=blacklisted)
 
     # Test if we need a free slot or a vms slot
-    if len( [element for element, n_nodes in elements.iteritems() if n_nodes > 0]) > 0:
+    if len([element for element, n_nodes in elements.iteritems()
+            if n_nodes > 0]) > 0:
         slot = find_free_slot(slots, elements)
         startdate = slot[0]
-        resources = distribute_hosts(slot[2], elements, excluded_elements = blacklisted)
+        resources = distribute_hosts(slot[2], elements,
+                                    excluded_elements=blacklisted)
     else:
-        startdate, resources = get_vms_slot(vms, elements, slots, excluded_elements = blacklisted)
+        startdate, resources = get_vms_slot(vms, elements, slots,
+                                    excluded_elements=blacklisted)
 
     if startdate is None:
         logger.error('Unable to find a slot, exiting')
@@ -255,71 +263,84 @@ if args.job_id is None:
 
     show_resources(resources)
 
-    jobs_specs = get_jobs_specs(resources, name = 'VM5K')
+    jobs_specs = get_jobs_specs(resources, name='VM5K')
 
     if not kavlan:
         for OarSubmission, _ in jobs_specs:
-            OarSubmission.resources = subnets+'+'+OarSubmission.resources
+            OarSubmission.resources = subnets + '+' + OarSubmission.resources
 
-    logger.debug('Jobs specifications %s', pformat(jobs_specs) )
+    logger.debug('Jobs specifications %s', pformat(jobs_specs))
 
-    (job_id, _) = oargridsub(jobs_specs, walltime = args.walltime,
-         additional_options = "-t deploy", reservation_date = startdate)
+    (job_id, _) = oargridsub(jobs_specs, walltime=args.walltime,
+         additional_options="-t deploy", reservation_date=startdate)
     if job_id is None:
-        logger.error('Wrong command line ? \n%s', get_oargridsub_commandline(jobs_specs, walltime = args.walltime,
-         additional_options = "-t deploy", reservation_date = startdate))
-    logger.info(style.log_header('Deployment will start at  ')+format_date(startdate))
-
+        logger.error('Wrong command line ? \n%s',
+            get_oargridsub_commandline(jobs_specs, walltime=args.walltime,
+                                       additional_options="-t deploy",
+                                       reservation_date=startdate))
+    logger.info(style.log_header('Deployment will start at  %s'),
+                format_date(startdate))
 else:
     logger.info('Using an existing job: %s', style.emph(args.job_id))
     if ':' in args.job_id:
+        startdate = 10 ** 20
         jobs = []
         for oar_job in args.job_id.split(','):
             frontend, job_id = oar_job.split(':')
-            jobs.append( (job_id, frontend) )
+            jobs.append((job_id, frontend))
     else:
         frontend, job_id = None, args.job_id
+#        get_oargrid_job_info(args.job_id)['start_date']
 
 
 print_step('Ressources')
 if frontend is None:
-    vm5k_resources = get_oargrid_job_vm5k_resources( job_id)
+    vm5k_resources = get_oargrid_job_vm5k_resources(job_id)
 else:
     vm5k_resources = get_oar_job_vm5k_resources(jobs)
 logger.debug(vm5k_resources)
 
 
-vm5k = vm5k_deployment(resources = vm5k_resources, vms = vms, 
-            env_name = args.env_name, env_file = args.env_file, outdir = args.outdir)
-vm5k.fact = ActionFactory(remote_tool = TAKTUK,
-                                fileput_tool = CHAINPUT,
-                                fileget_tool = TAKTUK)
+vm5k = vm5k_deployment(
+            resources=vm5k_resources,
+            vms=vms,
+            env_name=args.env_name,
+            env_file=args.env_file,
+            outdir=args.outdir)
+
+vm5k.fact = ActionFactory(remote_tool=TAKTUK,
+                          fileput_tool=CHAINPUT,
+                          fileget_tool=TAKTUK)
 vm5k.distribution = args.vm_distribution
 
 if args.nodeploy:
     deployment_tries = 0
 
 print_step('Deploying the hosts')
-vm5k.hosts_deployment(max_tries = deployment_tries, check_deploy =  not args.forcedeploy)
-f = open(args.outdir+'/hosts.list', 'w')
+vm5k.hosts_deployment(max_tries=deployment_tries,
+                      check_deploy=not args.forcedeploy)
+# Saving the list of hosts in outdir
+f = open(args.outdir + '/hosts.list', 'w')
 for host in vm5k.hosts:
-    f.write(host+'\n')
+    f.write(host + '\n')
 f.close()
 
 print_step('Managing packages')
-vm5k.packages_management(upgrade = True, other_packages = 'hwloc')
+vm5k.packages_management(upgrade=True,
+                         other_packages=args.host_packages)
 print_step('Configuring libvirt')
 vm5k.configure_libvirt()
 print_step('Configuring service node')
 vm5k.configure_service_node()
 print_step('Deploying virtual machines')
 logger.info('Maximum number of VMs %s', get_max_vms(vm5k.hosts))
-f = open(args.outdir+'/vms.list', 'w')
+f = open(args.outdir + '/vms.list', 'w')
 for vm in vm5k.vms:
-    f.write(vm['ip']+'\t'+vm['id']+'\n')
+    f.write(vm['ip'] + '\t' + vm['id'] + '\n')
 f.close()
 vm5k.get_state()
-vm5k.deploy_vms(disk_location = args.vm_disk_location, backing_file = args.vm_backing_file)
+vm5k.deploy_vms(disk_location=args.vm_disk_location,
+                backing_file=args.vm_backing_file)
 vm5k.get_state()
 
 if args.program is not None:
