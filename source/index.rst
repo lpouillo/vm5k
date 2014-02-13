@@ -21,9 +21,6 @@ Deployment script
 
 
 
-
-
-
 This module provides tools to deploy hosts and virtual machines on the Grid'5000 platform,
 using a preconfigured version of debian wheezy.
 
@@ -35,7 +32,7 @@ It needs a range of IP, either from g5k-subnets or kavlan to configure the VMs.
 
 
 .. autoclass:: vm5k_deployment
-	:members: hosts_deployment, 
+	:members: run, hosts_deployment, packages_management, configure_service_node, configure_libvirt, deploy_vms
    	:show-inheritance:
     
 
