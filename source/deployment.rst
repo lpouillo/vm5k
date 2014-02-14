@@ -4,7 +4,7 @@
 
 .. automodule:: vm5k.deployment
 
-
+.. image:: _static/circular_tree.png
 
 This module provides tools to deploy hosts and virtual machines on the Grid'5000 platform,
 using a preconfigured version of debian wheezy.
