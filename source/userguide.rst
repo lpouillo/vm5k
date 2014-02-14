@@ -45,7 +45,7 @@ Workflow
   * start the virtual machines
 
 
-.. image:: vm5k_workflow.png 
+.. image:: _static/vm5k_workflow.png 
 
 
 Basic

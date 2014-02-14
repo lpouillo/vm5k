@@ -1,13 +1,13 @@
-from vm5k_engine import *
+from vm5k.engine import vm5k_engine
 from itertools import product
 import xml.etree.ElementTree as ET
 import socket
 
 
-class MicroarchMigration( vm5k_engine ):
+class MicroarchMigration(vm5k_engine):
     """ An execo engine that performs migration time measurements with 
     various cpu/cell usage conditions and VM colocation. """
-    
+
     def __init__(self):
         super(MicroarchMigration, self).__init__()
         self.walltime = '6:00:00'

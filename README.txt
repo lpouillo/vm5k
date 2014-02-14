@@ -2,12 +2,13 @@
 vm5k
 ====
 
-A python module to ease the experimentations of virtual Machines for the Grid'5000 platform.
+A python module to ease the experimentations of virtual Machines on the Grid'5000 platform.
 It is composed of:
 
-* a lib to setup Debian hosts with libvirt and manage virtual machines
 * a script that deploy virtual machines
 * an experimental engine that conduct user defined workflow for a set of parameters
+* a lib to setup Debian hosts with libvirt and manage virtual machines
+
 
 Developped by the Inria Hemera initiative 2010-2014 
 https://www.grid5000.fr/mediawiki/index.php/Hemera

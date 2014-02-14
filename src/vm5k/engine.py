@@ -1,26 +1,27 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*-
-# This is an execo engine that can be used as a basis to perform Virtual Machine migration
-# measurements using libvirt on Grid5000.
+# Copyright 2012-2014 INRIA Rhone-Alpes, Service Experimentation et
+# Developpement
 #
-# After the definition of the conditions and parameters to be explored, the base worfklow
-# consists in:
-# - getting some nodes on a Grid5000 cluster
-# - deploy an environment with libvirt configured and virtual machine disks prepared
-# - perform some migration measurements (sequential, parallel, crossed)
-# - get the results from nodes and the ping log of VM
-# - draw some graphs
+# This file is part of Vm5k.
 #
-# It requires execo 2.2
+# Vm5k is free software: you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-# Laurent Pouilloux, INRIA 2012-2013
+# Vm5k is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+# or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+# License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Vm5k.  If not, see <http://www.gnu.org/licenses/>
 
-from os import path, mkdir, remove, listdir
-from pprint import pformat, pprint
+from os import path
+from pprint import pformat
 from xml.etree.ElementTree import fromstring, parse, ElementTree
 from time import time
 from datetime import timedelta
-from execo import configuration, Host, SshProcess, sleep, Remote, TaktukRemote, Get, Put, ChainPut, \
+from execo import Host, SshProcess, sleep, Remote, TaktukRemote, Get, Put, ChainPut, \
 ParallelActions, format_date
 from execo.time_utils import timedelta_to_seconds
 from execo.config import SSH, SCP, TAKTUK, CHAINPUT

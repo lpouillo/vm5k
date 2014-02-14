@@ -1,20 +1,21 @@
-# Copyright 2009-2012 INRIA Rhone-Alpes, Service Experimentation et
+# Copyright 2012-2014 INRIA Rhone-Alpes, Service Experimentation et
 # Developpement
 #
-# This file is part of Execo.
+# This file is part of Vm5k.
 #
-# Execo is free software: you can redistribute it and/or modify it
+# Vm5k is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Execo is distributed in the hope that it will be useful, but WITHOUT
+# Vm5k is distributed in the hope that it will be useful, but WITHOUT
 # ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
 # or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
 # License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Execo.  If not, see <http://www.gnu.org/licenses/>
+# along with Vm5k.  If not, see <http://www.gnu.org/licenses/>
+
 
 from os import fdopen
 from xml.etree.ElementTree import Element, SubElement, parse
@@ -164,42 +165,47 @@ class vm5k_deployment(object):
         start_vms(self.vms).run()
         wait_vms_have_started(self.vms)
 
-
-
-    def _create_backing_file(self, from_disk = '/grid5000/images/KVM/wheezy-x64-base.qcow2', to_disk = '/tmp/vm-base.img'):
+    def _create_backing_file(self,
+            from_disk='/grid5000/images/KVM/wheezy-x64-base.qcow2',
+            to_disk='/tmp/vm-base.img'):
         """ """
         logger.debug("Copying backing file from frontends")
-        copy_file = self.fact.get_fileput(self.hosts, [from_disk], remote_location='/tmp/').run()
+        copy_file = self.fact.get_fileput(self.hosts, [from_disk],
+                                        remote_location='/tmp/').run()
         self._actions_hosts(copy_file)
 
-        logger.debug('Creating disk image on '+to_disk)
-        cmd = 'qemu-img convert -O raw /tmp/'+from_disk.split('/')[-1]+' '+to_disk
+        logger.debug('Creating disk image on ' + to_disk)
+        cmd = 'qemu-img convert -O raw /tmp/' + from_disk.split('/')[-1] + \
+                ' ' + to_disk
         convert = self.fact.get_remote(cmd, self.hosts).run()
         self._actions_hosts(convert)
 
         if default_connection_params['user'] == 'root':
-            logger.debug('Copying ssh key on '+to_disk+' ...')
-            cmd = 'modprobe nbd max_part=1; '+ \
-                    'qemu-nbd --connect=/dev/nbd0 '+to_disk+' ; sleep 3 ; '+ \
-                    'mount /dev/nbd0p1 /mnt; mkdir /mnt/root/.ssh ; '+ \
-                    'cp /root/.ssh/authorized_keys  /mnt/root/.ssh/authorized_keys ; '+\
-                    'cp -r /root/.ssh/id_rsa* /mnt/root/.ssh/ ;'+ \
-                    'umount /mnt; qemu-nbd -d /dev/nbd0'
+            logger.debug('Copying ssh key on ' + to_disk + ' ...')
+            cmd = 'modprobe nbd max_part=1; ' + \
+        'qemu-nbd --connect=/dev/nbd0 ' + to_disk + \
+        ' ; sleep 3 ; ' + \
+        'mount /dev/nbd0p1 /mnt; mkdir /mnt/root/.ssh ; ' + \
+        'cp /root/.ssh/authorized_keys /mnt/root/.ssh/authorized_keys ; ' + \
+        'cp -r /root/.ssh/id_rsa* /mnt/root/.ssh/ ;' + \
+        'umount /mnt; qemu-nbd -d /dev/nbd0'
             copy_on_vm_base = self.fact.get_remote(cmd, self.hosts).run()
             self._actions_hosts(copy_on_vm_base)
 
-    def _remove_existing_disks(self, hosts = None):
+    def _remove_existing_disks(self, hosts=None):
         """Remove all img and qcow2 file from /tmp directory """
         logger.debug('Removing existing disks')
         if hosts is None:
             hosts = self.hosts
-        remove = self.fact.get_remote('rm -f /tmp/*.img; rm -f /tmp/*.qcow2', self.hosts).run()
+        remove = self.fact.get_remote('rm -f /tmp/*.img; rm -f /tmp/*.qcow2',
+                                      self.hosts).run()
         self._actions_hosts(remove)
 
     # libvirt configuration
-    def configure_libvirt(self, bridge = 'br0', libvirt_conf = None):
-        """Enable a bridge if needed on the remote hosts, configure libvirt with a bridged network 
-        for the virtual machines, and restart service."""
+    def configure_libvirt(self, bridge='br0', libvirt_conf=None):
+        """Enable a bridge if needed on the remote hosts, configure libvirt 
+        with a bridged network for the virtual machines, and restart service.
+        """
         self.enable_bridge()
         if not file:
             self._libvirt_uniquify()
@@ -246,9 +252,9 @@ class vm5k_deployment(object):
 
         out = True if logger.getEffectiveLevel() <= 10 else False
 
-        deployed_hosts, undeployed_hosts = deploy(deployment, out = out,
-                                num_tries = max_tries,
-                                check_deployed_command = check_deploy)
+        deployed_hosts, undeployed_hosts = deploy(deployment, out=out,
+                                num_tries=max_tries,
+                                check_deployed_command=check_deploy)
         
         deployed_hosts = list(deployed_hosts)
         undeployed_hosts = list(undeployed_hosts)

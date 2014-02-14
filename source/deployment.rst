@@ -1,13 +1,8 @@
-***********
-:mod:`vm5k`
-***********
+**********************
+:mod:`vm5k.deployment`
+**********************
 
-.. automodule:: vm5k
-
-
-Deployment script
-=================
-
+.. automodule:: vm5k.deployment
 
 
 
