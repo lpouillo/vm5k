@@ -4,7 +4,7 @@
 
 .. automodule:: vm5k.deployment
 
-.. image:: _static/circular_tree.png
+
 
 This module provides tools to deploy hosts and virtual machines on the Grid'5000 platform,
 using a preconfigured version of debian wheezy.
@@ -14,6 +14,8 @@ using a preconfigured version of debian wheezy.
 * a bridged networking for virtual machines
 
 It needs a range of IP, either from g5k-subnets or kavlan to configure the VMs.
+
+.. image:: _static/circular_tree.png
 
 
 .. autoclass:: vm5k_deployment
