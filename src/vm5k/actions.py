@@ -1,20 +1,20 @@
-# Copyright 2009-2012 INRIA Rhone-Alpes, Service Experimentation et
+# Copyright 2012-2014 INRIA Rhone-Alpes, Service Experimentation et
 # Developpement
 #
-# This file is part of Execo.
+# This file is part of Vm5k.
 #
-# Execo is free software: you can redistribute it and/or modify it
+# Vm5k is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Execo is distributed in the hope that it will be useful, but WITHOUT
+# Vm5k is distributed in the hope that it will be useful, but WITHOUT
 # ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
 # or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
 # License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Execo.  If not, see <http://www.gnu.org/licenses/>
+# along with Vm5k.  If not, see <http://www.gnu.org/licenses/>
 """A set of functions to manipulate virtual machines on Grid'5000"""
 
 from os import fdopen
@@ -48,7 +48,10 @@ def define_vms( vms_id, template = None, ip_mac = None, state = None, host = Non
     'mem': 512, 'n_cpu': 1, 'cpuset': 'auto',
     'hdd': 10, 'backing_file': '/tmp/vm-base.img',
     'state': 'KO'}
+    
     :param template: a XML element
+    
+    :params ip_mac: a list of tuple containing the ip
     """
     n_vm = len(vms_id)
     if template is None:

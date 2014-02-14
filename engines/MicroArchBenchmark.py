@@ -17,6 +17,13 @@ class MicroArchBenchmark( vm5k_engine ):
                     help = "", action = "store_true")
         self.options_parser.add_option("--nomulti", dest = "nomulti",
                     help = "", action = "store_true")
+<<<<<<< Updated upstream
+=======
+
+        self.fact = ActionFactory(remote_tool=SSH,
+                fileput_tool=SCP,
+                fileget_tool=SCP)
+>>>>>>> Stashed changes
 
     def define_parameters(self):
         """ Create the parameters for the engine :
