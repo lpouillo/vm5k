@@ -1,8 +1,9 @@
 .. vm5k documentation master file, created by
    sphinx-quickstart on Thu Feb 13 01:19:10 2014.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
 
+
+VM5K
+====
 
 .. image:: _static/grid5000.png 
 
@@ -13,14 +14,14 @@ customized environment, manipulation of virtual machines (VM), automatic experim
 
 
 .. toctree::
-    :maxdepth: 3
+    :maxdepth: 2
     
     Readme <readme>
     User Guide <userguide>
     API Documentation <apidoc>
+    Publications <publications>
 
-Indices and tables
-==================
+
 
 * :ref:`genindex`
 * :ref:`modindex`

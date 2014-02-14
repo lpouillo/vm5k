@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Vm5k.  If not, see <http://www.gnu.org/licenses/>
 
+""" Coucou c'est nous """
 
 from os import fdopen
 from xml.etree.ElementTree import Element, SubElement, parse
@@ -38,6 +39,8 @@ from actions import create_disks, install_vms, start_vms, \
 from services import dnsmasq_server
 from utils import prettify, print_step, get_max_vms, get_fastest_host, \
     hosts_list
+
+
 
 
 class vm5k_deployment(object):
@@ -255,7 +258,7 @@ class vm5k_deployment(object):
         deployed_hosts, undeployed_hosts = deploy(deployment, out=out,
                                 num_tries=max_tries,
                                 check_deployed_command=check_deploy)
-        
+
         deployed_hosts = list(deployed_hosts)
         undeployed_hosts = list(undeployed_hosts)
         # Renaming hosts if a kavlan is used
@@ -275,9 +278,10 @@ class vm5k_deployment(object):
             taktuk_conf = ('-s', '-S', '$HOME/.ssh/id_rsa:$HOME/.ssh/id_rsa,$HOME/.ssh/id_rsa.pub:$HOME/.ssh')
         else:
             taktuk_conf = ('-s', )
-        conf_ssh = self.fact.get_remote(' echo "Host *" >> /root/.ssh/config ;'+
+        conf_ssh = self.fact.get_remote(' echo "Host *" >> /root/.ssh/config ;' + \
                 'echo " StrictHostKeyChecking no" >> /root/.ssh/config; ',
-                self.hosts, connection_params = {'taktuk_options': taktuk_conf}).run()
+                self.hosts, 
+                connection_params={'taktuk_options': taktuk_conf}).run()
         self._actions_hosts(conf_ssh)
 
 

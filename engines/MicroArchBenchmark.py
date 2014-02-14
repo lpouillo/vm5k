@@ -1,8 +1,8 @@
-from vm5k_engine import *
+from vm5k.engine import *
 from itertools import product, repeat
 
 
-class MicroArchBenchmark( vm5k_engine ):
+class MicroArchBenchmark(vm5k_engine):
     """ An execo engine that performs migration time measurements with
     various cpu/cell usage conditions and VM colocation. """
 
@@ -13,11 +13,11 @@ class MicroArchBenchmark( vm5k_engine ):
         self.default_memory = 512
         self.options_parser.add_option("--mem", dest = "cachebench",
                     help = "", action = "store_true")
-	self.options_parser.add_option("--membw", dest = "mbw",
+        self.options_parser.add_option("--membw", dest = "mbw",
                     help = "", action = "store_true")
         self.options_parser.add_option("--nomulti", dest = "nomulti",
                     help = "", action = "store_true")
-	
+        
 	self.fact = ActionFactory(remote_tool = SSH,
 			fileput_tool = SCP,
 			fileget_tool = SCP)

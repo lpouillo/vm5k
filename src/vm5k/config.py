@@ -1,8 +1,8 @@
 from execo import configuration
 
 
-default_vm =  {'id': None, 'host': None, 'ip': None, 'mac': None,
-    'mem': 512, 'n_cpu': 1, 'cpuset': 'auto', 
+default_vm = {'id': None, 'host': None, 'ip': None, 'mac': None,
+    'mem': 512, 'n_cpu': 1, 'cpuset': 'auto',
     'hdd': 10, 'backing_file': '/tmp/vm-base.img',
     'state': 'KO'}
 

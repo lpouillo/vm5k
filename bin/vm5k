@@ -9,7 +9,7 @@
 #
 import os, argparse
 from pprint import pformat
-from progressbar import ProgressBar
+#from progressbar import ProgressBar
 from time import strftime
 from logging import INFO, DEBUG, WARN
 from math import ceil

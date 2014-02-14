@@ -1,4 +1,4 @@
-from vm5k.engine import vm5k_engine
+from vm5k.engine import *
 from itertools import product
 import xml.etree.ElementTree as ET
 import socket
@@ -9,17 +9,18 @@ class MicroarchMigration(vm5k_engine):
     various cpu/cell usage conditions and VM colocation. """
 
     def __init__(self):
+        """ """
         super(MicroarchMigration, self).__init__()
         self.walltime = '6:00:00'
         self.n_nodes = 2
         self.n_measure = 20
         self.env_name = 'wheezy-x64-nfs'
-        
+
     def workflow(self, comb): 
-        
+
         cpu_topology = self.cpu_topology[comb['cluster']]
         cpu_index = [item for sublist in cpu_topology for item in sublist] 
-        
+
         logger.info('Destroying VMS on all hosts')
         destroy_vms(self.hosts)
         n_vm = sum( [ int(i) for i in comb['dist'] ]) + 1
