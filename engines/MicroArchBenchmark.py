@@ -18,11 +18,17 @@ class MicroArchBenchmark( vm5k_engine ):
         self.options_parser.add_option("--nomulti", dest = "nomulti",
                     help = "", action = "store_true")
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 =======
+=======
+>>>>>>> Stashed changes
 
         self.fact = ActionFactory(remote_tool=SSH,
                 fileput_tool=SCP,
                 fileget_tool=SCP)
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 
     def define_parameters(self):

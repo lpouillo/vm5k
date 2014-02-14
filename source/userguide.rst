@@ -3,6 +3,7 @@ execo user guide
 ****************
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 In this user guide, the code can be executed from python source files,
 but it can also be run interactively in a python shell, such as
 ``ipython``, which is very convenient to inspect the execo objects.
@@ -16,6 +17,9 @@ In this tutorial it is shown how to install execo in subdirectory
 ``.local/`` of your home, allowing installation on computers where you
 are not root or when you don't want to mix manually installed packages
 with packages managed by your distribution package manager.
+=======
+.. toctree::
+>>>>>>> Stashed changes
 =======
 .. toctree::
 >>>>>>> Stashed changes
@@ -50,7 +54,10 @@ Since python 2.7, python automatically searches modules under
  export PYTHONPATH="$PYTHONHOMEPATH${PYTHONPATH:+:${PYTHONPATH}}"
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 =======
+=======
+>>>>>>> Stashed changes
   * determine the parameters from the oarjobs
   * create MAC address for the VM
   * generate dnsmasq configuration
