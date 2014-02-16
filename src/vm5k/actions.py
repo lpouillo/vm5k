@@ -19,7 +19,8 @@
 
 from os import fdopen
 from pprint import pformat
-from execo import SshProcess, Put, logger, TaktukRemote, Process, ParallelActions, Host
+from execo import SshProcess, Put, logger, TaktukRemote, Process, \
+    ParallelActions, Host
 from execo.log import style
 from execo.time_utils import sleep
 from execo_g5k import default_frontend_connection_params
@@ -35,14 +36,14 @@ from random import randint
 
 def show_vms(vms):
     """ """
-    logger.info(style.log_header('Virtual machines \n')+'%s',
-        ', '.join( [style.VM(vm['id'])+' ('+str(vm['mem'])+'Mb, '+str(vm['n_cpu'])+' cpu '+\
-                   vm['cpuset']+', '+str(vm['hdd'])+'Gb)'
-                    for vm in vms ] ) )
+    logger.info(style.log_header('Virtual machines \n') + '%s',
+        ', '.join([style.VM(vm['id']) + ' (' + str(vm['mem']) + 'Mb, ' + \
+        str(vm['n_cpu']) + ' cpu ' + vm['cpuset'] + ', ' + str(vm['hdd']) + 'Gb)'
+                    for vm in vms]))
 
 
-def define_vms( vms_id, template = None, ip_mac = None, state = None, host = None,
-        n_cpu = 1, cpusets = None, mem = None, hdd = None, backing_file = None):
+def define_vms(vms_id, template=None, ip_mac=None, state=None, host=None,
+        n_cpu=1, cpusets=None, mem=None, hdd=None, backing_file=None):
     """Create a list of virtual machines, where VM parameter is a dict similar to
     {'id': None, 'host': None, 'ip': None, 'mac': None,
     'mem': 512, 'n_cpu': 1, 'cpuset': 'auto',
@@ -60,11 +61,11 @@ def define_vms( vms_id, template = None, ip_mac = None, state = None, host = Non
             else [mem] * n_vm if isinstance(mem, int) else mem
         hdd = [default_vm['hdd']] * n_vm if hdd is None \
             else [hdd] * n_vm if isinstance(hdd, int) else hdd
-        backing_file = [default_vm['backing_file']]*n_vm if backing_file is None \
+        backing_file = [default_vm['backing_file']] * n_vm if backing_file is None \
             else [backing_file] * n_vm if isinstance(backing_file, str) else backing_file
-        state = [default_vm['state']]*n_vm if state is None \
+        state = [default_vm['state']] * n_vm if state is None \
             else [state] * n_vm if isinstance(state, str) else state
-        host = [default_vm['host']]*n_vm if host is None \
+        host = [default_vm['host']] * n_vm if host is None \
             else [host] * n_vm if isinstance(host, Host) else host
     else:
         n_cpu = [default_vm['n_cpu']] * n_vm if 'n_cpu' not in template.attrib \
@@ -78,11 +79,11 @@ def define_vms( vms_id, template = None, ip_mac = None, state = None, host = Non
         backing_file = [default_vm['backing_file']] * n_vm if 'backing_file' not in template.attrib \
             else [template.get('backing_file')] * n_vm
         state = [default_vm['state']]*n_vm if 'state' not in template.attrib \
-            else [template.get['state']] * n_vm
+            else [template.get('state')] * n_vm
 
-    ip_mac = [ (None, None) ] * n_vm if ip_mac is None else ip_mac
+    ip_mac = [(None, None)] * n_vm if ip_mac is None else ip_mac
 
-    vms = [ {'id': vms_id[i], 'mem': mem[i], 'n_cpu': n_cpu[i], 'cpuset': cpusets[i],
+    vms = [{'id': vms_id[i], 'mem': mem[i], 'n_cpu': n_cpu[i], 'cpuset': cpusets[i],
              'hdd': hdd[i], 'backing_file': backing_file[i], 'host': None, 'state': state[i],
              'ip': ip_mac[i][0], 'mac': ip_mac[i][1]} for i in range(n_vm)]
 
