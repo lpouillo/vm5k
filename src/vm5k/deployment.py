@@ -16,8 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with Vm5k.  If not, see <http://www.gnu.org/licenses/>
 
-""" Coucou c'est nous """
-
 from os import fdopen
 from xml.etree.ElementTree import Element, SubElement, parse
 from time import localtime, strftime
@@ -39,8 +37,6 @@ from actions import create_disks, install_vms, start_vms, \
 from services import dnsmasq_server
 from utils import prettify, print_step, get_max_vms, get_fastest_host, \
     hosts_list
-
-
 
 
 class vm5k_deployment(object):
@@ -206,21 +202,23 @@ class vm5k_deployment(object):
 
     # libvirt configuration
     def configure_libvirt(self, bridge='br0', libvirt_conf=None):
-        """Enable a bridge if needed on the remote hosts, configure libvirt 
+        """Enable a bridge if needed on the remote hosts, configure libvirt
         with a bridged network for the virtual machines, and restart service.
         """
         self.enable_bridge()
         if not file:
             self._libvirt_uniquify()
             self._libvirt_bridged_network(bridge)
-        logger.info('Restarting %s', style.emph('libvirt') )
+        logger.info('Restarting %s', style.emph('libvirt'))
         self.fact.get_remote('service libvirt-bin restart', self.hosts).run()
-
 
     def _libvirt_uniquify(self):
         logger.info('Making libvirt host unique')
-        cmd = 'uuid=`uuidgen` && sed -i "s/00000000-0000-0000-0000-000000000000/${uuid}/g" /etc/libvirt/libvirtd.conf '+\
-            '&& sed -i "s/#host_uuid/host_uuid/g" /etc/libvirt/libvirtd.conf && service libvirt-bin restart'
+        cmd = 'uuid=`uuidgen` ' + \
+    '&& sed -i "s/00000000-0000-0000-0000-000000000000/${uuid}/g" ' + \
+    '/etc/libvirt/libvirtd.conf ' + \
+    '&& sed -i "s/#host_uuid/host_uuid/g" /etc/libvirt/libvirtd.conf ' + \
+    '&& service libvirt-bin restart'
         self.fact.get_remote(cmd, self.hosts).run()
 
     def _libvirt_bridged_network(self, bridge):
@@ -630,7 +628,6 @@ class vm5k_deployment(object):
                 hosts_ko.append(p.host)
         hosts_ok, hosts_ko = list(set(hosts_ok)), list(set(hosts_ko))
         self._update_hosts_state(hosts_ok, hosts_ko)
-
 
 
 

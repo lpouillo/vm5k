@@ -20,12 +20,22 @@ Requirements
 The module requires:
 
 * execo 2.2, <http://execo.gforge.inria.fr/>
-* 
+* matplotlib 1.2 <http://matplotlib.org/> for plotting
 
 
 Installation
 ============
-You first need to install execo and on one of the Grid'5000 frontend.
+
+via pip:
+--------
+ 
+  pip install vm5k
+ 
+currenlty not available 
+  
+manual:
+-------
+You first need to install execo on one of the Grid'5000 frontend.
 
 http://execo.gforge.inria.fr/doc/userguide.html
 
@@ -35,7 +45,7 @@ Then you clone the repository and install the package:
  cd vm5k
  python setup.py install --user
 
-Don't forget to configure your PYTHONPATH and your PATH according to 
+Configure your PYTHONPATH and your PATH according to 
 http://execo.gforge.inria.fr/doc/userguide.html#installation
 
 
@@ -45,6 +55,7 @@ People
 Contributors
 ------------
 * Laurent Pouilloux
+* Jonathan Rouzaud-Cornabas
 * Daniel Balouek-Thomert
 * Flavien Quesnel
 
@@ -56,7 +67,7 @@ Grid'5000 technical support
 
 Testers
 -------
-* Jonathan Rouzaud-Cornabas
+
 * Jonathan Pastor
 * Takahiro Hirofuchi
 * Adrien Lèbre

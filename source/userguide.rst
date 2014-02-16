@@ -3,20 +3,17 @@ vm5k user guide
 ****************
 
 
-
-
-
 vm5k: automatic virtual machines deployment
 ===========================================
 
-The vm5k script provides you a tool to deploy a large numer of virtual machines 
-on the Grid'5000 platform. It provides several options to customize your topology
-and 
+The vm5k script provides a tool to deploy large numer of virtual machines 
+on the Grid'5000 platform. It provides several options to customize your 
+environnements and topology.
 
 Workflow
 --------
 
-* define a deployment **topology**:
+* define a deployment **topology** on Grid'5000:
 
   * distributed virtual machines using a template and a list of clusters/sites
   * or from a given xml file (see example below)
