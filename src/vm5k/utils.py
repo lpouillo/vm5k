@@ -236,9 +236,10 @@ def get_vms_slot(vms, elements, slots, excluded_elements=None):
         req_ram -= attr[host]['RAM']
         req_cpu -= attr[host]['CPU']
         cluster = get_host_cluster(host)
-        if not resources.has_key(cluster):
+        if cluster not in resources:
             resources[element] = 1
         else:
             resources[element] += 1
 
-    return chosen_slot[0], distribute_hosts(chosen_slot[2], resources, excluded_elements)
+    return chosen_slot[0], distribute_hosts(chosen_slot[2], resources,
+                                            excluded_elements)

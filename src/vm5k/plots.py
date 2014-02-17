@@ -12,7 +12,6 @@ except:
     pass
 
 
-
 def init_live_plot(xml):
     """Create  """
     logger.info('Initializing Live plot')
