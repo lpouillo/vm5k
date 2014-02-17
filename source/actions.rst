@@ -10,29 +10,29 @@ This module provides tools to interact with the virtual machines.
 VM definition and distribution
 ------------------------------
 
-.. autofunction:: show_vms
+.. autofunction:: vm5k.actions.show_vms
 
-.. autofunction:: define_vms
+.. autofunction:: vm5k.actions.define_vms
 
-.. autofunction:: distribute_vms
+.. autofunction:: vm5k.actions.distribute_vms
 
-.. autofunction:: list_vm
+.. autofunction:: vm5k.actions.list_vm
 
 VM state
 --------
 
-.. autofunction:: destroy_vms
+.. autofunction:: vm5k.actions.destroy_vms
 
-.. autofunction:: create_disks
+.. autofunction:: vm5k.actions.create_disks
 
-.. autofunction:: create_disks_on_hosts
+.. autofunction:: vm5k.actions.create_disks_on_hosts
 
-.. autofunction:: install_vms
+.. autofunction:: vm5k.actions.install_vms
 
-.. autofunction:: start_vms
+.. autofunction:: vm5k.actions.start_vms
 
-.. autofunction:: wait_vms_have_started
+.. autofunction:: vm5k.actions.wait_vms_have_started
 
-.. autofunction:: migrate_vm
+.. autofunction:: vm5k.actions.migrate_vm
 
-.. autofunction:: rm_qcow2_disks
+.. autofunction:: vm5k.actions.rm_qcow2_disks

@@ -266,7 +266,7 @@ def start_vms(vms):
     return TaktukRemote('{{hosts_cmds.values()}}', list(hosts_cmds.keys()))
 
 
-def wait_vms_have_started(vms, host=None):
+def wait_vms_have_started(vms, host=None, restart=True):
     """ Try to make a ls on all vms and return True when all process are ok"""
     if host is None:
         host = get_host_site(vms[0]['host'])
@@ -281,8 +281,8 @@ def wait_vms_have_started(vms, host=None):
     f.close()
     Put([host], [tmpfile], connection_params={'user': user}).run()
     nmap_tries = 0
-    started_vms = '0'
-    old_started = '0'
+    started_vms = []
+    old_started = len(started_vms)
     ssh_open = False
     while (not ssh_open) and nmap_tries < 10:
         sleep(20)
@@ -300,13 +300,14 @@ def wait_vms_have_started(vms, host=None):
             if 'Nmap done' in line:
                 logger.debug(line)
                 ssh_open = line.split()[2] == line.split()[5].replace('(', '')
-                started_vms = line.split()[5].replace('(', '')
-        if started_vms != old_started:
-            old_started = started_vms
+                alive_vms = line.split()[5].replace('(', '')
+        if alive_vms != old_started:
+            old_started = alive_vms
         else:
+            restart_vms([vm for vm in vms if vm['state'] == 'KO'])
             nmap_tries += 1
         if not ssh_open:
-            logger.info(str(nmap_tries) + ': ' + started_vms + '/' + \
+            logger.info(str(nmap_tries) + ': ' + str(alive_vms) + '/' +\
                         str(len(vms)))
     SshProcess('rm ' + tmpfile.split('/')[-1], host,
                connection_params={'user': user}).run()
@@ -319,6 +320,17 @@ def wait_vms_have_started(vms, host=None):
         return False
 
     return ssh_open
+
+
+def restart_vms(vms):
+    """ """
+    hosts = [vm['host'] for vm in vms]
+    running_vms = list_vm(hosts)
+    for vm in vms:
+        if {'id': vm['id']} not in running_vms[vm['host']]:
+            logger.info('%s has not been started on %s, starting it',
+                        style.vm(vm['id']), style.host(vm['host']))
+            SshProcess('virsh start ' + vm['id'], vm['host']).run()
 
 
 def migrate_vm(vm, host):
