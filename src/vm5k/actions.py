@@ -29,27 +29,43 @@ import tempfile
 from copy import deepcopy
 from execo.exception import ActionsFailed
 from config import default_vm
-from utils import get_CPU_RAM_FLOPS
+from utils import get_CPU_RAM_FLOPS, get_max_vms
 from itertools import cycle
 from random import randint
 
 
 def show_vms(vms):
-    """ """
+    """Print a short resume of vms parameters.
+
+    :params vms: a list containing a dict by virtual machine """
     logger.info(style.log_header('Virtual machines \n') + '%s',
         ', '.join([style.VM(vm['id']) + ' (' + str(vm['mem']) + 'Mb, ' + \
-        str(vm['n_cpu']) + ' cpu ' + vm['cpuset'] + ', ' + str(vm['hdd']) + 'Gb)'
-                    for vm in vms]))
+        str(vm['n_cpu']) + ' cpu ' + vm['cpuset'] + ', ' + str(vm['hdd']) + \
+        'Gb)' for vm in vms]))
 
 
 def define_vms(vms_id, template=None, ip_mac=None, state=None, host=None,
-        n_cpu=1, cpusets=None, mem=None, hdd=None, backing_file=None):
-    """Create a list of virtual machines, where VM parameter is a dict similar to
+        n_cpu=None, cpusets=None, mem=None, hdd=None, backing_file=None):
+    """Create a list of virtual machines, where VM parameter is a dict
+    similar to
     {'id': None, 'host': None, 'ip': None, 'mac': None,
     'mem': 512, 'n_cpu': 1, 'cpuset': 'auto',
     'hdd': 10, 'backing_file': '/tmp/vm-base.img',
     'state': 'KO'}
-    :param template: a XML element
+
+    Can be generated from a template 
+
+    :param vms_id: a list of string that will be used as vm id
+
+    :param template: an XML element defining the template of the VM
+
+    :param ip_mac: a list of tuple containing ip, mac correspondance
+
+    :param state: the state of the VM
+
+    :param host: the host of the VM
+
+    :param n_cpu: the number of virtual CPU of the VMs
     """
     n_vm = len(vms_id)
     if template is None:
@@ -78,7 +94,7 @@ def define_vms(vms_id, template=None, ip_mac=None, state=None, host=None,
             else [int(template.get('hdd'))] * n_vm
         backing_file = [default_vm['backing_file']] * n_vm if 'backing_file' not in template.attrib \
             else [template.get('backing_file')] * n_vm
-        state = [default_vm['state']]*n_vm if 'state' not in template.attrib \
+        state = [default_vm['state']] * n_vm if 'state' not in template.attrib \
             else [template.get('state')] * n_vm
 
     ip_mac = [(None, None)] * n_vm if ip_mac is None else ip_mac
@@ -92,14 +108,22 @@ def define_vms(vms_id, template=None, ip_mac=None, state=None, host=None,
     return vms
 
 
-def distribute_vms(vms, hosts, distribution = 'round-robin'):
-    """ """
+def distribute_vms(vms, hosts, distribution='round-robin'):
+    """Distribute the virtual machines on the host.
+
+    :param vms: a list of VMs dicts to be updated 
+
+    :param hosts: a list of hosts
+
+    :param distribution: a string defining the distribution type:  'round-robin', 'concentrated', 'n_by_hosts'
+    
+    """
     logger.debug('Initial virtual machines distribution \n%s',
-        "\n".join( [ vm['id']+": "+str(vm['host']) for vm in vms] ))
+        "\n".join([vm['id'] + ": " + str(vm['host']) for vm in vms]))
     if distribution not in ['round-robin', 'concentrated', 'n_by_hosts']:
         logger.error('Distribution %s is not supported')
         exit()
-        
+
     if distribution in ['round-robin', 'concentrated']:
         attr = get_CPU_RAM_FLOPS(hosts)
         dist_hosts = hosts[:]
@@ -108,15 +132,19 @@ def distribute_vms(vms, hosts, distribution = 'round-robin'):
         for vm in vms:
             remaining = attr[host].copy()
             while remaining['RAM'] - vm['mem'] <= 0 \
-                or remaining['CPU'] - vm['n_cpu']/3 <= 0:
+                or remaining['CPU'] - vm['n_cpu'] / 3 <= 0:
                 dist_hosts.remove(host)
                 if len(dist_hosts) == 0:
-                    req_mem = sum( [ vm['mem'] for vm in vms])
-                    req_cpu = sum( [ vm['n_cpu'] for vm in vms])/3
-                    logger.error('Not enough ressources ! \n'+'RAM'.rjust(20)+'CPU'.rjust(10)+'\n'+\
-                                 'Available'.ljust(15)+'%s Mb'.ljust(15)+'%s \n'+\
-                                 'Needed'.ljust(15)+'%s Mb'.ljust(15)+\
-                                 '%s \n', attr['TOTAL']['RAM'], attr['TOTAL']['CPU'],req_mem, req_cpu)
+                    req_mem = sum([vm['mem'] for vm in vms])
+                    req_cpu = sum([vm['n_cpu'] for vm in vms]) / 3
+                    logger.error(
+        'Not enough ressources ! \n' + 'RAM'.rjust(20) + 'CPU'.rjust(10) + '\n' + \
+        'Needed'.ljust(15) + '%s Mb'.ljust(15) + '%s \n' + \
+        'Available'.ljust(15) + '%s Mb'.ljust(15) + '%s \n' + \
+        'Maximum number of VM is %s', req_mem, req_cpu,
+        attr['TOTAL']['RAM'], attr['TOTAL']['CPU'],
+        style.emph(str(get_max_vms(hosts, vm['mem']))))
+                    exit()
 
                 iter_hosts = cycle(dist_hosts)
                 host = iter_hosts.next()
@@ -124,12 +152,12 @@ def distribute_vms(vms, hosts, distribution = 'round-robin'):
 
             vm['host'] = host
             remaining['RAM'] -= vm['mem']
-            remaining['CPU'] -= vm['n_cpu']/3
+            remaining['CPU'] -= vm['n_cpu'] / 3
             attr[host] = remaining.copy()
             if distribution == 'round-robin':
                 host = iter_hosts.next()
                 remaining = attr[host].copy()
-            if distribution ==  'random':
+            if distribution == 'random':
                 for i in range(randint(0, len(dist_hosts))):
                     host = iter_hosts.next()
 
@@ -142,17 +170,17 @@ def distribute_vms(vms, hosts, distribution = 'round-robin'):
                 i_vm += 1
 
     logger.debug('Final virtual machines distribution \n%s',
-        "\n".join( [ vm['id']+": "+str(vm['host']) for vm in vms ] ) )
+        "\n".join([ vm['id']+": "+str(vm['host']) for vm in vms ]))
 
 
-def list_vm( hosts, all = False ):
+def list_vm(hosts, not_running=False):
     """ Return the list of VMs on host """
     cmd = 'virsh --connect qemu:///system list'
-    if all:
+    if not_running:
         cmd += ' --all'
-    logger.debug('Listing Virtual machines on '+pformat(hosts))
-    list_vm = TaktukRemote(cmd, hosts ).run()
-    hosts_vms = { host: [] for host in hosts }
+    logger.debug('Listing Virtual machines on ' + pformat(hosts))
+    list_vm = TaktukRemote(cmd, hosts).run()
+    hosts_vms = {host: [] for host in hosts}
     for p in list_vm.processes:
         lines = p.stdout.split('\n')
         for line in lines:
@@ -164,21 +192,20 @@ def list_vm( hosts, all = False ):
     logger.debug(pformat(hosts_vms))
     return hosts_vms
 
-def destroy_vms( hosts):
-    """Destroy all the VM on the hosts"""
 
+def destroy_vms(hosts):
+    """Destroy all the VM on the hosts"""
     cmds = []
     hosts_with_vms = []
-    hosts_vms = list_vm(hosts, all = True)
-    
+    hosts_vms = list_vm(hosts, not_running=True)
+
     for host, vms in hosts_vms.iteritems():
         if len(vms) > 0:
-            cmds.append( '; '.join('virsh destroy '+vm['id']+'; virsh undefine '+vm['id'] for vm in vms ))
+            cmds.append('; '.join('virsh destroy ' + vm['id'] + \
+                        '; virsh undefine ' + vm['id'] for vm in vms))
             hosts_with_vms.append(host)
-    
     if len(cmds) > 0:
         TaktukRemote('{{cmds}}', hosts_with_vms).run()
-
 
 
 def create_disks(vms, backing_file = '/tmp/vm-base.img', backing_file_fmt = 'raw'):

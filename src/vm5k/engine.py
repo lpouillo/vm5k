@@ -69,7 +69,6 @@ class vm5k_engine( Engine ):
         self.frontend = None
         self.parameters = None
 
-
     def run(self):
         """The main experimental workflow, as described in ``Using the Execo toolkit to perform ... ``"""
         print_step('Defining parameters')
@@ -84,7 +83,7 @@ class vm5k_engine( Engine ):
             # Creation of the main iterator which is used for the first control loop.
             # You need have a method called define_parameters, that returns a list of parameter dicts
             self.create_paramsweeper()
-            
+
             job_is_dead = False
             # While they are combinations to treat
             while len(self.sweeper.get_remaining()) > 0:
@@ -96,7 +95,7 @@ class vm5k_engine( Engine ):
                 # Hosts deployment and configuration
                 self.setup_hosts()
 
-                # Initializing the resources and threads
+                # Initializing the resources and threads
                 available_hosts = list(self.hosts)
                 available_ip_mac = list(self.ip_mac)
                 threads = {}
@@ -172,7 +171,6 @@ class vm5k_engine( Engine ):
         logger.info('% s combinations', len(sweeps))
         self.sweeper = ParamSweeper( path.join(self.result_dir, "sweeps"), sweeps)
 
-
     def _get_nodes(self, starttime, endtime):
         """ """
         planning = get_planning(elements = [self.cluster],
@@ -247,13 +245,12 @@ def print_step(step_desc = None):
     logger.info(style.step(' '+step_desc+' '))
 
 
-def get_cpu_topology(cluster, dir = None):
+def get_cpu_topology(cluster, dir=None):
     """ """
     logger.info('Determining the architecture of cluster '+style.emph(cluster))
-
     root = None
-    # Trying to reed topology from a directory
-    if dir is not None:
+    # Trying to reed topology from a directory
+    if dir:
         fname = dir+'/topo_'+cluster+'.xml'
         try:
             tree = parse(fname)
@@ -287,6 +284,7 @@ def get_cpu_topology(cluster, dir = None):
         i_cell += 1
     logger.info(pformat(cpu_topology))
     return cpu_topology
+
 
 def boot_vms_by_core(vms):
     """ """
@@ -322,123 +320,3 @@ def boot_vms_by_core(vms):
         logger.info(style.Thread(host)+': '+style.emph(str(booted_vms)+'/'+str(n_vm)))
     return True
 
-
-#
-#
-## Migration functions
-#def split_vm( vms_params, n = 2 ):
-#    split_vms = [0] * n
-#    for i_params in range(n):
-#        split_vms[i_params] = vms_params[i_params::n]
-#    return split_vms
-#
-#def host_shortname( host):
-#    ''' Return the short name of a G5K host, with a color_style '''
-#    return host.address.split('.')[0]
-#
-#def migration_measure( vm, host_src, host_dest, i_mes = 0, label = 'MIG', mig_speed = default_mig_speed):
-#    ''' Return an Remote action to measure migration time of vm_id from
-#    host_src to host_dest '''
-#    cmd = "virsh --connect qemu:///system migrate-setspeed "+vm['vm_id']+" "+str(mig_speed)+"; timestamp=`date +%s`; "+ \
-#            "duration=`/usr/bin/time  -f \""+str(i_mes)+"\t%e\" sh -c '"+ \
-#            "virsh --connect qemu:///system migrate "+vm['vm_id']+" --live --copy-storage-inc "+\
-#            "qemu+ssh://"+host_dest.address+"/system'  2>&1 `;"+ \
-#            "echo $timestamp "+vm['vm_id']+" $duration >> "+\
-#            label+"_"+host_shortname(host_src)+"_"+host_shortname(host_dest)+".out"
-#    logger.info(style.host(vm['vm_id'], 'object_repr')+': '+host_shortname(host_src)+" -> "+host_shortname(host_dest))
-#    logger.debug('%s %s %s', cmd, host_src, host_dest)
-#    return Remote(cmd, [ host_src ])
-#
-#def measurements_loop(n_measure, vms, hosts, mig_function, mode, label = None, mig_speed = default_mig_speed, cache = False):
-#    ''' Perform a loop of migration given by the mig_function'''
-#    if not cache:
-#        clear_cache = Remote('sync; echo 3 > /proc/sys/vm/drop_caches', hosts)
-#
-#    n_nodes = len(hosts)
-#    permut = deque(''.join([`num` for num in range(n_nodes)]))
-#    for i_mes in range( n_measure ):
-#        if not cache:
-#            clear_cache.run()
-#            clear_cache.reset()
-#
-#        logger.info( style.user3('Measure '+str(i_mes+1)+'/'+str(n_measure)))
-#        ii = [int(permut[i]) for i in range(n_nodes)]
-#
-#        nodes = [ hosts[ii[i]] for i in range(n_nodes)]
-#
-#        migractions = mig_function( vms, nodes, i_mes = i_mes,
-#                    mode = mode, label = label, mig_speed = mig_speed)
-#
-#        migractions.run()
-#        if not migractions.ok():
-#            return False
-#
-#        if not cache:
-#            clear_cache.run()
-#            clear_cache.reset()
-#
-#        if mig_function != split_merge_migrations:
-#            permut.rotate(+1)
-#
-#    return True
-#
-#def twonodes_migrations( vms, hosts, mode = 'sequential', i_mes = 0, label = 'SEQ', mig_speed = default_mig_speed):
-#    ''' Return SequentialActions to perform sequential measurements '''
-#    migractions = []
-#    for vm in vms:
-#        migractions.append(migration_measure( vm, hosts[0], hosts[1], i_mes, label, mig_speed = mig_speed))
-#    if mode == 'sequential':
-#        return SequentialActions(migractions)
-#    else:
-#        return ParallelActions(migractions)
-#
-#def crossed_migrations( vms, hosts, mode = 'parallel', i_mes = 0, label = 'CROSSED', mig_speed = default_mig_speed):
-#    ''' Return ParallelActions to perform parallel measurements '''
-#    vms = split_vm(vms)
-#    migractions_01 = []; migractions_10 = []
-#    for vm in vms[0]:
-#        migractions_01.append(migration_measure( vm, hosts[0], hosts[1], i_mes, label, mig_speed = mig_speed))
-#    for vm in vms[1]:
-#        migractions_10.append(migration_measure( vm, hosts[1], hosts[0], i_mes, label, mig_speed = mig_speed))
-#    if mode == 'sequential':
-#        return ParallelActions( [ SequentialActions( migractions_01 ), SequentialActions( migractions_10 ) ] )
-#    else:
-#        return ParallelActions( migractions_01 + migractions_10 )
-#
-#def circular_migrations( vms, hosts, mode = 'sequential', i_mes = 0, label = 'CIRC', mig_speed = default_mig_speed):
-#    n_nodes = len(hosts)
-#    if n_nodes < 3:
-#        print 'Error, number of hosts must be >= 3'
-#    elif len(vms) % (n_nodes) !=0:
-#        print 'Error, number of VMs not divisible by number of hosts'
-#    else:
-#        vms = split_vm(vms, n_nodes )
-#        migractions = []
-#        for i_from in range(n_nodes):
-#            i_to = i_from+1 if i_from < n_nodes-1 else 0
-#            if mode == 'sequential':
-#                label = 'CIRCSEQ'
-#            elif mode == 'parallel':
-#                label = 'CIRCPARA'
-#            migractions.append(twonodes_migrations(vms[i_to], hosts[i_from], hosts[i_to], mode = mode, i_mes = 0, label = label ))
-#        return ParallelActions(migractions)
-#
-#def split_merge_migrations( vms, hosts, mode = 'parallel', i_mes = 0, label = 'SPLITMERGE', mig_speed = default_mig_speed):
-#    ''' Return ParallelActions to perform split migration '''
-#    if len(hosts) < 3:
-#        print 'Error, number of hosts must be >= 3'
-#    elif len(vms) % (len(hosts)) !=0:
-#        print 'Error, number of VMs not divisible by number of hosts'
-#    else:
-#        vms = split_vm(vms, len(hosts)-1 )
-#        migsplit = []
-#        migmerge = []
-#        for idx in range(len(hosts)-1):
-#            for vm in vms[idx]:
-#                migsplit.append(migration_measure( vm, hosts[0], hosts[idx+1], i_mes, label, mig_speed = mig_speed))
-#                migmerge.append(migration_measure( vm, hosts[idx+1], hosts[0], i_mes, label, mig_speed = mig_speed))
-#
-#        if mode == 'sequential':
-#            return SequentialActions( [SequentialActions(migsplit), SequentialActions(migmerge)])
-#        else:
-#            return SequentialActions( [ParallelActions(migsplit), ParallelActions(migmerge)])

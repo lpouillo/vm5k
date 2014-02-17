@@ -333,7 +333,9 @@ vm5k.configure_libvirt()
 print_step('Configuring service node')
 vm5k.configure_service_node()
 print_step('Deploying virtual machines')
-logger.info('Maximum number of VMs %s', get_max_vms(vm5k.hosts))
+if args.infile is None:
+    logger.info('Maximum number of VMs %s',
+        get_max_vms(vm5k.hosts, int(fromstring(args.vm_template).get('mem'))))
 f = open(args.outdir + '/vms.list', 'w')
 for vm in vm5k.vms:
     f.write(vm['ip'] + '\t' + vm['id'] + '\n')
@@ -343,8 +345,7 @@ vm5k.deploy_vms(disk_location=args.vm_disk_location,
                 backing_file=args.vm_backing_file)
 vm5k.get_state()
 
+
 if args.program is not None:
     print_step('Lauching program')
     Process(args.prog).run()
-
-

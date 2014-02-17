@@ -53,7 +53,7 @@ class vm5k_deployment(object):
                  env_name=None, env_file=None,
                  vms=None, distribution='round-robin',
                  outdir=None):
-        """:params infile: an XML file that describe the topology of the
+        """:param infile: an XML file that describe the topology of the
         deployment
 
         :param resources: a dict whose keys are Grid'5000 sites and values are
@@ -109,9 +109,11 @@ class vm5k_deployment(object):
                     len(self.hosts), style.host('hosts'),
                     len(self.vms), style.vm('vms'))
 
+    ## PUBLIC METHODS
     def run(self):
         """Launch the deployment and configuration of hosts and virtual
-        machines"""
+        machines: host_deployment, packages_mamangement, configure_service_node
+        configure_libvirt, deploy_vms"""
         try:
             print_step('HOSTS DEPLOYMENT')
             self.hosts_deployment()
@@ -130,7 +132,32 @@ class vm5k_deployment(object):
         finally:
             self.get_state()
 
+    def hosts_deployment(self, max_tries=1, check_deploy=True,
+                         conf_ssh=True, launch_disk_copy=False):
+        """Deploy the hosts using kadeploy, configure ssh for taktuk execution
+        and launch backing file disk copy"""
+        self._launch_kadeploy(max_tries, check_deploy)
+        if conf_ssh:
+            self._configure_ssh()
+        if launch_disk_copy:
+            self._start_disk_copy()
+
+    def packages_management(self, upgrade=True, other_packages=None):
+        """Configure APT to use testing repository,
+        perform upgrade and install required packages. Finally start
+        kvm module"""
+        self._configure_apt()
+        if upgrade:
+            self._upgrade_hosts()
+        self._install_packages()
+        # Post configuration to load KVM
+        self.fact.get_remote(
+            'modprobe kvm; modprobe kvm-intel; modprobe kvm-amd ; ' + \
+            'chown root:kvm /dev/kvm ;', self.hosts).run()
+
     def configure_service_node(self):
+        """Setup automatically a DNS server to access virtual machines by id
+        and also install a DHCP server if kavlan is used"""
         if self.kavlan:
             service = 'DNS/DHCP'
             dhcp = True
@@ -144,6 +171,17 @@ class vm5k_deployment(object):
         clients = list(self.hosts)
         clients.remove(service_node)
         dnsmasq_server(service_node, clients, self.vms, dhcp)
+
+    def configure_libvirt(self, bridge='br0', libvirt_conf=None):
+        """Enable a bridge if needed on the remote hosts, configure libvirt
+        with a bridged network for the virtual machines, and restart service.
+        """
+        self._enable_bridge()
+        if not file:
+            self._libvirt_uniquify()
+            self._libvirt_bridged_network(bridge)
+        logger.info('Restarting %s', style.emph('libvirt'))
+        self.fact.get_remote('service libvirt-bin restart', self.hosts).run()
 
     def deploy_vms(self, disk_location='one', boot_retry=None,
             backing_file='/grid5000/images/KVM/wheezy-x64-base.qcow2'):
@@ -163,6 +201,53 @@ class vm5k_deployment(object):
         logger.info('Starting the virtual machines')
         start_vms(self.vms).run()
         wait_vms_have_started(self.vms)
+
+    ## PRIVATE METHODS
+    def _launch_kadeploy(self, max_tries=1, check_deploy=True):
+        """Create a execo_g5k.Deployment object, launch the deployment and 
+        return a tuple (deployed_hosts, undeployed_hosts)
+        """
+        logger.info('Deploying %s hosts \n%s', len(self.hosts),
+                    hosts_list(self.hosts))
+        deployment = Deployment(hosts=[Host(canonical_host_name(host))
+                                          for host in self.hosts],
+                        env_file=self.env_file, env_name=self.env_name,
+                        vlan=self.kavlan)
+        # Activate kadeploy output log if log level is debug
+        out = True if logger.getEffectiveLevel() <= 10 else False
+        deployed_hosts, undeployed_hosts = deploy(deployment, out=out,
+                                num_tries=max_tries,
+                                check_deployed_command=check_deploy)
+        deployed_hosts = list(deployed_hosts)
+        undeployed_hosts = list(undeployed_hosts)
+        # Renaming hosts if a kavlan is used
+        if self.kavlan:
+            for i, host in enumerate(deployed_hosts):
+                deployed_hosts[i] = get_kavlan_host_name(host, self.kavlan)
+            for i, host in enumerate(undeployed_hosts):
+                undeployed_hosts[i] = get_kavlan_host_name(host, self.kavlan)
+        logger.info('Deployed %s hosts \n%s', len(deployed_hosts),
+                    hosts_list(deployed_hosts))
+        logger.info('Failed %s hosts \n%s', len(undeployed_hosts),
+                    hosts_list(undeployed_hosts))
+        self._update_hosts_state(deployed_hosts, undeployed_hosts)
+        return deployed_hosts, undeployed_hosts
+
+    def _configure_ssh(self):
+        if self.fact.remote_tool == 2:
+            # Configuring SSH with precopy of id_rsa and id_rsa.pub keys on all
+            # host to allow TakTuk connection
+            taktuk_conf = ('-s', '-S',
+                    '$HOME/.ssh/id_rsa:$HOME/.ssh/id_rsa,' + \
+                    '$HOME/.ssh/id_rsa.pub:$HOME/.ssh')
+        else:
+            taktuk_conf = ('-s', )
+        conf_ssh = self.fact.get_remote(
+                'echo "Host *" >> /root/.ssh/config ;' + \
+                'echo " StrictHostKeyChecking no" >> /root/.ssh/config; ',
+                self.hosts,
+                connection_params={'taktuk_options': taktuk_conf}).run()
+        self._actions_hosts(conf_ssh)
 
     def _create_backing_file(self,
             from_disk='/grid5000/images/KVM/wheezy-x64-base.qcow2',
@@ -201,16 +286,7 @@ class vm5k_deployment(object):
         self._actions_hosts(remove)
 
     # libvirt configuration
-    def configure_libvirt(self, bridge='br0', libvirt_conf=None):
-        """Enable a bridge if needed on the remote hosts, configure libvirt
-        with a bridged network for the virtual machines, and restart service.
-        """
-        self.enable_bridge()
-        if not file:
-            self._libvirt_uniquify()
-            self._libvirt_bridged_network(bridge)
-        logger.info('Restarting %s', style.emph('libvirt'))
-        self.fact.get_remote('service libvirt-bin restart', self.hosts).run()
+
 
     def _libvirt_uniquify(self):
         logger.info('Making libvirt host unique')
@@ -225,65 +301,31 @@ class vm5k_deployment(object):
         logger.debug('Configuring libvirt network ...')
         # Creating an XML file describing the network
         root = Element('network')
-        name = SubElement(root,'name')
+        name = SubElement(root, 'name')
         name.text = 'default'
-        SubElement(root, 'forward', attrib={'mode':'bridge'})
+        SubElement(root, 'forward', attrib={'mode': 'bridge'})
         SubElement(root, 'bridge', attrib={'name': bridge})
-        fd, network_xml = mkstemp(dir = '/tmp/', prefix='create_br_')
+        fd, network_xml = mkstemp(dir='/tmp/', prefix='create_br_')
         f = fdopen(fd, 'w')
         f.write(prettify(root))
         f.close()
         logger.debug('Destroying existing network')
-        destroy = self.fact.get_remote('virsh net-destroy default; virsh net-undefine default', self.hosts)
+        destroy = self.fact.get_remote('virsh net-destroy default; ' + \
+                            'virsh net-undefine default', self.hosts)
         destroy.nolog_exit_code = True
-        put = TaktukPut(self.hosts, [network_xml], remote_location = '/etc/libvirt/qemu/networks/')
-        start = self.fact.get_remote('virsh net-define /etc/libvirt/qemu/networks/'+network_xml.split('/')[-1]+' ; '+\
-                                     'virsh net-start default; virsh net-autostart default;', self.hosts)
-        netconf = SequentialActions( [destroy, put, start] ).run()
+        put = TaktukPut(self.hosts, [network_xml],
+                        remote_location='/etc/libvirt/qemu/networks/')
+        start = self.fact.get_remote(
+            'virsh net-define /etc/libvirt/qemu/networks/' + \
+            network_xml.split('/')[-1] + ' ; ' + \
+            'virsh net-start default; virsh net-autostart default;',
+            self.hosts)
+        netconf = SequentialActions([destroy, put, start]).run()
         self._actions_hosts(netconf)
 
-
     # Hosts configuration
-    def hosts_deployment(self, max_tries = 1, check_deploy = True):
-        """Create the execo_g5k.Deployment"""
-        logger.info('Deploying %s hosts \n%s', len(self.hosts), hosts_list(self.hosts))
-        deployment = Deployment( hosts = [ Host(canonical_host_name(host)) for host in self.hosts],
-            env_file = self.env_file, env_name = self.env_name,
-            vlan = self.kavlan)
 
-        out = True if logger.getEffectiveLevel() <= 10 else False
-
-        deployed_hosts, undeployed_hosts = deploy(deployment, out=out,
-                                num_tries=max_tries,
-                                check_deployed_command=check_deploy)
-
-        deployed_hosts = list(deployed_hosts)
-        undeployed_hosts = list(undeployed_hosts)
-        # Renaming hosts if a kavlan is used
-        if self.kavlan:
-            for i, host in enumerate(deployed_hosts):
-                deployed_hosts[i] = get_kavlan_host_name(host, self.kavlan) 
-            for i, host in enumerate(undeployed_hosts):
-                undeployed_hosts[i] = get_kavlan_host_name(host, self.kavlan)            
-
-        logger.info('Deployed %s hosts \n%s', len(deployed_hosts), hosts_list(deployed_hosts))
-        logger.info('Failed %s hosts \n%s', len(undeployed_hosts), hosts_list(undeployed_hosts))
-
-        self._update_hosts_state(deployed_hosts, undeployed_hosts)
-
-        # Configuring SSH with precopy of id_rsa and id_rsa.pub keys on all hosts to allow TakTuk connection
-        if self.fact.remote_tool == 2:
-            taktuk_conf = ('-s', '-S', '$HOME/.ssh/id_rsa:$HOME/.ssh/id_rsa,$HOME/.ssh/id_rsa.pub:$HOME/.ssh')
-        else:
-            taktuk_conf = ('-s', )
-        conf_ssh = self.fact.get_remote(' echo "Host *" >> /root/.ssh/config ;' + \
-                'echo " StrictHostKeyChecking no" >> /root/.ssh/config; ',
-                self.hosts, 
-                connection_params={'taktuk_options': taktuk_conf}).run()
-        self._actions_hosts(conf_ssh)
-
-
-    def enable_bridge(self, name = 'br0'):
+    def _enable_bridge(self, name='br0'):
         """We need a bridge to have automatic DHCP configuration for the VM."""
         logger.info('Configuring the bridge')
         hosts_br = self._get_bridge(self.hosts)
@@ -291,10 +333,11 @@ class vm5k_deployment(object):
         for host, br in hosts_br.iteritems():
             if br is None:
                 logger.debug('No bridge on host %s', style.host(host))
-                nobr_hosts.append( host)
+                nobr_hosts.append(host)
             elif br != name:
-                logger.debug('Wrong bridge on host %s, destroying it', style.host(host))
-                SshProcess('ip link set '+br+' down ; brctl delbr '+br, host).run()
+                logger.debug('Wrong bridge on host %s, destroying it',
+                             style.host(host))
+                SshProcess('ip link set ' + br + ' down ; brctl delbr '+br, host).run()
                 nobr_hosts.append(host)
             else:
                 logger.debug('Bridge %s is present on host %s', style.emph('name'), style.host(host) )
@@ -352,16 +395,6 @@ class vm5k_deployment(object):
                 hosts_br[p.host] = stdout
         return hosts_br
 
-    def packages_management(self, upgrade = True, other_packages = None):
-        """This method allow to configure APT to use testing repository, perform upgrade and install 
-        required packages."""
-        self._configure_apt()
-        if upgrade:
-            self._upgrade_hosts()
-        self._install_packages()
-        # Post configuration to avoid reboot
-        self.fact.get_remote('modprobe kvm; modprobe kvm-intel; modprobe kvm-amd ; chown root:kvm /dev/kvm ;',
-                             self.hosts).run()
 
     def _configure_apt(self):
         """ """

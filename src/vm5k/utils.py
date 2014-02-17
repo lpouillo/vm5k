@@ -145,35 +145,39 @@ def get_ipv4_range(network, mask_size):
 
 def print_step(step_desc=None):
     """Print a yellow coloured string"""
-    logger.info(style.step(' ' + step_desc + ' ').center(50))
+    logger.info(style.step(' ' + step_desc + ' ').ljust(50))
 
 
 def prettify(elem):
     """Return a pretty-printed XML string for the Element.  """
     rough_string = tostring(elem, 'utf-8')
     reparsed = minidom.parseString(rough_string)
-    return reparsed.toprettyxml(indent="  ").replace('<?xml version="1.0" ?>\n', '')
+    return reparsed.toprettyxml(indent="  ").replace(
+                    '<?xml version="1.0" ?>\n', '')
 
 
 def get_CPU_RAM_FLOPS(hosts):
     """Return the number of CPU and amount RAM for a host list """
-    hosts_attr = {'TOTAL': {'CPU': 0 ,'RAM': 0}}
+    hosts_attr = {'TOTAL': {'CPU': 0, 'RAM': 0}}
     cluster_attr = {}
     for host in hosts:
         if isinstance(host, Host):
             host = host.address
         cluster = get_host_cluster(host)
-        if not cluster_attr.has_key(cluster):
+        if not cluster in cluster_attr:
             attr = get_host_attributes(host)
-            cluster_attr[cluster] = {'CPU': attr['architecture']['smt_size'],
-                                     'RAM': int(attr['main_memory']['ram_size']/10**6),
-                                     'flops': attr['performance']['node_flops'] }
+            cluster_attr[cluster] = {
+                 'CPU': attr['architecture']['smt_size'],
+                 'RAM': int(attr['main_memory']['ram_size'] / 10 ** 6),
+                 'flops': attr['performance']['node_flops']}
         hosts_attr[host] = cluster_attr[cluster]
         hosts_attr['TOTAL']['CPU'] += attr['architecture']['smt_size']
-        hosts_attr['TOTAL']['RAM'] += int(attr['main_memory']['ram_size']/10**6)
+        hosts_attr['TOTAL']['RAM'] += int(attr['main_memory']['ram_size'] \
+                                          / 10 ** 6)
 
     logger.debug(hosts_list(hosts_attr))
     return hosts_attr
+
 
 def get_fastest_host(hosts):
         """ Use the G5K api to have the fastest node"""
@@ -181,7 +185,7 @@ def get_fastest_host(hosts):
         max_flops = 0
         for host in hosts:
             if isinstance(host, Host):
-                host = host.address 
+                host = host.address
             flops = attr[host]['flops']
             if  flops > max_flops:
                 max_flops = flops
