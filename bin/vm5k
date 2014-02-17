@@ -4,21 +4,22 @@
 #    vm5k: Automatic deployment of virtual machine on Grid'5000
 #     Created by L. Pouilloux and M. Imbert (INRIA, 2013)
 #
-#    A great thanks to A. Lèbre and J. Pastor for testing :)
+#    A great thanks to A. Lèbre and J. Pastor for extensive testing.
 #
 #
-import os, argparse
+import os
+import argparse
 from pprint import pformat
 #from progressbar import ProgressBar
 from time import strftime
 from logging import INFO, DEBUG, WARN
 from math import ceil
 from xml.etree.ElementTree import fromstring, parse, dump
-from execo import logger, Process
+from execo import logger, Process, TaktukRemote
 from execo.log import style
 from execo.config import TAKTUK, CHAINPUT
 from execo.action import ActionFactory
-from execo.time_utils import Timer, format_date, sleep
+from execo.time_utils import Timer, format_date
 from execo_g5k import oargridsub
 from execo_g5k.oargrid import get_oargridsub_commandline
 from execo_g5k.planning import get_planning, compute_slots, show_resources, \
@@ -72,8 +73,8 @@ optio.add_argument("-q", "--quiet",
                 help='print only warning and error messages')
 run.add_argument("-o", "--outdir",
                 dest="outdir",
-                default='vm5k_'+strftime("%Y%m%d_%H%M%S_%z"),
-                help='where to store the vm5k log files'+\
+                default='vm5k_' + strftime("%Y%m%d_%H%M%S_%z"),
+                help='where to store the vm5k log files' +\
                     "\ndefault=%(default)s")
 run.add_argument("-p", "--program",
                 dest="program",
@@ -157,6 +158,9 @@ vms.add_argument('-d', '--vm_distribution',
                     dest='vm_distribution',
                     help='how to distribute the VM distributed (default) ' + \
                         'or concentrated')
+vms.add_argument('--vm-clean-disks',
+                dest='vm_clean_disks',
+                help='force to use a fresh copy of the vms backing_file')
 vms.add_argument('--vm_packages',
                 dest='vm_packages',
                 help='comma separated list of packages to be installed ' + \
@@ -341,7 +345,8 @@ for vm in vm5k.vms:
     f.write(vm['ip'] + '\t' + vm['id'] + '\n')
 f.close()
 vm5k.get_state()
-vm5k.deploy_vms(disk_location=args.vm_disk_location,
+vm5k.deploy_vms(clean_disks=args.vm_clean_disks,
+                disk_location=args.vm_disk_location,
                 backing_file=args.vm_backing_file)
 vm5k.get_state()
 
@@ -349,3 +354,10 @@ vm5k.get_state()
 if args.program is not None:
     print_step('Lauching program')
     Process(args.prog).run()
+else:
+    test_vms = TaktukRemote('cat /proc/uptime', [vm['ip'] for vm in vm5k.vms]).run()
+    uptime = []
+    for p in test_vms.processes:
+        uptime.append((p.host.address, p.stdout))
+
+print uptime
