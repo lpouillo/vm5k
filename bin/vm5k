@@ -184,7 +184,7 @@ if args.n_vm is None and args.infile is None:
                  (style.emph('n_vm'), style.emph('infile')))
 if args.walltime is None and args.job_id is None:
     parser.error('Must specify one of the following options: -w %s ' + \
-                 'or -j, see -h for help' %\
+                'or -j %s, see -h for help' %\
                  (style.emph('walltime') + ' or -j ' + style.emph('job_id')))
 
 ## Start message
@@ -204,7 +204,7 @@ copy_outputs(args.outdir + '/vm5k.log', args.outdir + '/vm5k.log')
 ### DEFINING VMS AND ELEMENTS
 if args.infile is not None:
     # parse the XML file given in arguments
-    logger.info('Using an %s for the topology', style.emph(args.infile))
+    logger.info('Using %s for the topology', style.emph(args.infile))
     vm5k = parse(args.infile).getroot()
     vms = []
     for vm in vm5k.findall('.//vm'):
@@ -278,8 +278,8 @@ if args.job_id is None:
             get_oargridsub_commandline(jobs_specs, walltime=args.walltime,
                                        additional_options="-t deploy",
                                        reservation_date=startdate))
-    logger.info(style.log_header('Deployment will start at  %s'),
-                format_date(startdate))
+    logger.info('Deployment will start at %s'),
+                style.log_header(format_date(startdate))
 else:
     logger.info('Using an existing job: %s', style.emph(args.job_id))
     if ':' in args.job_id:

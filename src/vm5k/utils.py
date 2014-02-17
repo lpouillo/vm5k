@@ -23,7 +23,7 @@ from execo_g5k import get_oar_job_nodes, get_oargrid_job_oar_jobs, \
     get_oar_job_subnets, get_oar_job_kavlan, wait_oar_job_start, \
     wait_oargrid_job_start, distribute_hosts
 from execo_g5k.api_utils import get_host_cluster, get_g5k_clusters, \
-    get_host_attributes, get_resource_attributes
+    get_host_attributes, get_resource_attributes, get_cluster_site
 
 from xml.etree.ElementTree import tostring
 
@@ -145,7 +145,7 @@ def get_ipv4_range(network, mask_size):
 
 def print_step(step_desc=None):
     """Print a yellow coloured string"""
-    logger.info(style.step(' ' + step_desc + ' ').ljust(50))
+    logger.info(style.step(' ' + step_desc + ' ').ljust(45))
 
 
 def prettify(elem):
@@ -192,18 +192,20 @@ def get_fastest_host(hosts):
                 fastest_host = host
         return fastest_host
 
-def get_max_vms(hosts, mem = 512):
-    """Return the maximum number of virtual machines that can be created on the hosts"""
+
+def get_max_vms(hosts, mem=512):
+    """Return the maximum number of virtual machines that can be
+    created on the hosts"""
     total = get_CPU_RAM_FLOPS(hosts)['TOTAL']
-    return int(total['RAM']/mem-1)
+    return int(total['RAM'] / mem - 1)
 
 
-def get_vms_slot(vms, elements, slots, excluded_elements = None):
+def get_vms_slot(vms, elements, slots, excluded_elements=None):
     """Return a slot with enough RAM and CPU """
     chosen_slot = None
 
-    req_ram = sum( [ vm['mem'] for vm in vms] )
-    req_cpu = sum( [ vm['n_cpu'] for vm in vms] ) /3
+    req_ram = sum([vm['mem'] for vm in vms])
+    req_cpu = sum([vm['n_cpu'] for vm in vms]) / 3
     logger.debug('RAM %s CPU %s', req_ram, req_cpu)
 
     for slot in slots:
@@ -212,7 +214,8 @@ def get_vms_slot(vms, elements, slots, excluded_elements = None):
             n_hosts = slot[2][element]
             if element in get_g5k_clusters():
                 for i in range(n_hosts):
-                    hosts.append(Host(str(element+'-1.'+get_cluster_site(element)+'.grid5000.fr')))
+                    hosts.append(Host(str(element + '-1.' + \
+                            get_cluster_site(element) + '.grid5000.fr')))
         attr = get_CPU_RAM_FLOPS(hosts)['TOTAL']
         if attr['CPU'] > req_cpu and attr['RAM'] > req_ram:
             chosen_slot = slot

@@ -4,3 +4,7 @@
 
 .. automodule:: vm5k.engine
 
+.. autoclass:: vm5k.engine.vm5k_engine
+
+
+.. autoclass:: vm5k.engine.vm5k_engine_para

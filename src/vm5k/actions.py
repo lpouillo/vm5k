@@ -53,7 +53,8 @@ def define_vms(vms_id, template=None, ip_mac=None, state=None, host=None,
     'hdd': 10, 'backing_file': '/tmp/vm-base.img',
     'state': 'KO'}
 
-    Can be generated from a template 
+    Can be generated from a template or using user defined parameters (that can be
+    a single element or a list of element
 
     :param vms_id: a list of string that will be used as vm id
 
@@ -99,8 +100,9 @@ def define_vms(vms_id, template=None, ip_mac=None, state=None, host=None,
 
     ip_mac = [(None, None)] * n_vm if ip_mac is None else ip_mac
 
-    vms = [{'id': vms_id[i], 'mem': mem[i], 'n_cpu': n_cpu[i], 'cpuset': cpusets[i],
-             'hdd': hdd[i], 'backing_file': backing_file[i], 'host': None, 'state': state[i],
+    vms = [{'id': vms_id[i], 'mem': mem[i], 'n_cpu': n_cpu[i],
+            'cpuset': cpusets[i], 'hdd': hdd[i], 'host': None,
+             'backing_file': backing_file[i], 'state': state[i],
              'ip': ip_mac[i][0], 'mac': ip_mac[i][1]} for i in range(n_vm)]
 
     logger.debug('VM parameters have been defined:\n%s',
@@ -109,14 +111,14 @@ def define_vms(vms_id, template=None, ip_mac=None, state=None, host=None,
 
 
 def distribute_vms(vms, hosts, distribution='round-robin'):
-    """Distribute the virtual machines on the host.
+    """Distribute the virtual machines on the hosts.
 
-    :param vms: a list of VMs dicts to be updated 
+    :param vms: a list of VMs dicts which host key will be updated
 
     :param hosts: a list of hosts
 
-    :param distribution: a string defining the distribution type:  'round-robin', 'concentrated', 'n_by_hosts'
-    
+    :param distribution: a string defining the distribution type: 'round-robin', 'concentrated', 'n_by_hosts'
+
     """
     logger.debug('Initial virtual machines distribution \n%s',
         "\n".join([vm['id'] + ": " + str(vm['host']) for vm in vms]))
@@ -138,8 +140,8 @@ def distribute_vms(vms, hosts, distribution='round-robin'):
                     req_mem = sum([vm['mem'] for vm in vms])
                     req_cpu = sum([vm['n_cpu'] for vm in vms]) / 3
                     logger.error(
-        'Not enough ressources ! \n' + 'RAM'.rjust(20) + 'CPU'.rjust(10) + '\n' + \
-        'Needed'.ljust(15) + '%s Mb'.ljust(15) + '%s \n' + \
+        'Not enough ressources ! \n' + 'RAM'.rjust(20) + 'CPU'.rjust(10) + \
+        '\n' + 'Needed'.ljust(15) + '%s Mb'.ljust(15) + '%s \n' + \
         'Available'.ljust(15) + '%s Mb'.ljust(15) + '%s \n' + \
         'Maximum number of VM is %s', req_mem, req_cpu,
         attr['TOTAL']['RAM'], attr['TOTAL']['CPU'],
@@ -170,11 +172,12 @@ def distribute_vms(vms, hosts, distribution='round-robin'):
                 i_vm += 1
 
     logger.debug('Final virtual machines distribution \n%s',
-        "\n".join([ vm['id']+": "+str(vm['host']) for vm in vms ]))
+        "\n".join([vm['id'] + ": " + str(vm['host']) for vm in vms]))
 
 
 def list_vm(hosts, not_running=False):
-    """ Return the list of VMs on host """
+    """ Return the list of VMs on hosts using a disk which keys are the hosts and
+    value are list of VM id"""
     cmd = 'virsh --connect qemu:///system list'
     if not_running:
         cmd += ' --all'
@@ -187,8 +190,6 @@ def list_vm(hosts, not_running=False):
             if 'vm' in line:
                 std = line.split()
                 hosts_vms[p.host.address].append({'id': std[1]})
-#     logger.debug('List of VM on host %s\n%s', style.host(host),
-#                  ' '.join([style.emph(id) for id in vms_id]))
     logger.debug(pformat(hosts_vms))
     return hosts_vms
 
@@ -208,38 +209,46 @@ def destroy_vms(hosts):
         TaktukRemote('{{cmds}}', hosts_with_vms).run()
 
 
-def create_disks(vms, backing_file = '/tmp/vm-base.img', backing_file_fmt = 'raw'):
+def create_disks(vms, backing_file='/tmp/vm-base.img', backing_fmt='raw'):
     """ Return an action to create the disks for the VMs on the hosts"""
     hosts_cmds = {}
     for vm in vms:
-        cmd = 'qemu-img create -f qcow2 -o backing_file='+backing_file+',backing_fmt='+backing_file_fmt+' /tmp/'+\
-            vm['id']+'.qcow2 '+str(vm['hdd'])+'G ; '
-        hosts_cmds[vm['host']] = cmd if not hosts_cmds.has_key(vm['host']) else hosts_cmds[vm['host']]+cmd
+        cmd = 'qemu-img create -f qcow2 -o backing_file=' + backing_file + \
+            ',backing_fmt=' + backing_fmt + ' /tmp/' + \
+            vm['id'] + '.qcow2 ' + str(vm['hdd']) + 'G ; '
+        hosts_cmds[vm['host']] = cmd if not vm['host'] in hosts_cmds \
+            else hosts_cmds[vm['host']] + cmd
 
     logger.debug(pformat(hosts_cmds.values()))
 
     return TaktukRemote('{{hosts_cmds.values()}}', list(hosts_cmds.keys()))
 
-def create_disks_on_hosts(vms, hosts, backing_file = '/tmp/vm-base.img', backing_file_fmt = 'raw'):
+
+def create_disks_on_hosts(vms, hosts, backing_file='/tmp/vm-base.img',
+                          backing_fmt='raw'):
     """ Return a Parallel action to create the qcow2 disks on all hosts"""
     host_actions = []
     for host in hosts:
         tmp_vms = deepcopy(vms)
         for vm in tmp_vms:
             vm['host'] = host
-        host_actions.append(create_disks(tmp_vms, backing_file, backing_file_fmt))
-
+        host_actions.append(create_disks(tmp_vms, backing_file, backing_fmt))
     return ParallelActions(host_actions)
+
 
 def install_vms(vms):
     """ Return an action to install the VM on the hosts"""
     hosts_cmds = {}
     for vm in vms:
-        cmd = 'virt-install -d --import --connect qemu:///system --nographics --noautoconsole --noreboot'+ \
-        ' --name=' + vm['id'] + ' --network network=default,mac='+vm['mac']+' --ram='+str(vm['mem'])+ \
-        ' --disk path=/tmp/'+vm['id']+'.qcow2,device=disk,bus=virtio,format=qcow2,size='+str(vm['hdd'])+',cache=none '+\
-        ' --vcpus='+ str(vm['n_cpu'])+' --cpuset='+vm['cpuset']+' ; '
-        hosts_cmds[vm['host']] = cmd if not hosts_cmds.has_key(vm['host']) else hosts_cmds[vm['host']]+cmd
+        cmd = 'virt-install -d --import --connect qemu:///system ' + \
+        '--nographics --noautoconsole --noreboot --name=' + vm['id'] + ' '\
+        '--network network=default,mac=' + vm['mac'] + ' --ram=' + \
+        str(vm['mem']) + '--disk path=/tmp/' + vm['id'] + \
+        '.qcow2,device=disk,bus=virtio,format=qcow2,size=' + \
+        str(vm['hdd']) + ',cache=none ' + \
+        '--vcpus=' + str(vm['n_cpu']) + ' --cpuset=' + vm['cpuset'] + ' ; '
+        hosts_cmds[vm['host']] = cmd if not vm['host'] in hosts_cmds \
+            else hosts_cmds[vm['host']] + cmd
 
     logger.debug(pformat(hosts_cmds))
     return TaktukRemote('{{hosts_cmds.values()}}', list(hosts_cmds.keys()))
@@ -249,19 +258,16 @@ def start_vms(vms):
     """ Return an action to start the VMs on the hosts """
     hosts_cmds = {}
     for vm in vms:
-        cmd = 'virsh --connect qemu:///system start '+vm['id']+' ; '
-        hosts_cmds[vm['host']] = cmd if not hosts_cmds.has_key(vm['host']) else hosts_cmds[vm['host']]+cmd
+        cmd = 'virsh --connect qemu:///system start ' + vm['id'] + ' ; '
+        hosts_cmds[vm['host']] = cmd if not vm['host'] in hosts_cmds \
+            else hosts_cmds[vm['host']] + cmd
 
     logger.debug(pformat(hosts_cmds))
     return TaktukRemote('{{hosts_cmds.values()}}', list(hosts_cmds.keys()))
 
 
-#def check_vm_state(vms):
-#    """ """
-
-
-def wait_vms_have_started(vms, host = None):
-    """ Try to make a ls on all vms and return True when all process are ok0"""
+def wait_vms_have_started(vms, host=None):
+    """ Try to make a ls on all vms and return True when all process are ok"""
     if host is None:
         host = get_host_site(vms[0]['host'])
         user = default_frontend_connection_params['user']
@@ -271,9 +277,9 @@ def wait_vms_have_started(vms, host = None):
     fd, tmpfile = tempfile.mkstemp(prefix='vmips')
     f = fdopen(fd, 'w')
     for vm in vms:
-        f.write(vm['ip']+'\n')
+        f.write(vm['ip'] + '\n')
     f.close()
-    Put([host], [tmpfile], connection_params = {'user': user}).run()
+    Put([host], [tmpfile], connection_params={'user': user}).run()
     nmap_tries = 0
     started_vms = '0'
     old_started = '0'
@@ -282,26 +288,29 @@ def wait_vms_have_started(vms, host = None):
         sleep(20)
         logger.debug('nmap_tries %s', nmap_tries)
 
-        nmap = SshProcess('nmap -i '+tmpfile.split('/')[-1]+' -p 22', host, connection_params = {'user': user}).run()
+        nmap = SshProcess('nmap -i ' + tmpfile.split('/')[-1] + ' -p 22', host,
+                          connection_params={'user': user}).run()
         logger.debug('%s', nmap.cmd)
         for line in nmap.stdout.split('\n'):
             if 'Nmap scan report for' in line:
                 ip = line.split(' ')[4].strip()
-                vm = [ vm for vm in vms if vm['ip'] == ip]
+                vm = [vm for vm in vms if vm['ip'] == ip]
                 if len(vm) > 0:
                     vm[0]['state'] = 'OK'
             if 'Nmap done' in line:
                 logger.debug(line)
-                ssh_open = line.split()[2] == line.split()[5].replace('(','')
-                started_vms = line.split()[5].replace('(','')
+                ssh_open = line.split()[2] == line.split()[5].replace('(', '')
+                started_vms = line.split()[5].replace('(', '')
         if started_vms != old_started:
             old_started = started_vms
         else:
             nmap_tries += 1
         if not ssh_open:
-            logger.info(str(nmap_tries)+': '+  started_vms+'/'+str(len(vms)) )
-    SshProcess('rm '+tmpfile.split('/')[-1], host, connection_params = {'user': user}).run()
-    Process('rm '+tmpfile).run()
+            logger.info(str(nmap_tries) + ': ' + started_vms + '/' + \
+                        str(len(vms)))
+    SshProcess('rm ' + tmpfile.split('/')[-1], host,
+               connection_params={'user': user}).run()
+    Process('rm ' + tmpfile).run()
     if ssh_open:
         logger.info('All VM have been started')
         return True
@@ -321,22 +330,20 @@ def migrate_vm(vm, host):
         src = vm['host']
 
     # Check that the disk is here
-    test_disk = TaktukRemote('ls /tmp/'+vm['id']+'.qcow2', [host]).run()
+    test_disk = TaktukRemote('ls /tmp/' + vm['id'] + '.qcow2', [host]).run()
     if not test_disk.ok:
         vm['host'] = host
         create_disk_on_dest = create_disks([vm]).run()
         if not create_disk_on_dest:
             raise ActionsFailed, [create_disk_on_dest]
 
-    cmd = 'virsh --connect qemu:///system migrate '+vm['id']+' --live --copy-storage-inc '+\
-            'qemu+ssh://'+host+"/system'  "
-    return TaktukRemote(cmd, [src] )
-
-
-
+    cmd = 'virsh --connect qemu:///system migrate ' + vm['id'] + \
+        ' --live --copy-storage-inc qemu+ssh://' + host + "/system' "
+    return TaktukRemote(cmd, [src])
 
 
 def rm_qcow2_disks( hosts):
+    """Removing qcow2 disks located in /tmp"""
     logger.debug('Removing existing disks')
     TaktukRemote('rm -f /tmp/*.qcow2', hosts).run()
 
