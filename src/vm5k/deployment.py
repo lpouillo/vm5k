@@ -20,7 +20,7 @@ from os import fdopen
 from xml.etree.ElementTree import Element, SubElement, parse
 from time import localtime, strftime
 from tempfile import mkstemp
-from execo import logger, SshProcess, SequentialActions, Host, Local, sleep, \
+from execo import logger, Process, SshProcess, SequentialActions, Host, Local, sleep, \
     default_connection_params, TaktukPut
 from execo.action import ActionFactory
 from execo.log import style
@@ -183,14 +183,15 @@ class vm5k_deployment():
         logger.info('Restarting %s', style.emph('libvirt'))
         self.fact.get_remote('service libvirt-bin restart', self.hosts).run()
 
-    def deploy_vms(self, disk_location='one', boot_retry=None,
+    def deploy_vms(self, clean_disks=False, disk_location='one',
             backing_file='/grid5000/images/KVM/wheezy-x64-base.qcow2'):
         """Destroy the existing VMS, create the virtual disks, install the vms
         start them and wait until they have rebooted"""
         logger.info('Destroying existing virtual machines')
         destroy_vms(self.hosts)
+        if clean_disks:
+            self._remove_existing_disks()
         logger.info('Creating the virtual disks ')
-        self._remove_existing_disks()
         self._create_backing_file(from_disk=backing_file)
         if disk_location == 'one':
             create_disks(self.vms).run()
@@ -200,7 +201,7 @@ class vm5k_deployment():
         install_vms(self.vms).run()
         logger.info('Starting the virtual machines')
         start_vms(self.vms).run()
-        wait_vms_have_started(self.vms)
+        wait_vms_have_started(self.vms, self.host[0])
 
     ## PRIVATE METHODS
     def _launch_kadeploy(self, max_tries=1, check_deploy=True):
@@ -253,32 +254,49 @@ class vm5k_deployment():
             from_disk='/grid5000/images/KVM/wheezy-x64-base.qcow2',
             to_disk='/tmp/vm-base.img'):
         """ """
-        logger.debug("Copying backing file from frontends")
-        copy_file = self.fact.get_fileput(self.hosts, [from_disk],
-                                        remote_location='/tmp/').run()
-        self._actions_hosts(copy_file)
 
-        logger.debug('Creating disk image on ' + to_disk)
-        cmd = 'qemu-img convert -O raw /tmp/' + from_disk.split('/')[-1] + \
-                ' ' + to_disk
-        convert = self.fact.get_remote(cmd, self.hosts).run()
-        self._actions_hosts(convert)
+        logger.debug("Checking frontend disk vs host disk")
+        f_disk = Process('md5sum -t ' + from_disk).run()
+        disk_hash = f_disk.stdout.split(' ')[0]
+        cmd = 'if [ -f /tmp/' + from_disk.split('/')[-1] + ' ]; ' + \
+            'then md5sum  -t /tmp/' + from_disk.split('/')[-1] + '; fi'
 
-        if default_connection_params['user'] == 'root':
-            logger.debug('Copying ssh key on ' + to_disk + ' ...')
-            cmd = 'modprobe nbd max_part=1; ' + \
-        'qemu-nbd --connect=/dev/nbd0 ' + to_disk + \
-        ' ; sleep 3 ; ' + \
-        'mount /dev/nbd0p1 /mnt; mkdir /mnt/root/.ssh ; ' + \
-        'cp /root/.ssh/authorized_keys /mnt/root/.ssh/authorized_keys ; ' + \
-        'cp -r /root/.ssh/id_rsa* /mnt/root/.ssh/ ;' + \
-        'umount /mnt; qemu-nbd -d /dev/nbd0'
-            copy_on_vm_base = self.fact.get_remote(cmd, self.hosts).run()
-            self._actions_hosts(copy_on_vm_base)
+        h_disk = self.fact.get_remote(cmd, self.hosts).run()
+        disk_ok = True
+        for p in h_disk.processes:
+            if p.stdout.split(' ')[0] != disk_hash:
+                disk_ok = False
+                break
+
+        if disk_ok:
+            logger.info("Disk is already present, skipping copy")
+        else:
+            logger.info("Copying backing file from frontends")
+            copy_file = self.fact.get_fileput(self.hosts, [from_disk],
+                                            remote_location='/tmp/').run()
+            self._actions_hosts(copy_file)
+
+            logger.debug('Creating disk image on ' + to_disk)
+            cmd = 'qemu-img convert -O raw /tmp/' + from_disk.split('/')[-1] + \
+                    ' ' + to_disk
+            convert = self.fact.get_remote(cmd, self.hosts).run()
+            self._actions_hosts(convert)
+
+            if default_connection_params['user'] == 'root':
+                logger.debug('Copying ssh key on ' + to_disk + ' ...')
+                cmd = 'modprobe nbd max_part=1; ' + \
+            'qemu-nbd --connect=/dev/nbd0 ' + to_disk + \
+            ' ; sleep 3 ; ' + \
+            'mount /dev/nbd0p1 /mnt; mkdir /mnt/root/.ssh ; ' + \
+            'cp /root/.ssh/authorized_keys /mnt/root/.ssh/authorized_keys ; ' + \
+            'cp -r /root/.ssh/id_rsa* /mnt/root/.ssh/ ;' + \
+            'umount /mnt; qemu-nbd -d /dev/nbd0'
+                copy_on_vm_base = self.fact.get_remote(cmd, self.hosts).run()
+                self._actions_hosts(copy_on_vm_base)
 
     def _remove_existing_disks(self, hosts=None):
         """Remove all img and qcow2 file from /tmp directory """
-        logger.debug('Removing existing disks')
+        logger.info('Removing existing disks')
         if hosts is None:
             hosts = self.hosts
         remove = self.fact.get_remote('rm -f /tmp/*.img; rm -f /tmp/*.qcow2',
