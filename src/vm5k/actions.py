@@ -243,7 +243,7 @@ def install_vms(vms):
         cmd = 'virt-install -d --import --connect qemu:///system ' + \
         '--nographics --noautoconsole --noreboot --name=' + vm['id'] + ' '\
         '--network network=default,mac=' + vm['mac'] + ' --ram=' + \
-        str(vm['mem']) + '--disk path=/tmp/' + vm['id'] + \
+        str(vm['mem']) + ' --disk path=/tmp/' + vm['id'] + \
         '.qcow2,device=disk,bus=virtio,format=qcow2,size=' + \
         str(vm['hdd']) + ',cache=none ' + \
         '--vcpus=' + str(vm['n_cpu']) + ' --cpuset=' + vm['cpuset'] + ' ; '

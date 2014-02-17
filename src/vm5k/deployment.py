@@ -39,7 +39,7 @@ from utils import prettify, print_step, get_max_vms, get_fastest_host, \
     hosts_list
 
 
-class vm5k_deployment(object):
+class vm5k_deployment():
     """ Base class to control a deployment of hosts and virtual machines on
     Grid'5000. It helps to  deploy a wheezy-x64-base environment,
     to install and configure libvirt from testing repository, and to deploy

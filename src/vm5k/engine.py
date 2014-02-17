@@ -38,7 +38,8 @@ from threading import Thread, Lock
 
 
 class vm5k_engine(Engine):
-    """ The base vm5k engine class, that is build from execo_engine.Engine """
+    """ The base vm5k engine class, that is build from execo_engine.Engine
+    and can be used to perform virtual machines experiments."""
     def __init__(self):
         """ Add options for the number of measures, number of nodes
         walltime, env_file or env_name and clusters and initialize the engine 
@@ -180,6 +181,8 @@ class vm5k_engine(Engine):
 
 
 class vm5k_engine_para(vm5k_engine):
+    """A engine that use threads to treate combination in parallel
+    """
     def __init__(self):
         super(vm5k_engine_para, self).__init__()
 
@@ -203,7 +206,9 @@ class vm5k_engine_para(vm5k_engine):
         return startdate, n_nodes
 
     def run(self):
-        """The main experimental workflow, as described in ``Using the Execo toolkit to perform ... ``"""
+        """The main experimental workflow, as described in
+        ``Using the Execo toolkit to perform ...``
+        """
         print_step('Defining parameters')
         # The argument is a cluster
         self.cluster = self.args[0]

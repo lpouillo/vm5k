@@ -278,8 +278,8 @@ if args.job_id is None:
             get_oargridsub_commandline(jobs_specs, walltime=args.walltime,
                                        additional_options="-t deploy",
                                        reservation_date=startdate))
-    logger.info('Deployment will start at %s'),
-                style.log_header(format_date(startdate))
+    logger.info('Deployment will start at %s',
+                style.log_header(format_date(startdate)))
 else:
     logger.info('Using an existing job: %s', style.emph(args.job_id))
     if ':' in args.job_id:
