@@ -7,11 +7,17 @@ VM5K
 
 .. image:: _static/grid5000.png 
 
-A Python module to help you to manage virtual machines on the `Grid'5000 <https://www.grid5000.fr/>`_ 
-plaform. It has been designed to perform reproducible cloud experiments:  deployment of a 
-customized environment, manipulation of virtual machines (VM), automatic experimental engine. 
+A Python module designed to perform reproducible cloud experiments. It will help you to manage 
+virtual machines on the `Grid'5000 <https://www.grid5000.fr/>` plaform.  
+
+It is composed of three main tools:
+
+* a command line tool that deploy virtual machines (vm5k)
+* an experimental engine that conduct user defined workflow (vm5k_engine)
+* a lib to setup Debian hosts with libvirt and manage virtual machines
 
 
+Developped by the Hemera initiative (2010-2014).
 
 .. toctree::
     :maxdepth: 2

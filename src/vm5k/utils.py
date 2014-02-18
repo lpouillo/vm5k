@@ -1,20 +1,22 @@
-# Copyright 2009-2012 INRIA Rhone-Alpes, Service Experimentation et
+# Copyright 2012-2014 INRIA Rhone-Alpes, Service Experimentation et
 # Developpement
 #
-# This file is part of Execo.
+# This file is part of Vm5k.
 #
-# Execo is free software: you can redistribute it and/or modify it
+# Vm5k is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Execo is distributed in the hope that it will be useful, but WITHOUT
+# Vm5k is distributed in the hope that it will be useful, but WITHOUT
 # ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
 # or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
 # License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Execo.  If not, see <http://www.gnu.org/licenses/>
+# along with Vm5k.  If not, see <http://www.gnu.org/licenses/>
+
+from pprint import pformat
 from xml.dom import minidom
 from random import randint
 from execo import logger, Host
@@ -210,13 +212,15 @@ def get_vms_slot(vms, elements, slots, excluded_elements=None):
 
     for slot in slots:
         hosts = []
-        for element in elements:
-            n_hosts = slot[2][element]
-            if element in get_g5k_clusters():
+        for element in slot[2]:
+            if str(element) in get_g5k_clusters():
+                n_hosts = slot[2][element]
                 for i in range(n_hosts):
                     hosts.append(Host(str(element + '-1.' + \
                             get_cluster_site(element) + '.grid5000.fr')))
+
         attr = get_CPU_RAM_FLOPS(hosts)['TOTAL']
+
         if attr['CPU'] > req_cpu and attr['RAM'] > req_ram:
             chosen_slot = slot
             break
@@ -237,9 +241,10 @@ def get_vms_slot(vms, elements, slots, excluded_elements=None):
         req_cpu -= attr[host]['CPU']
         cluster = get_host_cluster(host)
         if cluster not in resources:
-            resources[element] = 1
+            resources[cluster] = 1
         else:
-            resources[element] += 1
+            resources[cluster] += 1
 
+    logger.debug(pformat(resources))
     return chosen_slot[0], distribute_hosts(chosen_slot[2], resources,
                                             excluded_elements)

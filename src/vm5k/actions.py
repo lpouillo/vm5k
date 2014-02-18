@@ -288,19 +288,23 @@ def wait_vms_have_started(vms, host=None, restart=True):
         sleep(20)
         logger.debug('nmap_tries %s', nmap_tries)
 
-        nmap = SshProcess('nmap -i ' + tmpfile.split('/')[-1] + ' -p 22', host,
+        nmap = SshProcess('nmap -v -oG - -i ' + tmpfile.split('/')[-1] + \
+                          ' -p 22 ', host,
                           connection_params={'user': user}).run()
         logger.debug('%s', nmap.cmd)
         for line in nmap.stdout.split('\n'):
-            if 'Nmap scan report for' in line:
-                ip = line.split(' ')[4].strip()
-                vm = [vm for vm in vms if vm['ip'] == ip]
-                if len(vm) > 0:
-                    vm[0]['state'] = 'OK'
+            if 'Status' in line:
+                split_line = line.split(' ')
+                ip = split_line[1]
+                state = split_line[3].strip()
+                if state == 'Up':
+                    vm = [vm for vm in vms if vm['ip'] == ip]
+                    if len(vm) > 0:
+                        vm[0]['state'] = 'OK'
             if 'Nmap done' in line:
                 logger.debug(line)
-                ssh_open = line.split()[2] == line.split()[5].replace('(', '')
-                alive_vms = line.split()[5].replace('(', '')
+                ssh_open = line.split()[10] == line.split()[13].replace('(', '')
+                alive_vms = line.split()[13].replace('(', '')
         if alive_vms != old_started:
             old_started = alive_vms
         else:

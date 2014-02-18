@@ -20,8 +20,8 @@ from os import fdopen
 from xml.etree.ElementTree import Element, SubElement, parse
 from time import localtime, strftime
 from tempfile import mkstemp
-from execo import logger, Process, SshProcess, SequentialActions, Host, Local, sleep, \
-    default_connection_params, TaktukPut
+from execo import logger, Process, SshProcess, SequentialActions, Host, \
+    Local, sleep, default_connection_params, TaktukPut, Timer
 from execo.action import ActionFactory
 from execo.log import style
 from execo.config import TAKTUK, CHAINPUT
@@ -31,12 +31,12 @@ from execo_g5k.config import g5k_configuration, \
 from execo_g5k.api_utils import get_host_cluster, get_g5k_sites, \
     get_cluster_site, get_host_site, canonical_host_name
 from execo_g5k.utils import get_kavlan_host_name
-from config import default_vm
-from actions import create_disks, install_vms, start_vms, \
+from vm5k.config import default_vm
+from vm5k.actions import create_disks, install_vms, start_vms, \
     wait_vms_have_started, destroy_vms, create_disks_on_hosts, distribute_vms
-from services import dnsmasq_server
-from utils import prettify, print_step, get_max_vms, get_fastest_host, \
+from vm5k.utils import prettify, print_step, get_max_vms, get_fastest_host, \
     hosts_list
+from vm5k.services import dnsmasq_server
 
 
 class vm5k_deployment():
@@ -200,8 +200,26 @@ class vm5k_deployment():
         logger.info('Installing the virtual machines')
         install_vms(self.vms).run()
         logger.info('Starting the virtual machines')
+        self.boot_time = Timer()
         start_vms(self.vms).run()
-        wait_vms_have_started(self.vms, self.host[0])
+        wait_vms_have_started(self.vms, self.hosts[0])
+
+    def get_state(self, output=True, mode='compact', plot=False):
+        """ """
+        if output:
+            output = self.outdir + '/vm5k_' + \
+                strftime('%Y%m%d_%H%M%S', localtime()) + '.xml'
+            f = open(output, 'w')
+            f.write(prettify(self.state))
+            f.close()
+
+        if mode == 'compact':
+            log = self._print_state_compact()
+
+        if plot == True:
+            print 'plot not finished'
+
+        logger.info('State %s', log)
 
     ## PRIVATE METHODS
     def _launch_kadeploy(self, max_tries=1, check_deploy=True):
@@ -229,7 +247,8 @@ class vm5k_deployment():
                 undeployed_hosts[i] = get_kavlan_host_name(host, self.kavlan)
         logger.info('Deployed %s hosts \n%s', len(deployed_hosts),
                     hosts_list(deployed_hosts))
-        logger.info('Failed %s hosts \n%s', len(undeployed_hosts),
+        cr = '\n' if len(undeployed_hosts) > 0 else ''
+        logger.info('Failed %s hosts %s %s', len(undeployed_hosts), cr,
                     hosts_list(undeployed_hosts))
         self._update_hosts_state(deployed_hosts, undeployed_hosts)
         return deployed_hosts, undeployed_hosts
@@ -608,24 +627,6 @@ class vm5k_deployment():
                                          'backing_file': vm['backing_file'],
                                          'state': vm['state']})
 
-    def get_state(self, output=True, mode='compact', plot=False):
-        """ """
-
-        if output:
-            output = self.outdir + '/vm5k_' + \
-                strftime('%Y%m%d_%H%M%S', localtime()) + '.xml'
-            f = open(output, 'w')
-            f.write(prettify(self.state))
-            f.close()
-
-        if mode == 'compact':
-            log = self._print_state_compact()
-
-        if plot == True:
-            print 'plot'
-
-        logger.info('State %s', log)
-
     def _print_state_compact(self):
         """Display in a compact form the distribution of vms on hosts."""
         dist = {}
@@ -688,9 +689,4 @@ class vm5k_deployment():
                 hosts_ko.append(p.host)
         hosts_ok, hosts_ko = list(set(hosts_ok)), list(set(hosts_ko))
         self._update_hosts_state(hosts_ok, hosts_ko)
-
-
-
-
-
 

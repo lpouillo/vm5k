@@ -35,11 +35,11 @@ currenlty not available
   
 manual:
 -------
-You first need to install execo on one of the Grid'5000 frontend.
+You first need to install execo on one of the Grid'5000 frontend::
 
 http://execo.gforge.inria.fr/doc/userguide.html
 
-Then you clone the repository and install the package:
+Then you clone the repository and install the package::
 
  git clone https://github.com/lpouillo/vm5k.git
  cd vm5k
@@ -58,6 +58,9 @@ Contributors
 * Jonathan Rouzaud-Cornabas
 * Daniel Balouek-Thomert
 * Flavien Quesnel
+* Jonathan Pastor
+* Takahiro Hirofuchi
+* Adrien Lèbre
 
 
 Grid'5000 technical support
@@ -65,12 +68,8 @@ Grid'5000 technical support
 * Matthieu Imbert
 * Simon Delamare
 
-Testers
--------
 
-* Jonathan Pastor
-* Takahiro Hirofuchi
-* Adrien Lèbre
+
 
 
 
