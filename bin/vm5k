@@ -199,7 +199,7 @@ if args.n_vm is None and args.infile is None:
 if args.walltime is None and args.job_id is None:
     parser.error('Must specify one of the following options: -w %s ' + \
                 'or -j %s, see -h for help' %\
-                 (style.emph('walltime') + ' or -j ' + style.emph('job_id')))
+                 (style.emph('walltime'), style.emph('job_id')))
 
 ## Start message
 print_step('VM5K: automatic deployement of VMs on Grid\'5000')
@@ -364,16 +364,16 @@ vm5k.get_state(plot=True)
 if args.program is not None:
     print_step('Lauching program')
     Process(args.prog).run()
-else:
-    sleep(2)
-    logger.info('Measuring boot time')
-    test_vms = TaktukRemote('cat /proc/uptime', [vm['ip']
-                        for vm in vm5k.vms]).run()
-    uptime = []
-    for p in test_vms.processes:
-        uptime.append(float(p.stdout.strip().split(' ')[0]))
-
-    logger.info(str(uptime))
-    print sum(uptime) / len(uptime)
+#else:
+#    sleep(2)
+#    logger.info('Measuring boot time')
+#    test_vms = TaktukRemote('cat /proc/uptime', [vm['ip']
+#                        for vm in vm5k.vms]).run()
+#    uptime = []
+#    for p in test_vms.processes:
+#        uptime.append(float(p.stdout.strip().split(' ')[0]))
+#
+#    logger.info(str(uptime))
+#    print sum(uptime) / len(uptime)
 
 

@@ -19,7 +19,7 @@
 
 from os import fdopen
 from pprint import pformat
-from execo import SshProcess, Put, logger, TaktukRemote, Process, \
+from execo import SshProcess, TaktukPut, logger, TaktukRemote, Process, \
     ParallelActions, Host
 from execo.log import style
 from execo.time_utils import sleep
@@ -117,7 +117,7 @@ def distribute_vms(vms, hosts, distribution='round-robin'):
 
     :param hosts: a list of hosts
 
-    :param distribution: a string defining the distribution type: 'round-robin', 'concentrated', 'n_by_hosts'
+    :param distribution: a string defining the distribution type: 'round-robin','concentrated','n_by_hosts'
 
     """
     logger.debug('Initial virtual machines distribution \n%s',
@@ -267,19 +267,30 @@ def start_vms(vms):
 
 
 def wait_vms_have_started(vms, host=None, restart=True):
-    """ Try to make a ls on all vms and return True when all process are ok"""
-    if host is None:
-        host = get_host_site(vms[0]['host'])
-        user = default_frontend_connection_params['user']
-    else:
-        user = 'root'
+    """Scan port 22 on all vms, distributed on hosts"""
 
     fd, tmpfile = tempfile.mkstemp(prefix='vmips')
     f = fdopen(fd, 'w')
     for vm in vms:
         f.write(vm['ip'] + '\n')
     f.close()
-    Put([host], [tmpfile], connection_params={'user': user}).run()
+    hosts_vms = []
+    line = 0
+    for vm in vms:
+        if vms['host'] not in hosts_vms:
+            hosts_vms[vm['host']] = []
+        hosts_vms[vm['host']].append(vm['ip'])
+    hosts_cmd = []
+    TaktukPut([hosts_vms.keys()], [tmpfile]).run()
+    for host in sorted(hosts_vms.keys()):
+            hosts_cmd.append("awk 'NR>=" + line + " && NR<=" + line + \
+                len(hosts_vms[host]) + "' " + \
+                tmpfile.split('/')[-1] + " > nmap_file ;" + \
+                "nmap -v -oG - -i nmap_file -p 22")
+            line += len(hosts_vms[host])
+            logger.debug('%s', hosts_cmd[-1])
+
+    logger.info(pformat(hosts_cmd))
     nmap_tries = 0
     started_vms = []
     old_started = len(started_vms)
@@ -287,25 +298,21 @@ def wait_vms_have_started(vms, host=None, restart=True):
     while (not ssh_open) and nmap_tries < 10:
         sleep(5)
         logger.debug('nmap_tries %s', nmap_tries)
-        
-        nmap = SshProcess('nmap -v -oG - -i ' + tmpfile.split('/')[-1] + \
-                          ' -p 22 ', host,
-                          connection_params={'user': user}).run()
-                          
-        logger.debug('%s', nmap.cmd)
-        for line in nmap.stdout.split('\n'):
-            if 'Status' in line:
-                split_line = line.split(' ')
-                ip = split_line[1]
-                state = split_line[3].strip()
-                if state == 'Up':
-                    vm = [vm for vm in vms if vm['ip'] == ip]
-                    if len(vm) > 0:
-                        vm[0]['state'] = 'OK'
-            if 'Nmap done' in line:
-                logger.debug(line)
-                ssh_open = line.split()[10] == line.split()[13].replace('(', '')
-                alive_vms = line.split()[13].replace('(', '')
+        nmap = TaktukRemote('{{hosts_cmd}}', hosts_vms.keys()).run()
+        for p in nmap.processes:
+            for p in nmap.stdout.split('\n'):
+                if 'Status' in line:
+                    split_line = line.split(' ')
+                    ip = split_line[1]
+                    state = split_line[3].strip()
+                    if state == 'Up':
+                        vm = [vm for vm in vms if vm['ip'] == ip]
+                        if len(vm) > 0:
+                            vm[0]['state'] = 'OK'
+                if 'Nmap done' in line:
+                    logger.debug(line)
+                    ssh_open = line.split()[10] == line.split()[13].replace('(', '')
+                    alive_vms = line.split()[13].replace('(', '')
         if alive_vms != old_started:
             old_started = alive_vms
         else:
@@ -314,8 +321,7 @@ def wait_vms_have_started(vms, host=None, restart=True):
         if not ssh_open:
             logger.info(str(nmap_tries) + ': ' + str(alive_vms) + '/' +\
                         str(len(vms)))
-    SshProcess('rm ' + tmpfile.split('/')[-1], host,
-               connection_params={'user': user}).run()
+    TaktukRemote('rm ' + tmpfile.split('/')[-1], hosts_vms.heys()).run()
     Process('rm ' + tmpfile).run()
     if ssh_open:
         logger.info('All VM have been started')
@@ -324,7 +330,6 @@ def wait_vms_have_started(vms, host=None, restart=True):
         logger.error('All VM have not been started')
         return False
 
-    return ssh_open
 
 
 def restart_vms(vms):
