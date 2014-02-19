@@ -23,7 +23,8 @@ Developped by the Hemera initiative (2010-2014).
     :maxdepth: 2
     
     Readme <readme>
-    User Guide <userguide>
+    vm5k: automatic virtual machines deployment <vm5k>
+    vm5k_engine: automatizing experiments <vm5k_engine>
     API Documentation <apidoc>
     Publications <publications>
 
