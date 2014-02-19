@@ -103,7 +103,7 @@ class vm5k_deployment():
                 self.env_file = '/home/lpouilloux/synced/environments/vm5k/' +\
                 'vm5k.env'
 
-        logger.info('%s %s %s %s %s %s %s %s',
+        logger.info('%s \n%s \n%s \n%s \n%s \n%s \n%s \n%s',
                     len(self.sites), style.emph('sites'),
                     len(self.clusters), style.user1('clusters'),
                     len(self.hosts), style.host('hosts'),

@@ -285,12 +285,13 @@ def wait_vms_have_started(vms, host=None, restart=True):
     old_started = len(started_vms)
     ssh_open = False
     while (not ssh_open) and nmap_tries < 10:
-        sleep(20)
+        sleep(5)
         logger.debug('nmap_tries %s', nmap_tries)
-
+        
         nmap = SshProcess('nmap -v -oG - -i ' + tmpfile.split('/')[-1] + \
                           ' -p 22 ', host,
                           connection_params={'user': user}).run()
+                          
         logger.debug('%s', nmap.cmd)
         for line in nmap.stdout.split('\n'):
             if 'Status' in line:
