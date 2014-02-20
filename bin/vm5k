@@ -194,11 +194,11 @@ else:
 
 if args.n_vm is None and args.infile is None:
     parser.error('Must specify one of the following options: -n ' + \
-                 style.emph('n_vm') + 'or -i ' + style.emph('infile') + \
+                 style.emph('n_vm') + ' or -i ' + style.emph('infile') + \
                  ', use -h for help')
 if args.walltime is None and args.job_id is None:
     parser.error('Must specify one of the following options: -w ' + \
-                style.emph('walltime') + 'or -j ' + style.emph('job_id') + \
+                style.emph('walltime') + ' or -j ' + style.emph('job_id') + \
                 ', see -h for help')
 
 ## Start message
