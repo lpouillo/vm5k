@@ -57,15 +57,15 @@ Choose the Grid'5000 elements
 
 You can also select the hosts by giving a list of cluster or sites and deploy a custom environnement::
 
- vm5k --n_vm 100 -r hercule,griffon,graphene --host_env_file path_do_mykadeploy_env
+ vm5k --n_vm 100 -r hercule,griffon,graphene --host_env_file path_do_mykadeploy_env -w 2:00:00
 
 or select the number of hosts you want on each element and in a KaVLAN::
 
- vm5k --n_vm 100 -r lyon:4,griffon:10 -k
+ vm5k --n_vm 100 -r lyon:4,griffon:10 -k -w 2:00:00
  
 You may use an existing grid reservation (with a KaVLAN global)::
 
- vm5k --n_vm 100 -j 42895
+ vm5k --n_vm 100 -j 42895 
  
 It will retrieve the hosts that you have, deploy and configure it, and finally distribute the VM on them.
 
