@@ -347,7 +347,7 @@ print_step('Configuring libvirt')
 vm5k.configure_libvirt()
 print_step('Configuring service node')
 vm5k.configure_service_node()
-print_step('Deploying virtual machines')
+print_step('Deploy virtual machines')
 if args.infile is None:
     logger.info('Maximum number of VMs %s',
         get_max_vms(vm5k.hosts, int(fromstring(args.vm_template).get('mem'))))

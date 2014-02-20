@@ -202,6 +202,7 @@ class vm5k_deployment():
         logger.info('Starting the virtual machines')
         self.boot_time = Timer()
         start_vms(self.vms).run()
+        logger.info('Wait for all VM up')
         wait_vms_have_started(self.vms, self.hosts[0])
 
     def get_state(self, output=True, mode='compact', plot=False):
