@@ -55,7 +55,7 @@ desc = 'A tool to deploy and configure nodes and virtual machines with ' + \
 epilog = style.host('Examples:') + '\nDeploy 100 VM with the default ' + \
     'environnements for 3h ' + \
     style.command('\n %(prog)s -n 100 -w 3:00:00') + \
-    'Issues/features requests can be reported to ' + \
+    '\nIssues/features requests can be reported to ' + \
     style.emph('https://github.com/lpouillo/vm5k')
 
 parser = argparse.ArgumentParser(prog=prog, description=desc, epilog=epilog,
@@ -193,13 +193,13 @@ else:
 
 
 if args.n_vm is None and args.infile is None:
-    parser.error('Must specify one of the following options: -n %s ' + \
-                 'or -i %s, use -h for help ' %\
-                 (style.emph('n_vm'), style.emph('infile')))
+    parser.error('Must specify one of the following options: -n ' + \
+                 style.emph('n_vm') + 'or -i ' + style.emph('infile') + \
+                 ', use -h for help')
 if args.walltime is None and args.job_id is None:
-    parser.error('Must specify one of the following options: -w %s ' + \
-                'or -j %s, see -h for help' %\
-                 (style.emph('walltime'), style.emph('job_id')))
+    parser.error('Must specify one of the following options: -w ' + \
+                style.emph('walltime') + 'or -j ' + style.emph('job_id') + \
+                ', see -h for help')
 
 ## Start message
 print_step('VM5K: automatic deployement of VMs on Grid\'5000')
@@ -364,6 +364,7 @@ vm5k.get_state(plot=True)
 if args.program is not None:
     print_step('Lauching program')
     Process(args.prog).run()
+
 #else:
 #    sleep(2)
 #    logger.info('Measuring boot time')
@@ -375,5 +376,5 @@ if args.program is not None:
 #
 #    logger.info(str(uptime))
 #    print sum(uptime) / len(uptime)
-
-
+logger.info('Execution terminated, all files saved in ' + \
+            style.emph(args.outdir))
