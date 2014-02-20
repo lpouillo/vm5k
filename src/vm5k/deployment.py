@@ -149,7 +149,7 @@ class vm5k_deployment():
         self._configure_apt()
         if upgrade:
             self._upgrade_hosts()
-        self._install_packages()
+        self._install_packages(other_packages=other_packages)
         # Post configuration to load KVM
         self.fact.get_remote(
             'modprobe kvm; modprobe kvm-intel; modprobe kvm-amd ; ' + \
@@ -547,7 +547,8 @@ class vm5k_deployment():
         self.sites.sort()
         self.hosts.sort(key=lambda host: (host.split('.', 1)[0].split('-')[0],
                                     int(host.split('.', 1)[0].split('-')[1])))
-        self.clusters = list(set([get_host_cluster(host) for host in self.hosts]))
+        self.clusters = list(set([get_host_cluster(host)
+                                  for host in self.hosts]))
         self.clusters.sort()
         self._add_xml_elements()
 
@@ -578,7 +579,8 @@ class vm5k_deployment():
     def _get_xml_elements(self):
         """Get sites, clusters and host from self.state """
         self.sites = [site.id for site in self.state.findall('./site')]
-        self.clusters = [cluster.id for cluster in self.state.findall('.//cluster')]
+        self.clusters = [cluster.id 
+                         for cluster in self.state.findall('.//cluster')]
         self.hosts = [host.id for host in self.state.findall('.//host')]
 
     def _get_xml_vms(self):
