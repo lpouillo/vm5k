@@ -283,25 +283,25 @@ def wait_vms_have_started(vms, restart=True):
     hosts.sort()
     # Pushing file on all hosts
     TaktukPut(hosts, [tmpfile]).run()
-    logger.setLevel('DEBUG')
     logger.debug(pformat(hosts))
     # Splitting nmap scan
-    n_vm_scan = ceil(len(vms) / len(hosts))
+    n_vm_scan = ceil(len(vms) / len(hosts)) + 1
     cmds = []
     for i in range(len(hosts)):
-        cmds.append("awk 'NR>=" + str(i * n_vm_scan) + \
-                    " && NR<=" + str((i + 1) * n_vm_scan) + \
+        start = str(int(i * n_vm_scan))
+        end = str(int((i + 1) * n_vm_scan))
+        cmds.append("awk 'NR>=" + start + \
+                    " && NR<" + end + \
               "' " + tmpfile.split('/')[-1] + " > nmap_file ; " + \
             "nmap -v -oG - -i nmap_file -p 22")
-    logger.setLevel('INFO')
-    nmap = TaktukRemote('{{cmds}}', hosts)
     logger.debug('%s', pformat(cmds))
+    nmap = TaktukRemote('{{cmds}}', hosts)
     nmap_tries = 0
     all_up = False
     started_vms = []
     old_started = started_vms[:]
     while (not all_up) and nmap_tries < 10:
-        sleep(10)
+        sleep(15)
         logger.debug('nmap_tries %s', nmap_tries)
         nmap.run()
         for p in nmap.processes:
@@ -314,7 +314,6 @@ def wait_vms_have_started(vms, restart=True):
                         vm = [vm for vm in vms if vm['ip'] == ip]
                         if len(vm) > 0:
                             vm[0]['state'] = 'OK'
-                            print vm[0]['id'] + ' is OK'
 
         started_vms = [vm for vm in vms if vm['state'] == 'OK']
         all_up = len(started_vms) == len(vms)
