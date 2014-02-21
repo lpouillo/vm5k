@@ -37,6 +37,7 @@ from vm5k.actions import create_disks, install_vms, start_vms, \
 from vm5k.utils import prettify, print_step, get_max_vms, get_fastest_host, \
     hosts_list
 from vm5k.services import dnsmasq_server
+from vm5k.plots import topology_plot
 
 
 class vm5k_deployment():
@@ -217,8 +218,8 @@ class vm5k_deployment():
         if mode == 'compact':
             log = self._print_state_compact()
 
-        if plot == True:
-            print 'plot not finished'
+        if plot:
+            topology_plot(self.state, dir=self.outdir)
 
         logger.info('State %s', log)
 
@@ -629,7 +630,12 @@ class vm5k_deployment():
                                          'hdd': str(vm['hdd']),
                                          'backing_file': vm['backing_file'],
                                          'state': vm['state']})
-
+            
+    def _update_vms_xml(self):
+        for vm in self.vms:
+            print vm
+        
+        
     def _print_state_compact(self):
         """Display in a compact form the distribution of vms on hosts."""
         dist = {}

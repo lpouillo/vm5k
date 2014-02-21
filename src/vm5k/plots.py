@@ -12,58 +12,103 @@ except:
     pass
 
 
-def init_live_plot(xml):
-    """Create  """
-    logger.info('Initializing Live plot')
-    plt.figure(figsize=(15, 15))
-    plt.ion()
-    plt.show()
-    G = nx.Graph(name='deployment')
-    site_nodes = []
-    cluster_nodes = []
-    host_nodes = []
+def xml_to_graph(xml, name='vm5k'):
+    G = nx.Graph(name=name)
+    G.add_node(name, dict(size=2000, color='#FF6363', element='vm5k'))
     for site in xml.findall('site'):
-        site_nodes.append(site.get('id').upper())
-        G.add_node(site.get('id').upper())
-        G.add_edge('vm5k', site.get('id').upper())
+        G.add_node(site.get('id').upper(),
+                dict(size=1000, color='#9CF7BC', element='site'))
+        G.add_edge(name, site.get('id').upper())
         for cluster in site.findall('cluster'):
-            cluster_nodes.append(cluster.get('id').title())
-            G.add_nodes_from([(cluster.get('id'), dict(size=11,color='blue'))])
-            G.add_edge(site.get('id'),cluster.get('id').title())
+            G.add_node(cluster.get('id').title(),
+                    dict(size=500, color='#BFDFF2', element='cluster'))
+            G.add_edge(site.get('id').upper(), cluster.get('id').title())
             for host in cluster.findall('host'):
-                host_nodes.append(host.get('id'))
-                G.add_node(host.get('id'))
-                G.add_edge(cluster.get('id'),host.get('id'))
+                color = '#F0F7BE' if host.get('state') == 'OK' else '#000000'
+                print host.get('state')
+                G.add_node(host.get('id'),
+                    dict(size=250, color=color, element='host'))
+                G.add_edge(cluster.get('id').title(), host.get('id'))
+                for vm in host.findall('vm'):
+                    G.add_node(vm.get('id'),
+                    dict(size=125, color='#F5C9CD', element='vm'))
+                    G.add_edge(host.get('id'), vm.get('id'))
+    return G
 
+
+def topology_plot(xml, outdir='.'):
+    """ """
+    G = xml_to_graph(xml)
+    plt.figure(figsize=(20, 20))
     logger.info('Edges and nodes defined')
-    pos = nx.graphviz_layout(G, prog='neato')
+    pos = nx.graphviz_layout(G, prog='twopi')
+    #pos = nx.spring_layout(G)
     logger.info('position defined')
-    nx.draw_networkx_nodes(G, pos,
-                       node_size = 2000,
-                       nodelist = ['vm5k'],
-                       node_color = '#FF6363')
-    nx.draw_networkx_nodes(G, pos,
-                       node_size = 1000,
-                       nodelist = site_nodes,
-                       node_color = '#9CF7BC')
-    nx.draw_networkx_nodes(G, pos,
-                       node_size = 500,
-                       nodelist = cluster_nodes,
-                       node_color = '#BFDFF2')
-    nx.draw_networkx_nodes(G, pos,
-                       node_size = 250,
-                       nodelist = host_nodes,
-                       node_color = '#F0F7BE')
-#     nx.draw_networkx_nodes(G, pos,
-#                        node_size = 125,
-#                        nodelist = vm_nodes,
-#                        node_color = '#F5C9CD')
+
+    colors = [d['color'] for n, d in G.nodes_iter(True)]
+    sizes = [d['size'] for n, d in G.nodes_iter(True)]
+
+    nx.draw_networkx_nodes(G, pos, node_size=sizes, node_color=colors)
+
+    labels1 = {n: n for n, d in G.nodes_iter(True) if d['element'] not in ['host', 'vm']}
+    labels2 = {n: n.split('.')[0].split('-')[1] for n, d in G.nodes_iter(True) if d['element'] == 'host'}
+    nx.draw_networkx_labels(G, pos, dict(labels1.items() + labels2.items()), font_size=16, font_weight='bold')
     nx.draw_networkx_edges(G, pos, alpha=0.5, width=2)
 
-    plt.draw()
+    plt.savefig(outdir + '/test2.png')
 
+#def init_live_plot(xml):
+#    """Create  """
+#    logger.info('Initializing Live plot')
+#    plt.figure(figsize=(15, 15))
+#    plt.ion()
+#    plt.show()
+#    G = nx.Graph(name='deployment')
+#    site_nodes = []
+#    cluster_nodes = []
+#    host_nodes = []
+#    for site in xml.findall('site'):
+#        site_nodes.append(site.get('id').upper())
+#        G.add_node(site.get('id').upper())
+#        G.add_edge('vm5k', site.get('id').upper())
+#        for cluster in site.findall('cluster'):
+#            cluster_nodes.append(cluster.get('id').title())
+#            G.add_nodes_from([(cluster.get('id'), dict(size=11,color='blue'))])
+#            G.add_edge(site.get('id'),cluster.get('id').title())
+#            for host in cluster.findall('host'):
+#                host_nodes.append(host.get('id'))
+#                G.add_node(host.get('id'))
+#                G.add_edge(cluster.get('id'),host.get('id'))
+#
+#    logger.info('Edges and nodes defined')
+#    pos = nx.graphviz_layout(G, prog='neato')
+#    logger.info('position defined')
+#    nx.draw_networkx_nodes(G, pos,
+#                       node_size = 2000,
+#                       nodelist = ['vm5k'],
+#                       node_color = '#FF6363')
+#    nx.draw_networkx_nodes(G, pos,
+#                       node_size = 1000,
+#                       nodelist = site_nodes,
+#                       node_color = '#9CF7BC')
+#    nx.draw_networkx_nodes(G, pos,
+#                       node_size = 500,
+#                       nodelist = cluster_nodes,
+#                       node_color = '#BFDFF2')
+#    nx.draw_networkx_nodes(G, pos,
+#                       node_size = 250,
+#                       nodelist = host_nodes,
+#                       node_color = '#F0F7BE')
+##     nx.draw_networkx_nodes(G, pos,
+##                        node_size = 125,
+##                        nodelist = vm_nodes,
+##                        node_color = '#F5C9CD')
+#    nx.draw_networkx_edges(G, pos, alpha=0.5, width=2)
+#
+#    plt.draw()
+#
 #     plt.draw()
-
+#
 #             for vm in host.findall('vm'):
 #                 vm_nodes.append(vm.get('id'))
 #                 G.add_node(vm.get('id'))

@@ -81,6 +81,10 @@ run.add_argument("-o", "--outdir",
 run.add_argument("-p", "--program",
                 dest="program",
                 help='Launch a program at the end of the deployment')
+run.add_argument("--plot",
+                dest='plot',
+                action="store_true",
+                help='draw a graph of the deployment')
 #run.add_argument("--live-plot",
 #                action="store_true",
 #                help='Open a figure to track the deployment process')
@@ -359,7 +363,7 @@ vm5k.get_state()
 vm5k.deploy_vms(clean_disks=args.vm_clean_disks,
                 disk_location=args.vm_disk_location,
                 backing_file=args.vm_backing_file)
-vm5k.get_state(plot=True)
+vm5k.get_state(plot=args.plot)
 
 if args.program is not None:
     print_step('Lauching program')
