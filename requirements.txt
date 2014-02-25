@@ -1,2 +1,0 @@
-vm5k
---extra-index-url http://execo.gforge.inria.fr/downloads/execo-2.2.tar.gz egg=execo-2.2
