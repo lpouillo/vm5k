@@ -19,6 +19,7 @@
 from pprint import pformat
 from xml.dom import minidom
 from random import randint
+from itertools import cycle
 from execo import logger, Host
 from execo.log import style
 from execo_g5k import get_oar_job_nodes, get_oargrid_job_oar_jobs, \
@@ -230,21 +231,27 @@ def get_vms_slot(vms, elements, slots, excluded_elements=None):
     if chosen_slot is None:
         return None, None
 
-    resources = {}
-    for host in hosts:
-        if isinstance(host, Host):
-            host = host.address
-        if req_ram < 0 and req_cpu < 0:
-            break
-        attr = get_CPU_RAM_FLOPS([host])
-        req_ram -= attr[host]['RAM']
-        req_cpu -= attr[host]['CPU']
-        cluster = get_host_cluster(host)
-        if cluster not in resources:
-            resources[cluster] = 1
+    resources_needed = {}
+    resources_available = chosen_slot[2]
+    clusters = [element for element in chosen_slot[2].keys()
+                if element in get_g5k_clusters()]
+    iter_clusters = cycle(clusters)
+    while req_ram > 0 and req_cpu > 0:
+        cluster = iter_clusters.next()
+        if resources_available[cluster] == 0:
+            clusters.remove(cluster)
+            iter_clusters = cycle(clusters)
         else:
-            resources[cluster] += 1
+            host = cluster + '-1'
+            attr = get_CPU_RAM_FLOPS([host])
+            resources_available[cluster] -= 1
+            req_ram -= attr[host]['RAM']
+            req_cpu -= attr[host]['CPU']
+            if cluster in resources_needed:
+                resources_needed[cluster] += 1
+            else:
+                resources_needed[cluster] = 1
 
-    logger.debug(pformat(resources))
-    return chosen_slot[0], distribute_hosts(chosen_slot[2], resources,
+    logger.debug(pformat(resources_needed))
+    return chosen_slot[0], distribute_hosts(chosen_slot[2], resources_needed,
                                             excluded_elements)
