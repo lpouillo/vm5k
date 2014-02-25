@@ -293,6 +293,7 @@ if args.job_id is None:
 
     (job_id, _) = oargridsub(jobs_specs, walltime=args.walltime,
          additional_options="-t deploy", reservation_date=startdate)
+
     if job_id is None:
         logger.error('Wrong command line ? \n%s',
             get_oargridsub_commandline(jobs_specs, walltime=args.walltime,
@@ -352,13 +353,13 @@ for host in vm5k.hosts:
     f.write(host + '\n')
 f.close()
 
-
 print_step('Configuring service node')
 vm5k.configure_service_node()
 print_step('Deploy virtual machines')
 if args.infile is None:
     logger.info('Maximum number of VMs %s',
         get_max_vms(vm5k.hosts, int(fromstring(args.vm_template).get('mem'))))
+
 f = open(args.outdir + '/vms.list', 'w')
 for vm in vm5k.vms:
     f.write(vm['ip'] + '\t' + vm['id'] + '\n')

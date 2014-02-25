@@ -20,6 +20,7 @@ from pprint import pformat
 from xml.dom import minidom
 from random import randint
 from itertools import cycle
+from math import floor
 from execo import logger, Host
 from execo.log import style
 from execo_g5k import get_oar_job_nodes, get_oargrid_job_oar_jobs, \
@@ -206,7 +207,8 @@ def get_max_vms(hosts, mem=512):
 def get_vms_slot(vms, elements, slots, excluded_elements=None):
     """Return a slot with enough RAM and CPU """
     chosen_slot = None
-
+    mem = vms[0]['mem']
+    cpu = vms[0]['n_cpu']
     req_ram = sum([vm['mem'] for vm in vms])
     req_cpu = sum([vm['n_cpu'] for vm in vms]) / 3
     logger.debug('RAM %s CPU %s', req_ram, req_cpu)
@@ -236,7 +238,7 @@ def get_vms_slot(vms, elements, slots, excluded_elements=None):
     clusters = [element for element in chosen_slot[2].keys()
                 if element in get_g5k_clusters()]
     iter_clusters = cycle(clusters)
-    while req_ram > 0 and req_cpu > 0:
+    while req_ram > 0 or req_cpu > 0:
         cluster = iter_clusters.next()
         if resources_available[cluster] == 0:
             clusters.remove(cluster)
@@ -245,8 +247,9 @@ def get_vms_slot(vms, elements, slots, excluded_elements=None):
             host = cluster + '-1'
             attr = get_CPU_RAM_FLOPS([host])
             resources_available[cluster] -= 1
-            req_ram -= attr[host]['RAM']
-            req_cpu -= attr[host]['CPU']
+            req_ram -= float(attr[host]['RAM'] / mem) * mem
+            req_cpu -= float(attr[host]['CPU'] / cpu) * cpu
+
             if cluster in resources_needed:
                 resources_needed[cluster] += 1
             else:
