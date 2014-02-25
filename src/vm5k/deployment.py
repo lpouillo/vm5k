@@ -104,7 +104,9 @@ class vm5k_deployment():
                 self.env_file = '/home/lpouilloux/synced/environments/vm5k/' +\
                 'vm5k.env'
 
-        logger.info('\n%s %s \n%s %s \n%s %s \n%s %s',
+        network = 'IP range from KaVLAN' if self.kavlan else 'IP range from g5k-subnet'
+        logger.info('%s\n%s %s \n%s %s \n%s %s \n%s %s',
+                    network,
                     len(self.sites), style.emph('sites'),
                     len(self.clusters), style.user1('clusters'),
                     len(self.hosts), style.host('hosts'),
@@ -203,8 +205,10 @@ class vm5k_deployment():
         logger.info('Starting the virtual machines')
         self.boot_time = Timer()
         start_vms(self.vms).run()
-        logger.info('Wait for all VM up')
+        logger.info('Waiting for VM to boot ...')
         wait_vms_have_started(self.vms, self.hosts[0])
+        logger.info('Done in %s seconds',
+                    style.emph(self.boot_time.elapsed()))
 
     def get_state(self, output=True, mode='compact', plot=False):
         """ """
@@ -272,7 +276,7 @@ class vm5k_deployment():
         self._actions_hosts(conf_ssh)
 
     def _create_backing_file(self,
-            from_disk='/grid5000/images/KVM/wheezy-x64-base.qcow2',
+            from_disk='/grid5000/images/KVM/wheezy-x64-base-1.3.qcow2',
             to_disk='/tmp/vm-base.img'):
         """ """
 
@@ -305,13 +309,13 @@ class vm5k_deployment():
 
             if default_connection_params['user'] == 'root':
                 logger.debug('Copying ssh key on ' + to_disk + ' ...')
-                cmd = 'modprobe nbd max_part=1; ' + \
-            'qemu-nbd --connect=/dev/nbd0 ' + to_disk + \
-            ' ; sleep 3 ; ' + \
-            'mount /dev/nbd0p1 /mnt; mkdir /mnt/root/.ssh ; ' + \
-            'cp /root/.ssh/authorized_keys /mnt/root/.ssh/authorized_keys ; ' + \
-            'cp -r /root/.ssh/id_rsa* /mnt/root/.ssh/ ;' + \
-            'umount /mnt; qemu-nbd -d /dev/nbd0'
+                cmd = 'modprobe nbd max_part=8; ' + \
+        'qemu-nbd --connect=/dev/nbd0 ' + to_disk + \
+        ' ; sleep 3 ; ' + \
+        'mount /dev/nbd0p1 /mnt; mkdir /mnt/root/.ssh ; ' + \
+        'cp /root/.ssh/authorized_keys /mnt/root/.ssh/authorized_keys ; ' + \
+        'cp -r /root/.ssh/id_rsa* /mnt/root/.ssh/ ;' + \
+        'umount /mnt; qemu-nbd -d /dev/nbd0'
                 copy_on_vm_base = self.fact.get_remote(cmd, self.hosts).run()
                 self._actions_hosts(copy_on_vm_base)
 
@@ -630,12 +634,11 @@ class vm5k_deployment():
                                          'hdd': str(vm['hdd']),
                                          'backing_file': vm['backing_file'],
                                          'state': vm['state']})
-            
+
     def _update_vms_xml(self):
         for vm in self.vms:
             print vm
-        
-        
+
     def _print_state_compact(self):
         """Display in a compact form the distribution of vms on hosts."""
         dist = {}

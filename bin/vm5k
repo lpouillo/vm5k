@@ -137,7 +137,7 @@ optdeploy.add_argument('--forcedeploy',
                 help='force the deployment of the hosts')
 optdeploy.add_argument('--nodeploy',
                 action="store_true",
-                help='consider that hosts are already deployed')
+                help='consider that hosts are already deployed and configured')
 hosts.add_argument('--host-munin',
                 dest='host_munin',
                 action="store_true",
@@ -146,6 +146,7 @@ hosts.add_argument('--host-packages',
                 dest='host_packages',
                 help='comma separated list of packages to be installed ' + \
                     'on the hosts')
+
 
 ## VMs configuration
 vms = parser.add_argument_group(style.host('Virtual machines'),
@@ -206,7 +207,7 @@ if args.walltime is None and args.job_id is None:
                 ', see -h for help')
 
 ## Start message
-print_step('VM5K: automatic deployement of VMs on Grid\'5000')
+print_step('VM5K: automatic deployement of VMs on Grid\'5000 *')
 logger.info('Options\n' + '\n'.join([style.emph(option.ljust(20)) + \
             '= ' + str(vars(args)[option]).ljust(10)
             for option in sorted(vars(args).keys()) if vars(args)[option]]))
@@ -330,25 +331,27 @@ vm5k.fact = ActionFactory(remote_tool=TAKTUK,
                           fileget_tool=TAKTUK)
 vm5k.distribution = args.vm_distribution
 
-if args.nodeploy:
-    deployment_tries = 0
-
 print_step('Deploying the hosts')
-vm5k.hosts_deployment(max_tries=deployment_tries,
+if args.nodeploy:
+    vm5k._launch_kadeploy(max_tries=0)
+    logger.info('Skipping packages management and libvirt configuration')
+else:
+    vm5k.hosts_deployment(max_tries=deployment_tries,
                       check_deploy=not args.forcedeploy)
+    print_step('Managing packages')
+    vm5k.packages_management(upgrade=True,
+                             other_packages=args.host_packages)
+    if args.host_munin:
+        vm5k.ser
+    print_step('Configuring libvirt')
+    vm5k.configure_libvirt()
 # Saving the list of hosts in outdir
 f = open(args.outdir + '/hosts.list', 'w')
 for host in vm5k.hosts:
     f.write(host + '\n')
 f.close()
 
-print_step('Managing packages')
-vm5k.packages_management(upgrade=True,
-                         other_packages=args.host_packages)
-if args.host_munin:
-    vm5k.ser
-print_step('Configuring libvirt')
-vm5k.configure_libvirt()
+
 print_step('Configuring service node')
 vm5k.configure_service_node()
 print_step('Deploy virtual machines')
@@ -365,20 +368,15 @@ vm5k.deploy_vms(clean_disks=args.vm_clean_disks,
                 backing_file=args.vm_backing_file)
 vm5k.get_state(plot=args.plot)
 
+logger.info('VM5K Execution terminated, all files saved in %s ' + \
+            '\nhosts hosts.list\nvms vms.list\nlog vm5k.log',
+            style.emph(args.outdir))
+
 if args.program is not None:
     print_step('Lauching program')
-    Process(args.prog).run()
+    if os.path.isfile(args.program):
+        args.program = './' + args.program
+    
+    Process(args.program).run()
 
-#else:
-#    sleep(2)
-#    logger.info('Measuring boot time')
-#    test_vms = TaktukRemote('cat /proc/uptime', [vm['ip']
-#                        for vm in vm5k.vms]).run()
-#    uptime = []
-#    for p in test_vms.processes:
-#        uptime.append(float(p.stdout.strip().split(' ')[0]))
-#
-#    logger.info(str(uptime))
-#    print sum(uptime) / len(uptime)
-logger.info('Execution terminated, all files saved in ' + \
-            style.emph(args.outdir))
+

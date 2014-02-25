@@ -146,8 +146,8 @@ def get_ipv4_range(network, mask_size):
 
 
 def print_step(step_desc=None):
-    """Print a yellow coloured string"""
-    logger.info(style.step(step_desc).ljust(45))
+    """Print an on_magenta coloured string"""
+    logger.info(style.step('* ' + step_desc).ljust(45))
 
 
 def prettify(elem):
