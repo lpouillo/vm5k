@@ -6,7 +6,7 @@ from numpy import array, median
 from execo import sleep, TaktukRemote, logger
 from vm5k import print_step
 sleep(2)
-print_step('Measuring boot time')
+logger.info('Measuring boot time')
 
 vms = []
 run_dir = 'boot_time/'

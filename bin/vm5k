@@ -10,6 +10,8 @@
 import os
 import argparse
 from pprint import pformat
+import matplotlib
+matplotlib.use('Agg')
 #from progressbar import ProgressBar
 from time import strftime
 from logging import INFO, DEBUG, WARN
@@ -374,9 +376,7 @@ logger.info('VM5K Execution terminated, all files saved in %s ' + \
 
 if args.program is not None:
     print_step('Lauching program')
-    if os.path.isfile(args.program):
+    if args.program in os.listdir('.'):
         args.program = './' + args.program
-    
-    Process(args.program).run()
-
-
+    prog = Process(args.program).run()
+    print prog.stdout
