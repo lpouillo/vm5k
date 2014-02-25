@@ -369,8 +369,7 @@ vm5k.deploy_vms(clean_disks=args.vm_clean_disks,
                 backing_file=args.vm_backing_file)
 vm5k.get_state(plot=args.plot)
 
-logger.info('VM5K Execution terminated, all files saved in %s ' + \
-            '\nhosts hosts.list\nvms vms.list\nlog vm5k.log',
+logger.info('VM5K Execution terminated, files saved in %s',
             style.emph(args.outdir))
 
 if args.program is not None:
