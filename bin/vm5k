@@ -209,7 +209,7 @@ if args.walltime is None and args.job_id is None:
                 ', see -h for help')
 
 ## Start message
-print_step('VM5K: automatic deployement of VMs on Grid\'5000 *')
+print_step('VM5K: deployment of VMs on Grid\'5000 *')
 logger.info('Options\n' + '\n'.join([style.emph(option.ljust(20)) + \
             '= ' + str(vars(args)[option]).ljust(10)
             for option in sorted(vars(args).keys()) if vars(args)[option]]))
