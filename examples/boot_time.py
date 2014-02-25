@@ -3,6 +3,8 @@ import os
 import time
 import datetime
 from numpy import array, median
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from execo import TaktukRemote, logger
 
@@ -51,9 +53,9 @@ logger.info('Standard deviation: %s', std)
 logger.info('Min-max: %s-%s', dur_min, dur_max)
 
 # Drawing historgram
-n, bins, patches = plt.hist(uptime, 5, normed=1, facecolor='g', alpha=0.75)
+n, bins, patches = plt.hist(uptime, bins=len(vms) / 10,
+                            facecolor='g', alpha=0.75)
 plt.xlabel('Boot duration')
 plt.ylabel('Number of VMs')
-plt.axis([40, 160, 0, 0.03])
 plt.grid(True)
 plt.savefig('boot_time.png')

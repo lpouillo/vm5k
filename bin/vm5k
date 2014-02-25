@@ -12,7 +12,6 @@ import argparse
 from pprint import pformat
 import matplotlib
 matplotlib.use('Agg')
-#from progressbar import ProgressBar
 from time import strftime
 from logging import INFO, DEBUG, WARN
 from math import ceil
