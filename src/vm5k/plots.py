@@ -25,7 +25,6 @@ def xml_to_graph(xml, name='vm5k'):
             G.add_edge(site.get('id').upper(), cluster.get('id').title())
             for host in cluster.findall('host'):
                 color = '#F0F7BE' if host.get('state') == 'OK' else '#000000'
-                print host.get('state')
                 G.add_node(host.get('id'),
                     dict(size=250, color=color, element='host'))
                 G.add_edge(cluster.get('id').title(), host.get('id'))
@@ -36,14 +35,23 @@ def xml_to_graph(xml, name='vm5k'):
     return G
 
 
-def topology_plot(xml, outdir='.', outfmt='svg'):
+def topology_plot(xml, outdir='.', outfmt='png'):
     """ """
 
     G = xml_to_graph(xml)
     plt.figure(figsize=(20, 20))
     logger.info('Edges and nodes defined')
-    pos = nx.graphviz_layout(G, prog='twopi')
-    #pos = nx.spring_layout(G)
+    try:
+        pos = nx.graphviz_layout(G, prog='twopi')
+    except:
+        logger.warning('No graphviz installed, using')
+        pos = nx.shell_layout(G,
+            [['vm5k'],
+            [n for n, d in G.nodes_iter(True) if d['element'] == 'site'],
+            [n for n, d in G.nodes_iter(True) if d['element'] == 'cluster'],
+            [n for n, d in G.nodes_iter(True) if d['element'] == 'host'],
+            [n for n, d in G.nodes_iter(True) if d['element'] == 'vm'],
+            ])
     logger.info('position defined')
 
     colors = [d['color'] for n, d in G.nodes_iter(True)]
@@ -51,9 +59,12 @@ def topology_plot(xml, outdir='.', outfmt='svg'):
 
     nx.draw_networkx_nodes(G, pos, node_size=sizes, node_color=colors)
 
-    labels1 = {n: n for n, d in G.nodes_iter(True) if d['element'] not in ['host', 'vm']}
-    labels2 = {n: n.split('.')[0].split('-')[1] for n, d in G.nodes_iter(True) if d['element'] == 'host'}
-    nx.draw_networkx_labels(G, pos, dict(labels1.items() + labels2.items()), font_size=16, font_weight='bold')
+    labels1 = {n: n for n, d in G.nodes_iter(True)
+               if d['element'] not in ['host', 'vm']}
+    labels2 = {n: n.split('.')[0].split('-')[1] for n, d in G.nodes_iter(True)
+               if d['element'] == 'host'}
+    nx.draw_networkx_labels(G, pos, dict(labels1.items() + labels2.items()),
+                            font_size=16, font_weight='bold')
     nx.draw_networkx_edges(G, pos, alpha=0.5, width=2)
 
     plt.savefig(outdir + '/vm5k.' + outfmt)
