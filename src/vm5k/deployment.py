@@ -222,10 +222,10 @@ class vm5k_deployment():
         if mode == 'compact':
             log = self._print_state_compact()
 
-        if plot:
-            topology_plot(self.state, dir=self.outdir)
-
         logger.info('State %s', log)
+
+        if plot:
+            topology_plot(self.state, outdir=self.outdir)
 
     ## PRIVATE METHODS
     def _launch_kadeploy(self, max_tries=1, check_deploy=True):
@@ -276,7 +276,7 @@ class vm5k_deployment():
         self._actions_hosts(conf_ssh)
 
     def _create_backing_file(self,
-            from_disk='/grid5000/images/KVM/wheezy-x64-base-1.3.qcow2',
+            from_disk='/grid5000/images/KVM/wheezy-x64-base.qcow2',
             to_disk='/tmp/vm-base.img'):
         """ """
 
@@ -307,17 +307,18 @@ class vm5k_deployment():
             convert = self.fact.get_remote(cmd, self.hosts).run()
             self._actions_hosts(convert)
 
-            if default_connection_params['user'] == 'root':
-                logger.debug('Copying ssh key on ' + to_disk + ' ...')
-                cmd = 'modprobe nbd max_part=8; ' + \
+        if default_connection_params['user'] == 'root':
+            logger.debug('Copying ssh key on ' + to_disk + ' ...')
+            cmd = 'modprobe nbd max_part=16; ' + \
         'qemu-nbd --connect=/dev/nbd0 ' + to_disk + \
-        ' ; sleep 3 ; ' + \
-        'mount /dev/nbd0p1 /mnt; mkdir /mnt/root/.ssh ; ' + \
+        ' ; sleep 3 ; partprobe /dev/nbd0 ; ' + \
+        'part=`fdisk -l /dev/nbd0 |grep "*"|grep dev|cut -f 1 -d " "` ; ' + \
+        'mount $part /mnt ; mkdir /mnt/root/.ssh ; ' + \
         'cp /root/.ssh/authorized_keys /mnt/root/.ssh/authorized_keys ; ' + \
         'cp -r /root/.ssh/id_rsa* /mnt/root/.ssh/ ;' + \
         'umount /mnt; qemu-nbd -d /dev/nbd0'
-                copy_on_vm_base = self.fact.get_remote(cmd, self.hosts).run()
-                self._actions_hosts(copy_on_vm_base)
+            copy_on_vm_base = self.fact.get_remote(cmd, self.hosts).run()
+            self._actions_hosts(copy_on_vm_base)
 
     def _remove_existing_disks(self, hosts=None):
         """Remove all img and qcow2 file from /tmp directory """
