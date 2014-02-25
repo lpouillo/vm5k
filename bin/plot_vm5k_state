@@ -1,0 +1,11 @@
+#!/usr/bin/env python
+# A base script to create a topology plot from an XML file generated 
+# by vm5k
+import sys
+from vm5k.plots import topology_plot
+import xml.etree.ElementTree as ET
+
+fname = sys.argv[1]
+xml = ET.parse(fname)
+xml = xml.getroot()
+G = topology_plot(xml)
