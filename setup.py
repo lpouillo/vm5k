@@ -13,5 +13,8 @@ setup(
     description='A python module to ease the experimentations ' + \
         'of virtual Machines on the Grid\'5000 platform.',
     long_description=open('README.txt').read(),
+    dependency_links=[
+        "http://execo.gforge.inria.fr/downloads/execo-2.2.tar.gz"
+    ],
 )
 
