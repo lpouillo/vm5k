@@ -14,7 +14,7 @@ setup(
         'of virtual Machines on the Grid\'5000 platform.',
     long_description=open('README.txt').read(),
     dependency_links=[
-        "http://execo.gforge.inria.fr/downloads/execo-2.2.tar.gz"
+        "http://execo.gforge.inria.fr/downloads/execo-2.2.tar.gz#egg=execo-2.2"
     ],
 )
 
