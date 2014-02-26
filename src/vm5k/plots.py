@@ -44,14 +44,16 @@ def topology_plot(xml, outdir='.', outfmt='png'):
     try:
         pos = nx.graphviz_layout(G, prog='twopi')
     except:
-        logger.warning('No graphviz installed, using')
-        pos = nx.shell_layout(G,
-            [['vm5k'],
-            [n for n, d in G.nodes_iter(True) if d['element'] == 'site'],
-            [n for n, d in G.nodes_iter(True) if d['element'] == 'cluster'],
-            [n for n, d in G.nodes_iter(True) if d['element'] == 'host'],
-            [n for n, d in G.nodes_iter(True) if d['element'] == 'vm'],
-            ])
+        logger.warning('No graphviz installed, using spring layout that ' + \
+                       ' does not scale well ...')
+        pos = nx.spring_layout(G, iterations=100)
+#        pos = nx.shell_layout(G,
+#            [['vm5k'],
+#            [n for n, d in G.nodes_iter(True) if d['element'] == 'site'],
+#            [n for n, d in G.nodes_iter(True) if d['element'] == 'cluster'],
+#            [n for n, d in G.nodes_iter(True) if d['element'] == 'host'],
+#            [n for n, d in G.nodes_iter(True) if d['element'] == 'vm'],
+#            ])
     logger.info('position defined')
 
     colors = [d['color'] for n, d in G.nodes_iter(True)]
