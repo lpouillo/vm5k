@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import os
+import sys
 import time
 import datetime
 from numpy import array, median
@@ -12,9 +12,12 @@ logger.info('Measuring boot time')
 
 # Reading VMs list
 vms = []
-run_dir = 'boot_time/'
+run_dir = sys.argv[1]
 
-f = open(run_dir + 'vms.list')
+if not run_dir:
+    logger.error('No directory specified')
+    exit()
+f = open(run_dir + '/vms.list')
 for line in f:
     if 'vm' in line:
         tmp = line.split()
@@ -53,7 +56,7 @@ logger.info('Standard deviation: %s', std)
 logger.info('Min-max: %s-%s', dur_min, dur_max)
 
 # Drawing historgram
-n, bins, patches = plt.hist(uptime, bins=len(vms) / 10,
+n, bins, patches = plt.hist(uptime, bins=5,
                             facecolor='g', alpha=0.75)
 plt.xlabel('Boot duration')
 plt.ylabel('Number of VMs')
