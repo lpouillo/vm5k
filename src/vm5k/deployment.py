@@ -524,7 +524,6 @@ class vm5k_deployment():
                 exit()
 
         self._add_xml_elements()
-
         distribute_vms(self.vms, self.hosts, self.distribution)
         self._set_vms_ip_mac()
 
@@ -665,7 +664,6 @@ class vm5k_deployment():
 
     def _add_xml_vms(self):
         """Add vms distributed on hosts to self.state """
-        print self.vms
         for vm in self.vms:
             host = self.state.find(".//host/[@id='" + vm['host'] + "']")
             SubElement(host, 'vm', attrib={'id': vm['id'],
