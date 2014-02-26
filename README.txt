@@ -35,18 +35,19 @@ currenlty not available
   
 manual:
 -------
-You first need to install execo on one of the Grid'5000 frontend::
 
-http://execo.gforge.inria.fr/doc/userguide.html
-
-Then you clone the repository and install the package::
-
- git clone https://github.com/lpouillo/vm5k.git
- cd vm5k
- python setup.py install --user
+  export http_proxy="http://proxy:3128"
+  export https_proxy="https://proxy:3128"
+  pip install execo
 
 Configure your PYTHONPATH and your PATH according to 
 http://execo.gforge.inria.fr/doc/userguide.html#installation
+
+Then you clone the repository and install the package::
+
+  git clone https://github.com/lpouillo/vm5k.git
+  cd vm5k
+  python setup.py install --user
 
 
 People
