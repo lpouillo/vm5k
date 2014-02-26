@@ -212,21 +212,23 @@ def get_vms_slot(vms, elements, slots, excluded_elements=None):
     req_cpu = sum([vm['n_cpu'] for vm in vms]) / 3
     logger.debug('RAM %s CPU %s', req_ram, req_cpu)
 
+    for element in excluded_elements:
+        if element in get_g5k_sites():
+            excluded_elements += [cluster for cluster
+                                  in get_site_clusters(element)
+                                  if cluster not in excluded_elements]
     if 'grid5000' in elements:
         clusters = [cluster for cluster in get_g5k_clusters()
                          if cluster not in excluded_elements
                           and get_cluster_site not in excluded_elements]
     else:
         clusters = [element for element in elements
-                    if element in get_g5k_clusters()
-                    and element not in excluded_elements]
+                    if element in get_g5k_clusters()]
         for element in elements:
-            if element in get_g5k_sites() \
-                    and element not in excluded_elements:
+            if element in get_g5k_sites():
                 clusters += [cluster
                     for cluster in get_site_clusters(element)
-                        if cluster not in excluded_elements
-                            and cluster not in clusters]
+                        if cluster not in clusters]
     clusters.sort()
 
     for slot in slots:
