@@ -200,6 +200,7 @@ class vm5k_deployment():
         start_vms(self.vms).run()
         logger.info('Waiting for VM to boot ...')
         wait_vms_have_started(self.vms, self.hosts[0])
+        self._update_vms_xml()
         logger.info('Done in %s seconds',
                     style.emph(self.boot_time.elapsed()))
 
@@ -562,7 +563,7 @@ class vm5k_deployment():
                                   for host in self.hosts]))
         self.clusters.sort()
 
-    def _check_xml_elements(self, xml, resources):
+    def _check_xml_elements(self, xml, resources, strict=False):
         sites, clusters, hosts = self._get_xml_elements(xml)
         ok = True
         if not sites == self.sites:
@@ -573,10 +574,30 @@ class vm5k_deployment():
             logger.error('List of clusters from resources differs from infile' + \
                 '\n resource %s \n infile %s', self.clusters, clusters)
             ok = False
-        if not hosts == self.hosts:
-            logger.error('List of hosts from resources differs from infile' + \
-                '\n resource %s \n infile %s', self.hosts, hosts)
-            ok = False
+        if strict:
+            if not hosts == self.hosts:
+                logger.error('List of hosts from resources differs from infile' + \
+                    '\n resource %s \n infile %s', self.hosts, hosts)
+                ok = False
+        else:
+            res_hosts = {}
+            for host in self.hosts:
+                cluster = get_host_cluster(host)
+                if cluster in res_hosts:
+                    res_hosts[cluster] += 1
+                else:
+                    res_hosts[cluster] = 1
+            xml_hosts = {}
+            for host in hosts:
+                cluster = get_host_cluster(host)
+                if cluster in xml_hosts:
+                    xml_hosts[cluster] += 1
+                else:
+                    xml_hosts[cluster] = 1
+            if not res_hosts == xml_hosts:
+                logger.error('List of hosts from resources differs from infile' + \
+                    '\n resource %s \n infile %s', self.hosts, hosts)
+                ok = False
 
         return ok
 
@@ -608,7 +629,7 @@ class vm5k_deployment():
                     'hdd': int(_default_xml_value('hdd')),
                     'backing_file': _default_xml_value('backing_file'),
                     'host': host.get('id'),
-                    'state': _default_xml_value('state')})
+                    'state': 'KO'})
         return vms
 
     def _set_vms_ip_mac(self):
@@ -644,6 +665,7 @@ class vm5k_deployment():
 
     def _add_xml_vms(self):
         """Add vms distributed on hosts to self.state """
+        print self.vms
         for vm in self.vms:
             host = self.state.find(".//host/[@id='" + vm['host'] + "']")
             SubElement(host, 'vm', attrib={'id': vm['id'],
@@ -655,10 +677,6 @@ class vm5k_deployment():
                                          'hdd': str(vm['hdd']),
                                          'backing_file': vm['backing_file'],
                                          'state': vm['state']})
-
-    def _update_vms_xml(self):
-        for vm in self.vms:
-            print vm
 
     def _print_state_compact(self):
         """Display in a compact form the distribution of vms on hosts."""
@@ -691,6 +709,11 @@ class vm5k_deployment():
                     log += style.Unknown(vm)
                 log += ' '
         return log
+
+    def _update_vms_xml(self):
+        for vm in self.vms:
+            self.state.find(".//vm/[@id='" + vm['id'] + "']").set('state',
+                                                                vm['state'])
 
     def _update_hosts_state(self, hosts_ok, hosts_ko):
         """ """
