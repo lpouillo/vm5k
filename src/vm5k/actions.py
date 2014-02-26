@@ -123,9 +123,6 @@ def distribute_vms(vms, hosts, distribution='round-robin'):
     """
     logger.debug('Initial virtual machines distribution \n%s',
         "\n".join([vm['id'] + ": " + str(vm['host']) for vm in vms]))
-    if distribution not in ['round-robin', 'concentrated', 'n_by_hosts']:
-        logger.error('Distribution %s is not supported')
-        exit()
 
     if distribution in ['round-robin', 'concentrated']:
         attr = get_CPU_RAM_FLOPS(hosts)
@@ -171,7 +168,8 @@ def distribute_vms(vms, hosts, distribution='round-robin'):
             for i in range(n_by_host):
                 vms[i_vm]['host'] = host
                 i_vm += 1
-
+    else:
+        logger.debug('No valid distribution given')
     logger.debug('Final virtual machines distribution \n%s',
         "\n".join([vm['id'] + ": " + str(vm['host']) for vm in vms]))
 

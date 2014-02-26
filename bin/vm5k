@@ -30,14 +30,13 @@ from vm5k import vm5k_deployment, define_vms, get_oar_job_vm5k_resources, \
     get_max_vms, get_oargrid_job_vm5k_resources, get_vms_slot, print_step
 from vm5k.services import setup_munin
 
-### INITIALIZATION
 
 ## Constants
 deployment_tries = 1
 blacklisted = ['helios', 'sagittaire']
 default_connection_params['user'] = 'root'
 
-## Command line options
+## Parsing options
 prog = 'vm5k'
 desc = 'A tool to deploy and configure nodes and virtual machines with ' + \
     style.log_header('Debian') + ' and ' + style.log_header('libvirt') + \
@@ -165,7 +164,6 @@ vms.add_argument('-l', '--vm_disk_location',
                     dest='vm_disk_location',
                     help='Where to create the qcow2: one (default) or all)')
 vms.add_argument('-d', '--vm_distribution',
-                    default='round-robin',
                     dest='vm_distribution',
                     help='how to distribute the VM distributed (default) ' + \
                         'or concentrated')
@@ -312,7 +310,6 @@ else:
         frontend, job_id = None, args.job_id
 #        get_oargrid_job_info(args.job_id)['start_date']
 
-
 print_step('Ressources')
 if frontend is None:
     vm5k_resources = get_oargrid_job_vm5k_resources(job_id)
@@ -321,6 +318,7 @@ else:
 logger.debug(vm5k_resources)
 
 vm5k = vm5k_deployment(
+            infile=args.infile,
             resources=vm5k_resources,
             vms=vms,
             env_name=args.env_name,

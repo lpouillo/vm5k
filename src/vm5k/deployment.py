@@ -17,7 +17,7 @@
 # along with Vm5k.  If not, see <http://www.gnu.org/licenses/>
 
 from os import fdopen
-from xml.etree.ElementTree import Element, SubElement, parse
+from xml.etree.ElementTree import Element, SubElement, parse, dump
 from time import localtime, strftime
 from tempfile import mkstemp
 from execo import logger, Process, SshProcess, SequentialActions, Host, \
@@ -28,13 +28,13 @@ from execo.config import TAKTUK, CHAINPUT
 from execo_g5k import deploy, Deployment
 from execo_g5k.config import g5k_configuration, \
     default_frontend_connection_params
-from execo_g5k.api_utils import get_host_cluster, get_g5k_sites, \
+from execo_g5k.api_utils import get_host_cluster, \
     get_cluster_site, get_host_site, canonical_host_name
 from execo_g5k.utils import get_kavlan_host_name
 from vm5k.config import default_vm
 from vm5k.actions import create_disks, install_vms, start_vms, \
     wait_vms_have_started, destroy_vms, create_disks_on_hosts, distribute_vms
-from vm5k.utils import prettify, print_step, get_max_vms, get_fastest_host, \
+from vm5k.utils import prettify, print_step, get_fastest_host, \
     hosts_list
 from vm5k.services import dnsmasq_server
 from vm5k.plots import topology_plot
@@ -70,29 +70,15 @@ class vm5k_deployment():
         :params distribution: how to distribute the vms on the hosts
         (``round-robin`` , ``concentrated``, ``random``)
 
+        :params outdir: directory to store the deployment files
         """
         print_step('Initializing vm5k_deployment')
-        if outdir:
-            self.outdir = outdir
-        else:
-            self.outdir = 'vm5k_' + strftime("%Y%m%d_%H%M%S_%z")
-
-        self.state = Element('vm5k')
+        # set a factory for the deployment that use taktuk and chainput
         self.fact = ActionFactory(remote_tool=TAKTUK,
                                 fileput_tool=CHAINPUT,
                                 fileget_tool=TAKTUK)
-        self.distribution = distribution
         self.kavlan = None
-
-        if not infile:
-            self._init_state(resources, vms, infile)
-        else:
-            self.state = parse(infile)
-            self._get_xml_elements()
-            self._get_xml_vms()
-            self._set_vms_ip_mac()
-            self._add_xml_vms()
-
+        self.kavlan_site = None
         if env_name is not None:
             self.env_name = env_name
             self.env_file = None
@@ -104,6 +90,13 @@ class vm5k_deployment():
                 self.env_file = '/home/lpouilloux/synced/environments/vm5k/' +\
                 'vm5k.env'
 
+        if outdir:
+            self.outdir = outdir
+        else:
+            self.outdir = 'vm5k_' + strftime("%Y%m%d_%H%M%S_%z")
+
+        self.state = Element('vm5k')
+        self._define_elements(infile, resources, vms, distribution)
         network = 'IP range from KaVLAN' if self.kavlan else 'IP range from g5k-subnet'
         logger.info('%s\n%s %s \n%s %s \n%s %s \n%s %s',
                     network,
@@ -512,61 +505,111 @@ class vm5k_deployment():
             self._actions_hosts(install_extra)
 
     # State related methods
-    def _init_state(self, resources=None, vms=None, distribution=None,
-                    infile=None):
-        """Create the topology XML structure describing the vm5k initial state
-        """
-        logger.debug('SITES')
-        self.sites = [site for site in resources.keys() if site != 'global']
-
-        logger.debug('IP MAC')
-        if 'global' not in resources:
-            if len(self.sites) == 1:
-                self.ip_mac = resources[self.sites[0]]['ip_mac']
-                if resources[site]['kavlan']:
-                    self.kavlan = resources[site]['kavlan']
-            else:
-                self.ip_mac = {site: resources[site]['ip_mac']
-                               for site in self.sites}
+    def _define_elements(self, infile=None, resources=None, vms=None,
+                         distribution=None):
+        """Create the list of sites, clusters, hosts, vms and check
+        correspondance between infile and resources"""
+        self._get_ip_mac(resources)
+        self._get_resources_elements(resources)
+        if not infile:
+            self.vms = vms
+            self.distribution = distribution if distribution else 'round-robin'
         else:
+            xml = parse(infile)
+            if self._check_xml_elements(xml, resources):
+                self.vms = self._get_xml_vms(xml)
+                self.distribution = None
+            else:
+                exit()
+
+        self._add_xml_elements()
+
+        distribute_vms(self.vms, self.hosts, self.distribution)
+        self._set_vms_ip_mac()
+
+        self._add_xml_vms()
+
+    def _get_ip_mac(self, resources):
+        """ """
+        if len(resources.keys()) == 1:
+            # mono site
+            self.ip_mac = resources[resources.keys()[0]]['ip_mac']
+            self.kavlan = resources[resources.keys()[0]]['kavlan']
+        elif 'global' in resources:
+            # multi site in a global kavlan
             self.ip_mac = resources['global']['ip_mac']
             self.kavlan = resources['global']['kavlan']
             self.kavlan_site = resources['global']['site']
+        else:
+            # multi site in prod network
+            self.ip_mac = {site: resource['ip_mac']
+                            for site, resource in resources.iteritems()}
 
-        logger.debug('KaVLAN: %s', self.kavlan)
-
-        logger.debug('CLUSTERS AND HOSTS')
-        self.clusters = []
+    def _get_resources_elements(self, resources=None):
+        """ """
+        self.sites = sorted([site for site in resources.keys()
+                                if site != 'global'])
         self.hosts = []
-        for site, elements in resources.iteritems():
-            if site not in self.sites and site in get_g5k_sites():
-                self.sites.append(site)
-            if site != 'global':
-                if self.kavlan:
-                    for host in elements['hosts']:
-                        self.hosts.append(get_kavlan_host_name(host,
-                                                               self.kavlan))
-                else:
-                    self.hosts += elements['hosts']
-
-        logger.debug(self.hosts)
-        self.sites.sort()
+        for site in self.sites:
+            if self.kavlan:
+                self.hosts += map(lambda host: get_kavlan_host_name(host,
+                                    self.kavlan), resources[site]['hosts'])
+            else:
+                self.hosts += resources[site]['hosts']
         self.hosts.sort(key=lambda host: (host.split('.', 1)[0].split('-')[0],
                                     int(host.split('.', 1)[0].split('-')[1])))
         self.clusters = list(set([get_host_cluster(host)
                                   for host in self.hosts]))
         self.clusters.sort()
-        self._add_xml_elements()
 
-        logger.debug('Virtual Machines')
-        max_vms = get_max_vms(self.hosts)
-        if vms:
-            self.vms = vms if len(vms) <= max_vms else vms[0:max_vms]
-            distribute_vms(vms, self.hosts, self.distribution)
-            self._set_vms_ip_mac()
-            self._add_xml_vms()
-        else:
-            self.vms = []
+    def _check_xml_elements(self, xml, resources):
+        sites, clusters, hosts = self._get_xml_elements(xml)
+        ok = True
+        if not sites == self.sites:
+            logger.error('List of sites from resources differs from infile' + \
+                '\n resource %s \n infile %s', self.sites, sites)
+            ok = False
+        if not clusters == self.clusters:
+            logger.error('List of clusters from resources differs from infile' + \
+                '\n resource %s \n infile %s', self.clusters, clusters)
+            ok = False
+        if not hosts == self.hosts:
+            logger.error('List of hosts from resources differs from infile' + \
+                '\n resource %s \n infile %s', self.hosts, hosts)
+            ok = False
+
+        return ok
+
+    def _get_xml_elements(self, xml):
+        """ """
+
+        sites = sorted([site.get('id') for site in xml.findall('./site')])
+        clusters = sorted([cluster.get('id')
+                         for cluster in xml.findall('.//cluster')])
+        hosts = sorted([host.get('id') for host in xml.findall('.//host')],
+                       key=lambda host: (host.split('.', 1)[0].split('-')[0],
+                                    int(host.split('.', 1)[0].split('-')[1])))
+
+        return sites, clusters, hosts
+
+    def _get_xml_vms(self, xml):
+        """Define the list of VMs from the infile """
+
+        def _default_xml_value(key):
+            return default_vm[key] if key not in vm.attrib else vm.get(key)
+
+        vms = []
+        for host in xml.findall('.//host'):
+            for vm in host.findall('.//vm'):
+                vms.append({'id': vm.get('id'),
+                    'n_cpu': int(_default_xml_value('n_cpu')),
+                    'cpuset': _default_xml_value('cpuset'),
+                    'mem': int(_default_xml_value('mem')),
+                    'hdd': int(_default_xml_value('hdd')),
+                    'backing_file': _default_xml_value('backing_file'),
+                    'host': host.get('id'),
+                    'state': _default_xml_value('state')})
+        return vms
 
     def _set_vms_ip_mac(self):
         """Not finished """
@@ -581,29 +624,6 @@ class vm5k_deployment():
             for vm in self.vms:
                 vm['ip'], vm['mac'] = self.ip_mac[i_vm]
                 i_vm += 1
-
-    def _get_xml_elements(self):
-        """Get sites, clusters and host from self.state """
-        self.sites = [site.id for site in self.state.findall('./site')]
-        self.clusters = [cluster.id 
-                         for cluster in self.state.findall('.//cluster')]
-        self.hosts = [host.id for host in self.state.findall('.//host')]
-
-    def _get_xml_vms(self):
-        """Define the list of VMs from the infile """
-        self.vms = []
-
-        def _default_xml_value(key):
-            return default_vm[key] if key not in vm.attrib else vm.get(key)
-
-        for vm in self.state.findall('.//vm'):
-            self.vms.append({'id': vm.get('id'),
-                    'n_cpu': _default_xml_value['n_cpu'],
-                    'cpuset': _default_xml_value['cpuset'],
-                    'mem': _default_xml_value['mem'],
-                    'hdd': _default_xml_value['hdd'],
-                    'backing_file': _default_xml_value['backing_file'],
-                    'host': _default_xml_value['host']})
 
     def _add_xml_elements(self):
         """Add sites, clusters, hosts to self.state """
@@ -656,8 +676,13 @@ class vm5k_deployment():
         for host in sorted(dist.keys(), key=lambda x: (x.split('.')[0].split('-')[0],
                                                 int(x.split('.')[0].split('-')[1]))):
             log += '\n' + style.host(host) + ': '.ljust(max_len_host + 2 - len(host))
-            for vm in sorted(dist[host].keys(), key=lambda x: (x.split('.')[0].split('-')[0],
-                                                int(x.split('.')[0].split('-')[1]))):
+            try: 
+                vms = sorted(dist[host].keys(), key=lambda x: (x.split('.')[0].split('-')[0],
+                                                int(x.split('.')[0].split('-')[1])))
+            except:
+                vms = sorted(dist[host].keys())
+                pass
+            for vm in vms:
                 if dist[host][vm] == 'OK':
                     log += style.OK(vm)
                 elif dist[host][vm] == 'KO':
