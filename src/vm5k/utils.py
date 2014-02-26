@@ -27,7 +27,8 @@ from execo_g5k import get_oar_job_nodes, get_oargrid_job_oar_jobs, \
     get_oar_job_subnets, get_oar_job_kavlan, wait_oar_job_start, \
     wait_oargrid_job_start, distribute_hosts
 from execo_g5k.api_utils import get_host_cluster, get_g5k_clusters, \
-    get_host_attributes, get_resource_attributes, get_cluster_site
+    get_host_attributes, get_resource_attributes, get_cluster_site, \
+    get_g5k_sites, get_site_clusters
 
 from xml.etree.ElementTree import tostring
 
@@ -61,8 +62,6 @@ def get_oar_job_vm5k_resources(jobs):
             kavlan = get_oar_job_kavlan(oar_job_id, site)
             if kavlan:
                 ip_mac = get_kavlan_ip_mac(kavlan, site)
-        if 'grid5000.fr' in site:
-            site = site.split('.')[0]
         resources[site] = {'hosts': hosts,
                            'ip_mac': ip_mac,
                            'kavlan': kavlan}
@@ -213,21 +212,36 @@ def get_vms_slot(vms, elements, slots, excluded_elements=None):
     req_cpu = sum([vm['n_cpu'] for vm in vms]) / 3
     logger.debug('RAM %s CPU %s', req_ram, req_cpu)
 
+    if 'grid5000' in elements:
+        clusters = [cluster for cluster in get_g5k_clusters()
+                         if cluster not in excluded_elements
+                          and get_cluster_site not in excluded_elements]
+    else:
+        clusters = [element for element in elements
+                    if element in get_g5k_clusters()
+                    and element not in excluded_elements]
+        for element in elements:
+            if element in get_g5k_sites() \
+                    and element not in excluded_elements:
+                clusters += [cluster
+                    for cluster in get_site_clusters(element)
+                        if cluster not in excluded_elements
+                            and cluster not in clusters]
+    clusters.sort()
+
     for slot in slots:
         hosts = []
         for element in slot[2]:
-            if str(element) in get_g5k_clusters():
+            if str(element) in clusters:
                 n_hosts = slot[2][element]
                 for i in range(n_hosts):
                     hosts.append(Host(str(element + '-1.' + \
                             get_cluster_site(element) + '.grid5000.fr')))
-
         attr = get_CPU_RAM_FLOPS(hosts)['TOTAL']
 
         if attr['CPU'] > req_cpu and attr['RAM'] > req_ram:
             chosen_slot = slot
             break
-
         del hosts[:]
 
     if chosen_slot is None:
@@ -235,8 +249,7 @@ def get_vms_slot(vms, elements, slots, excluded_elements=None):
 
     resources_needed = {}
     resources_available = chosen_slot[2]
-    clusters = [element for element in chosen_slot[2].keys()
-                if element in get_g5k_clusters()]
+
     iter_clusters = cycle(clusters)
     while req_ram > 0 or req_cpu > 0:
         cluster = iter_clusters.next()
