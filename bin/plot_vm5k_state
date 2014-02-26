@@ -2,6 +2,8 @@
 # A base script to create a topology plot from an XML file generated 
 # by vm5k
 import sys
+import matplotlib
+matplotlib.use('Agg')
 from vm5k.plots import topology_plot
 import xml.etree.ElementTree as ET
 
