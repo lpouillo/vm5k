@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+#
+# A simple program to retrieve boot time for vms after
+# a vm5k deployment
+#
 import sys
 import time
 import datetime
@@ -10,18 +14,18 @@ from execo import TaktukRemote, logger
 
 logger.info('Measuring boot time')
 
-# Reading VMs list
+# Reading VMs list for directory given in arg
 vms = []
 run_dir = sys.argv[1]
 
 if not run_dir:
     logger.error('No directory specified')
     exit()
+
 f = open(run_dir + '/vms.list')
 for line in f:
-    if 'vm' in line:
-        tmp = line.split()
-        vms.append({'id': tmp[1], 'ip': tmp[0]})
+    tmp = line.split()
+    vms.append({'id': tmp[1], 'ip': tmp[0]})
 f.close()
 
 # Measuring boot_duration
