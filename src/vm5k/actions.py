@@ -23,8 +23,6 @@ from execo import SshProcess, TaktukPut, logger, TaktukRemote, Process, \
     ParallelActions, Host
 from execo.log import style
 from execo.time_utils import sleep
-from execo_g5k import default_frontend_connection_params
-from execo_g5k.api_utils import get_host_site
 import tempfile
 from math import ceil
 from copy import deepcopy
@@ -54,8 +52,8 @@ def define_vms(vms_id, template=None, ip_mac=None, state=None, host=None,
     'hdd': 10, 'backing_file': '/tmp/vm-base.img',
     'state': 'KO'}
 
-    Can be generated from a template or using user defined parameters (that can be
-    a single element or a list of element
+    Can be generated from a template or using user defined parameters (that
+    can be a single element or a list of element
 
     :param vms_id: a list of string that will be used as vm id
 
@@ -69,6 +67,7 @@ def define_vms(vms_id, template=None, ip_mac=None, state=None, host=None,
 
     :param n_cpu: the number of virtual CPU of the VMs
     """
+
     n_vm = len(vms_id)
     if template is None:
         n_cpu = [default_vm['n_cpu']] * n_vm if n_cpu is None \
@@ -186,7 +185,7 @@ def list_vm(hosts, not_running=False):
     for p in list_vm.processes:
         lines = p.stdout.split('\n')
         for line in lines:
-            if 'vm' in line:
+            if 'running' in line or 'shut off' in line:
                 std = line.split()
                 hosts_vms[p.host.address].append({'id': std[1]})
     logger.debug(pformat(hosts_vms))
