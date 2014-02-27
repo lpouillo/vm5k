@@ -15,13 +15,13 @@ from execo import TaktukRemote, logger
 logger.info('Measuring boot time')
 
 # Reading VMs list for directory given in arg
-vms = []
 run_dir = sys.argv[1]
 
 if not run_dir:
     logger.error('No directory specified')
     exit()
 
+vms = []
 f = open(run_dir + '/vms.list')
 for line in f:
     tmp = line.split()
@@ -43,7 +43,6 @@ boot_duration = []
 for p in get_ssh_up.processes:
     ssh_up = time.mktime(datetime.datetime.strptime('2014 ' + \
             p.stdout.strip(), "%Y %b %d %H:%M:%S").timetuple())
-
     boot_duration.append(ssh_up - boot_time[p.host.address])
 
 

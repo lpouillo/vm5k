@@ -748,4 +748,3 @@ class vm5k_deployment():
                 hosts_ko.append(p.host)
         hosts_ok, hosts_ko = list(set(hosts_ok)), list(set(hosts_ko))
         self._update_hosts_state(hosts_ok, hosts_ko)
-

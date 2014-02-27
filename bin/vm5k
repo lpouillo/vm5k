@@ -8,6 +8,7 @@
 #
 #
 import os
+import sys
 import argparse
 from pprint import pformat
 import matplotlib
@@ -206,12 +207,12 @@ else:
 ## Start message
 print_step('VM5K: deployment of VMs on Grid\'5000 *')
 
-# Fix demo values for n_vm and walltime 
+# Fix demo values for n_vm and walltime
 if args.n_vm is None and args.infile is None:
     logger.warning('No options: -n %s or -i %s, setting %s to %s',
-                 style.emph('n_vm'), style.emph('infile'), 
+                 style.emph('n_vm'), style.emph('infile'),
                  style.emph('n_vm'), style.emph(str(10)))
-    args.n_vm = 10
+    args.n_vm = 30
 if args.walltime is None and args.job_id is None:
     logger.warning('No options: -w %s or -j %s, setting %s to %s',
                 style.emph('walltime'), style.emph('job_id'),
@@ -412,9 +413,11 @@ logger.info('files saved in %s %s', style.emph(args.outdir), log)
 
 if args.program is not None:
     print_step('Lauching program')
+    logger.info(args.program)
     if args.program in os.listdir('.'):
         args.program = './' + args.program
     prog = Process(args.program)
     prog.shell = True
+    prog.stdout_handlers.append(sys.stdout)
+    prog.stderr_handlers.append(sys.stderr)
     prog.run()
-    print prog.stdout
