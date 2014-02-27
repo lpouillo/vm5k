@@ -52,7 +52,7 @@ class vm5k_deployment():
 
     def __init__(self, infile=None, resources=None,
                  env_name=None, env_file=None,
-                 vms=None, distribution='round-robin',
+                 vms=None, distribution=None,
                  outdir=None):
         """:param infile: an XML file that describe the topology of the
         deployment
@@ -80,10 +80,14 @@ class vm5k_deployment():
         self.kavlan = None
         self.kavlan_site = None
         if env_name is not None:
-            self.env_name = env_name
             self.env_file = None
+            if not ':' in env_name:
+                self.env_name, self.env_user = env_name, None
+            else:
+                self.env_user, self.env_name = env_name.split(':')
         else:
             self.env_name = None
+            self.env_user = None
             if env_file is not None:
                 self.env_file = env_file
             else:
@@ -231,7 +235,7 @@ class vm5k_deployment():
         deployment = Deployment(hosts=[Host(canonical_host_name(host))
                                           for host in self.hosts],
                         env_file=self.env_file, env_name=self.env_name,
-                        vlan=self.kavlan)
+                        user=self.env_user, vlan=self.kavlan)
         # Activate kadeploy output log if log level is debug
         out = True if logger.getEffectiveLevel() <= 10 else False
         deployed_hosts, undeployed_hosts = deploy(deployment, out=out,
@@ -489,7 +493,7 @@ class vm5k_deployment():
         self._actions_hosts(install_base)
 
         libvirt_packages = 'libvirt-bin virtinst python2.7 python-pycurl python-libxml2 qemu-kvm nmap'
-        logger.info('Installing libvirt packages \n%s', 
+        logger.info('Installing libvirt packages \n%s',
                     style.emph(libvirt_packages))
         cmd = 'export DEBIAN_MASTER=noninteractive ; apt-get update && apt-get install -y --force-yes '+\
             '-o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" -t testing '+\
@@ -498,10 +502,11 @@ class vm5k_deployment():
         self._actions_hosts(install_libvirt)
 
         if other_packages:
-            logger.info('Installing extra packages \n%s', 
+            logger.info('Installing extra packages \n%s',
                         style.emph(other_packages))
-            cmd = 'export DEBIAN_MASTER=noninteractive ; apt-get update && '+\
-                'apt-get install -y --force-yes '+other_packages
+            cmd = 'export DEBIAN_MASTER=noninteractive ; ' + \
+                'apt-get update && apt-get install -y --force-yes ' + \
+                other_packages
             install_extra = self.fact.get_remote(cmd, self.hosts).run()
             self._actions_hosts(install_extra)
 
