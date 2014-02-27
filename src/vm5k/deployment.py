@@ -201,8 +201,8 @@ class vm5k_deployment():
         logger.info('Waiting for VM to boot ...')
         wait_vms_have_started(self.vms, self.hosts[0])
         self._update_vms_xml()
-        logger.info('Done in %s seconds',
-                    style.emph(self.boot_time.elapsed()))
+#        logger.info('Done in %s seconds',
+#                    style.emph(self.boot_time.elapsed()))
 
     def get_state(self, output=True, mode='compact', plot=False):
         """ """
@@ -248,7 +248,7 @@ class vm5k_deployment():
         logger.info('Deployed %s hosts \n%s', len(deployed_hosts),
                     hosts_list(deployed_hosts))
         cr = '\n' if len(undeployed_hosts) > 0 else ''
-        logger.info('Failed %s hosts %s %s', len(undeployed_hosts), cr,
+        logger.info('Failed %s hosts %s%s', len(undeployed_hosts), cr,
                     hosts_list(undeployed_hosts))
         self._update_hosts_state(deployed_hosts, undeployed_hosts)
         return deployed_hosts, undeployed_hosts

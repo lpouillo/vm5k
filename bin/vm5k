@@ -20,7 +20,7 @@ from execo import logger, Process, TaktukRemote, default_connection_params, slee
 from execo.log import style
 from execo.config import TAKTUK, CHAINPUT
 from execo.action import ActionFactory
-from execo.time_utils import Timer, format_date
+from execo.time_utils import Timer, format_date, format_duration
 from execo_g5k import oargridsub
 from execo_g5k.oargrid import get_oargridsub_commandline
 from execo_g5k.planning import get_planning, compute_slots, show_resources, \
@@ -30,6 +30,10 @@ from vm5k import vm5k_deployment, define_vms, get_oar_job_vm5k_resources, \
     get_max_vms, get_oargrid_job_vm5k_resources, get_vms_slot, print_step
 from vm5k.services import setup_munin
 
+
+## Start a timer
+timer = Timer()
+execution_time = {}
 
 ## Constants
 deployment_tries = 1
@@ -182,11 +186,15 @@ vms.add_argument('--vm-packages',
 
 args = parser.parse_args()
 
-## Start a timer
-timer = Timer()
-execution_time = {}
-out_deploy = False
+## Create output directory and save execution log
+try:
+    os.mkdir(args.outdir)
+except os.error:
+    pass
+copy_outputs(args.outdir + '/vm5k.log', args.outdir + '/vm5k.log')
+
 ## Set log level
+out_deploy = False
 if args.verbose:
     logger.setLevel(DEBUG)
     out_deploy = True
@@ -195,29 +203,25 @@ elif args.quiet:
 else:
     logger.setLevel(INFO)
 
-
-if args.n_vm is None and args.infile is None:
-    parser.error('Must specify one of the following options: -n ' + \
-                 style.emph('n_vm') + ' or -i ' + style.emph('infile') + \
-                 ', use -h for help')
-if args.walltime is None and args.job_id is None:
-    parser.error('Must specify one of the following options: -w ' + \
-                style.emph('walltime') + ' or -j ' + style.emph('job_id') + \
-                ', see -h for help')
-
 ## Start message
 print_step('VM5K: deployment of VMs on Grid\'5000 *')
+
+# Fix demo values for n_vm and walltime 
+if args.n_vm is None and args.infile is None:
+    logger.warning('No options: -n %s or -i %s, setting %s to %s',
+                 style.emph('n_vm'), style.emph('infile'), 
+                 style.emph('n_vm'), style.emph(str(10)))
+    args.n_vm = 10
+if args.walltime is None and args.job_id is None:
+    logger.warning('No options: -w %s or -j %s, setting %s to %s',
+                style.emph('walltime'), style.emph('job_id'),
+                style.emph('walltime'), style.emph('1:00:00'))
+    args.walltime = '1:00:00'
+
 logger.info('Options\n' + '\n'.join([style.emph(option.ljust(20)) + \
             '= ' + str(vars(args)[option]).ljust(10)
             for option in sorted(vars(args).keys()) if vars(args)[option]]))
 
-## Create output directory
-try:
-    os.mkdir(args.outdir)
-except os.error:
-    pass
-
-copy_outputs(args.outdir + '/vm5k.log', args.outdir + '/vm5k.log')
 
 ### DEFINING VMS AND ELEMENTS
 if args.infile is not None:
@@ -242,7 +246,12 @@ else:
             element_uid, n_nodes = element, 0
         elements[element_uid] = int(n_nodes)
 
+execution_time['1-INIT'] = timer.elapsed()
+
+##############################################################################
 # MANAGING RESERVATION
+##############################################################################
+timer = Timer()
 print_step('Reservation')
 frontend = None
 if args.job_id is None:
@@ -297,7 +306,7 @@ if args.job_id is None:
             get_oargridsub_commandline(jobs_specs, walltime=args.walltime,
                                        additional_options="-t deploy",
                                        reservation_date=startdate))
-    logger.info('Deployment will start at %s',
+    logger.info('Job %s will start at %s', style.emph(job_id),
                 style.log_header(format_date(startdate)))
 else:
     logger.info('Using an existing job: %s', style.emph(args.job_id))
@@ -310,6 +319,13 @@ else:
         frontend, job_id = None, args.job_id
 #        get_oargrid_job_info(args.job_id)['start_date']
 
+execution_time['2-RESERVATION'] = timer.elapsed()
+
+
+##############################################################################
+# RETRIEVING RESOURCES
+##############################################################################
+timer = Timer()
 print_step('Ressources')
 if frontend is None:
     vm5k_resources = get_oargrid_job_vm5k_resources(job_id)
@@ -317,6 +333,13 @@ else:
     vm5k_resources = get_oar_job_vm5k_resources(jobs)
 logger.debug(vm5k_resources)
 
+execution_time['3-RESOURCES'] = timer.elapsed()
+
+
+##############################################################################
+# INSTALLING THE HOSTS
+##############################################################################
+timer = Timer()
 vm5k = vm5k_deployment(
             infile=args.infile,
             resources=vm5k_resources,
@@ -352,6 +375,14 @@ f.close()
 
 print_step('Configuring service node')
 vm5k.configure_service_node()
+
+execution_time['4-HOSTS'] = timer.elapsed()
+
+
+##############################################################################
+# DEPLOYING THE VIRTUAL MACHINES
+##############################################################################
+timer = Timer()
 print_step('Deploy virtual machines')
 if args.infile is None:
     logger.info('Maximum number of VMs %s',
@@ -367,12 +398,23 @@ vm5k.deploy_vms(clean_disks=args.vm_clean_disks,
                 backing_file=args.vm_backing_file)
 vm5k.get_state(plot=args.plot)
 
-logger.info('VM5K Execution terminated, files saved in %s',
-            style.emph(args.outdir))
+execution_time['5-VMS'] = timer.elapsed()
+timer = Timer()
+
+
+print_step('VM5K Execution terminated')
+log = ''
+for step in sorted(execution_time.keys()):
+    log += '\n' + style.emph(step + ':').ljust(10) + \
+        format_duration(execution_time[step])
+logger.info('files saved in %s %s', style.emph(args.outdir), log)
+
 
 if args.program is not None:
     print_step('Lauching program')
     if args.program in os.listdir('.'):
         args.program = './' + args.program
-    prog = Process(args.program).run()
+    prog = Process(args.program)
+    prog.shell = True
+    prog.run()
     print prog.stdout
