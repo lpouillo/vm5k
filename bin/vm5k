@@ -17,10 +17,8 @@ from time import strftime
 from logging import INFO, DEBUG, WARN
 from math import ceil
 from xml.etree.ElementTree import fromstring, parse, dump
-from execo import logger, Process, TaktukRemote, default_connection_params, sleep
+from execo import logger, Process, default_connection_params
 from execo.log import style
-from execo.config import TAKTUK, CHAINPUT
-from execo.action import ActionFactory
 from execo.time_utils import Timer, format_date, format_duration
 from execo_g5k import oargridsub
 from execo_g5k.oargrid import get_oargridsub_commandline
@@ -32,9 +30,13 @@ from vm5k import vm5k_deployment, define_vms, get_oar_job_vm5k_resources, \
 from vm5k.services import setup_munin
 
 
-## Start a timer
-timer = Timer()
+
+##############################################################################
+# INITIALIZATION
+##############################################################################
 execution_time = {}
+timer = Timer()
+
 
 ## Constants
 deployment_tries = 1
@@ -249,6 +251,7 @@ else:
 
 execution_time['1-INIT'] = timer.elapsed()
 
+
 ##############################################################################
 # MANAGING RESERVATION
 ##############################################################################
@@ -345,14 +348,10 @@ vm5k = vm5k_deployment(
             infile=args.infile,
             resources=vm5k_resources,
             vms=vms,
+            distribution=args.vm_distribution,
             env_name=args.env_name,
             env_file=args.env_file,
             outdir=args.outdir)
-
-vm5k.fact = ActionFactory(remote_tool=TAKTUK,
-                          fileput_tool=CHAINPUT,
-                          fileget_tool=TAKTUK)
-vm5k.distribution = args.vm_distribution
 
 print_step('Deploying the hosts')
 if args.nodeploy:
