@@ -123,7 +123,7 @@ def dnsmasq_server(server, clients=None, vms=None, dhcp=True):
 
     logger.debug('Restarting service ...')
     cmd = 'service dnsmasq stop ; rm /var/lib/misc/dnsmasq.leases ; service dnsmasq start',
-    SshProcess( cmd, server).run()
+    SshProcess(cmd, server).run()
 
 
 

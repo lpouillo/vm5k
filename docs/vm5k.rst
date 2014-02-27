@@ -52,39 +52,53 @@ on any Grid5000 cluster with hardware virtualization, for 2 hours::
 This will automatically get find free nodes on Grid'5000 that can sustains your virtual
 machine, perform the reservation and deploy hosts and VMs automatically.
 
-Choose the Grid'5000 elements
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-You can also select the hosts by giving a list of cluster or sites and deploy a custom environnement::
+Customize the environments
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
- vm5k --n_vm 100 -r hercule,griffon,graphene --host_env_file path_do_mykadeploy_env -w 2:00:00
+To perform your experiments, you may want to use specific environments to test the effect of 
+various configurations (distribution version, kernel parameters, vm disk, ...). You can 
+choose the hosts operating system with::
 
-or select the number of hosts you want on each element and in a KaVLAN::
+ vm5k --n_vm 50 --walltime 2:00:00 --env_name wheezy-x64-prod
+ vm5k --n_vm 50 --walltime 2:00:00 --env_name user:env_name
+ vm5k --n_vm 50 --walltime 2:00:00 --env_file path/to/your/env_file
 
- vm5k --n_vm 100 -r lyon:4,griffon:10 -k -w 2:00:00
+You may also want to use your virtual machines disk::
+
+ vm5k --n_vm 50 --walltime 2:00:00 --vm_backing_file path_to_my_qcow2_file_on_g5k
  
-You may use an existing grid reservation (with a KaVLAN global)::
-
- vm5k --n_vm 100 -j 42895 
+For more complex situtation, i.e. using different backing_file, you need to use the XML 
+topology infile.
  
-It will retrieve the hosts that you have, deploy and configure it, and finally distribute the VM on them.
+ 
+Customize the hardware 
+^^^^^^^^^^^^^^^^^^^^^^
 
-
-Tune the virtual machines
-^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The script use a default template for the virtual machine `<vm mem="1024" hdd="2" cpu="1" cpuset="auto" />`. You 
-can define your own template by passing the xml description to vm_template option (-t) and choose 
-a specific backing file::
+You can customize the virtual machines hardware by defining a template::
 
  vm5k --n_vm 20 --vm_template '<vm mem="4096" hdd="10" cpu="4" cpuset="auto"/>' 
-        --vm_backing_file path_to_my_qcow2_file_on_g5k
 
-will deploy 20 virtual machines with system and components you want.
+If you want to test your application on a specific hardware (CPU, RAM, ...), you can select the 
+Grid'5000 elements you want to use by giving a list of cluster or sites::
+
+ vm5k --n_vm 100 -r hercule,griffon,graphene  -w 2:00:00
+
+or select the number of hosts you want on each element::
+
+ vm5k --n_vm 100 -r taurus:4,nancy:10 -w 2:00:00
+ 
+You may use an existing grid reservation::
+
+ vm5k --n_vm 100 -j 42895 
+ vm5k --n_vm 10 -j grenoble:1657430
+ 
+It will retrieve the hosts that you have, deploy and configure it, and finally distribute the VM 
+on them.
 
 
-Use deployment file
-^^^^^^^^^^^^^^^^^^^
+Advanced usage
+^^^^^^^^^^^^^^
 
 To have the finest control on the deployment topology, you can use an input file that described the topology and VM
 characteristics::
