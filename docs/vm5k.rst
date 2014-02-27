@@ -2,7 +2,7 @@
 vm5k: automatic virtual machines deployment
 *******************************************
 
-The vm5k script provides a tool to deploy a large numer of virtual machines 
+The vm5k script provides a tool to deploy a large number of virtual machines 
 on the Grid'5000 platform. It provides several options to customize your 
 environnements and topology.
 
@@ -40,17 +40,17 @@ Workflow
 .. image:: _static/vm5k_workflow.png 
 
 
-Usage
------
+Basic Usage
+-----------
 
-The basic usage is to create a certain number of virtual machines on Grid5000.
-To deploy 100 VM on *wheezy-x64-base* and with the *wheezy-x64-base.qcow2* KVM image
+The basic usage is to create a certain number of virtual machines on Grid'5000.
+To deploy 100 VM on *wheezy-x64-base* hosts and with the *wheezy-x64-base.qcow2* KVM image
 on any Grid5000 cluster with hardware virtualization, for 2 hours::
 
   vm5k --n_vm 100 -w 2:00:00
 
-This will automatically get find free nodes on Grid'5000 that can sustains your virtual
-machine, perform the reservation and deploy hosts and VMs automatically.
+This will automatically find free nodes on Grid'5000 that can sustains your virtual
+machines, perform the reservation and deploy hosts and VMs automatically.
 
 
 Customize the environments
@@ -74,7 +74,6 @@ topology infile.
  
 Customize the hardware 
 ^^^^^^^^^^^^^^^^^^^^^^
-
 You can customize the virtual machines hardware by defining a template::
 
  vm5k --n_vm 20 --vm_template '<vm mem="4096" hdd="10" cpu="4" cpuset="auto"/>' 
@@ -88,6 +87,12 @@ or select the number of hosts you want on each element::
 
  vm5k --n_vm 100 -r taurus:4,nancy:10 -w 2:00:00
  
+See https://www.grid5000.fr/mediawiki/index.php/Special:G5KHardware for more details.
+ 
+ 
+Use an existing job
+^^^^^^^^^^^^^^^^^^^
+
 You may use an existing grid reservation::
 
  vm5k --n_vm 100 -j 42895 
@@ -97,8 +102,18 @@ It will retrieve the hosts that you have, deploy and configure it, and finally d
 on them.
 
 
-Advanced usage
-^^^^^^^^^^^^^^
+Deploy in an isolated vlan 
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Grid'5000 offers the possibility of using KaVLAN to deploy your nodes in an isolated VLAN,  
+https://www.grid5000.fr/mediawiki/index.php/Network_isolation_on_Grid%275000. You can 
+use it in vm5k with::
+
+ vm5k --n_vm 100 -r reims -w 2:00:00 -k
+ vm5k --n_vm 100 -r taurus:4,nancy:10 -w 2:00:00 -k
+
+Use a topology file 
+^^^^^^^^^^^^^^^^^^^
 
 To have the finest control on the deployment topology, you can use an input file that described the topology and VM
 characteristics::

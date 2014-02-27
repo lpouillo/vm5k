@@ -399,15 +399,16 @@ vm5k.deploy_vms(clean_disks=args.vm_clean_disks,
 vm5k.get_state(plot=args.plot)
 
 execution_time['5-VMS'] = timer.elapsed()
-timer = Timer()
 
-
-print_step('VM5K Execution terminated')
+total = sum(value for value in execution_time.itervalues())
+print_step('VM5K Execution terminated in ' + str(format_duration(total)))
 log = ''
+
 for step in sorted(execution_time.keys()):
     log += '\n' + style.emph(step + ':').ljust(10) + \
         format_duration(execution_time[step])
-logger.info('files saved in %s %s', style.emph(args.outdir), log)
+
+logger.info('Details: %s \nfiles saved in %s', style.emph(args.outdir), log)
 
 
 if args.program is not None:

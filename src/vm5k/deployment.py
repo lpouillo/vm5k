@@ -696,8 +696,9 @@ class vm5k_deployment():
         log = ''
         for host in sorted(dist.keys(), key=lambda x: (x.split('.')[0].split('-')[0],
                                                 int(x.split('.')[0].split('-')[1]))):
-            log += '\n' + style.host(host) + ': '.ljust(max_len_host + 2 - len(host))
-            try: 
+            log += '\n' + style.host(host) + '(' + str(len(dist[host].keys())) + \
+                                    '): '.ljust(max_len_host + 2 - len(host))
+            try:
                 vms = sorted(dist[host].keys(), key=lambda x: (x.split('.')[0].split('-')[0],
                                                 int(x.split('.')[0].split('-')[1])))
             except:

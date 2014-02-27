@@ -25,29 +25,18 @@ The module requires:
 
 Installation
 ============
-
-via pip:
---------
- 
-  pip install vm5k
- 
-currenlty not available 
-  
-manual:
--------
+Connect on a Grid'5000 frontend and type the following commands::
 
   export http_proxy="http://proxy:3128"
   export https_proxy="https://proxy:3128"
-  pip install execo
+  easy_install --user execo
+  easy_install --user matplotlib
+  cd /grid5000/code/staging/
+  python setup.py install --user
 
-Configure your PYTHONPATH and your PATH according to 
+Configure your PATH according to 
 http://execo.gforge.inria.fr/doc/userguide.html#installation
 
-Then you clone the repository and install the package::
-
-  git clone https://github.com/lpouillo/vm5k.git
-  cd vm5k
-  python setup.py install --user
 
 
 People
