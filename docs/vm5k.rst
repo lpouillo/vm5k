@@ -111,6 +111,9 @@ use it in vm5k with::
 
  vm5k --n_vm 100 -r reims -w 2:00:00 -k
  vm5k --n_vm 100 -r taurus:4,nancy:10 -w 2:00:00 -k
+ vm5k --n_vm 600 -r grid5000:100 -w 2:00:00 -k -b reims
+ 
+When using global kavlan, you must blacklist reims due to bug 
 
 Use a topology file 
 ^^^^^^^^^^^^^^^^^^^
