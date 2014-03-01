@@ -36,6 +36,7 @@ Workflow
   * perform installation with virt-install
   * start the virtual machines
 
+* execute a **program** on the frontend
 
 .. image:: _static/vm5k_workflow.png 
 
@@ -52,8 +53,8 @@ on any Grid5000 cluster with hardware virtualization, for 2 hours::
 This will automatically find free nodes on Grid'5000 that can sustains your virtual
 machines, perform the reservation and deploy hosts and VMs automatically.
 
-Choose a distribution
-^^^^^^^^^^^^^^^^^^^^^
+Choose a distribution for the VMs
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Default distribution follow a ``round-robin`` mechanism``, i.e. adding vm to host while cycling around
 them and checking that it can sustain more VM. But you may want to have a the same number of VM on
@@ -67,12 +68,12 @@ cannot sustain more VM, i.e. have enough memory to start it.
 
   vm5k -r grid5000:20 -n 200 -d concentrated
 
-To control finely the distribution, you should use the infile option, that is described in
+To control more finely the distribution, you must use the infile option, that is described in
 `Topology file <http://vm5k.readthedocs.org/en/latest/vm5k.html#use-a-topology-file>`_. 
 A generated one can be found in vm5k outdir after deployment.
 
-Customize the environments
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+Customize the environments of the hosts and VMs
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 To perform your experiments, you may want to use specific environments to test the effect of 
 various configurations (distribution version, kernel parameters, vm disk, ...). You can 
@@ -86,16 +87,12 @@ You may also want to use your virtual machines disk::
 
  vm5k --n_vm 50 --walltime 2:00:00 --vm_backing_file path_to_my_qcow2_file_on_g5k
  
-For more complex situtation, i.e. using different backing_file, you need to use the XML 
-topology infile.
+For more complex situtation, i.e. using different backing_file for the VMs, you need to use the XML 
+`Topology file <http://vm5k.readthedocs.org/en/latest/vm5k.html#use-a-topology-file>`_
  
  
-Customize the hardware 
-^^^^^^^^^^^^^^^^^^^^^^
-You can customize the virtual machines hardware by defining a template::
-
- vm5k --n_vm 20 --vm_template '<vm mem="4096" hdd="10" cpu="4" cpuset="auto"/>' 
-
+Choose the hardware and define the virtual hardware 
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 If you want to test your application on a specific hardware (CPU, RAM, ...), you can select the 
 Grid'5000 elements you want to use by giving a list of cluster or sites::
 
@@ -105,9 +102,15 @@ or select the number of hosts you want on each element::
 
  vm5k --n_vm 100 -r taurus:4,nancy:10 -w 2:00:00
  
-See https://www.grid5000.fr/mediawiki/index.php/Special:G5KHardware for more details.
+See https://www.grid5000.fr/mediawiki/index.php/Special:G5KHardware for 
+more details.
+
+You can customize the virtual machines hardware by defining a template::
+
+ vm5k --n_vm 20 --vm_template '<vm mem="4096" hdd="10" cpu="4" cpuset="auto"/>' 
  
- 
+or using the `Topology file <http://vm5k.readthedocs.org/en/latest/vm5k.html#use-a-topology-file>`_
+  
 Use an existing job
 ^^^^^^^^^^^^^^^^^^^
 
