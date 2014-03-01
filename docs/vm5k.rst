@@ -52,6 +52,24 @@ on any Grid5000 cluster with hardware virtualization, for 2 hours::
 This will automatically find free nodes on Grid'5000 that can sustains your virtual
 machines, perform the reservation and deploy hosts and VMs automatically.
 
+Choose a distribution
+^^^^^^^^^^^^^^^^^^^^^
+
+Default distribution follow a ``round-robin`` mechanism``, i.e. adding vm to host while cycling around
+them and checking that it can sustain more VM. But you may want to have a the same number of VM on
+all hosts, ``n_by_hosts``. For that use::
+
+  vm5k -r granduc:5,petitprince:5 -n 100 -d n_by_hosts
+  
+You can also have a ``concentrated`` distributionm meaning that next host will be used when the previous one 
+cannot sustain more VM, i.e. have enough memory to start it. 
+
+
+  vm5k -r grid5000:20 -n 200 -d concentrated
+
+To control finely the distribution, you should use the infile option, that is described in
+`Topology file <http://vm5k.readthedocs.org/en/latest/vm5k.html#use-a-topology-file>`_. 
+A generated one can be found in vm5k outdir after deployment.
 
 Customize the environments
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
