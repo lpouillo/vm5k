@@ -408,7 +408,7 @@ for step in sorted(execution_time.keys()):
     log += '\n' + style.emph(step + ':').ljust(10) + \
         format_duration(execution_time[step])
 
-logger.info('Details: %s \nfiles saved in %s', style.emph(args.outdir), log)
+logger.info('Details: \nFiles saved in %s %s', style.emph(args.outdir), log)
 
 
 if args.program is not None:
