@@ -4,7 +4,7 @@ vm5k: automatic virtual machines deployment
 
 The vm5k script provides a tool to deploy a large number of virtual machines 
 on the Grid'5000 platform. It provides several options to customize your 
-environnements and topology.
+environments and topology.
 
 Workflow
 --------
@@ -56,21 +56,21 @@ machines, perform the reservation and deploy hosts and VMs automatically.
 Choose a distribution for the VMs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Default distribution follow a ``round-robin`` mechanism``, i.e. adding vm to host while cycling around
+Default distribution follow a ``round-robin`` mechanism, i.e. adding vm to host while cycling around
 them and checking that it can sustain more VM. But you may want to have a the same number of VM on
-all hosts, ``n_by_hosts``. For that use::
+all hosts. For that use ``n_by_hosts``::
 
   vm5k -r granduc:5,petitprince:5 -n 100 -d n_by_hosts
   
-You can also have a ``concentrated`` distributionm meaning that next host will be used when the previous one 
-cannot sustain more VM, i.e. have enough memory to start it. 
-
+You can also have a ``concentrated`` distribution meaning that next host will be used when 
+the previous one cannot sustain more VM, i.e. have enough memory to start it:: 
 
   vm5k -r grid5000:20 -n 200 -d concentrated
 
 To control more finely the distribution, you must use the infile option, that is described in
 `Topology file <http://vm5k.readthedocs.org/en/latest/vm5k.html#use-a-topology-file>`_. 
-A generated one can be found in vm5k outdir after deployment.
+A generated one can be found in vm5k outdir after deployment or in examples directory of 
+vm5k package.
 
 Customize the environments of the hosts and VMs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -103,7 +103,7 @@ or select the number of hosts you want on each element::
  vm5k --n_vm 100 -r taurus:4,nancy:10 -w 2:00:00
  
 See https://www.grid5000.fr/mediawiki/index.php/Special:G5KHardware for 
-more details.
+more details on the cluster hardware.
 
 You can customize the virtual machines hardware by defining a template::
 
@@ -114,10 +114,12 @@ or using the `Topology file <http://vm5k.readthedocs.org/en/latest/vm5k.html#use
 Use an existing job
 ^^^^^^^^^^^^^^^^^^^
 
-You may use an existing grid reservation::
+You may use an existing reservation::
 
  vm5k --n_vm 100 -j 42895 
  vm5k --n_vm 10 -j grenoble:1657430
+ vm5k --n_vm 45 -j grenoble:1657430,toulouse:415866,rennes:673350
+ 
  
 It will retrieve the hosts that you have, deploy and configure it, and finally distribute the VM 
 on them.

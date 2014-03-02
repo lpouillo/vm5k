@@ -64,4 +64,4 @@ n, bins, patches = plt.hist(uptime, bins=5,
 plt.xlabel('Boot duration')
 plt.ylabel('Number of VMs')
 plt.grid(True)
-plt.savefig('boot_time.png')
+plt.savefig(run_dir + 'boot_time.png')
