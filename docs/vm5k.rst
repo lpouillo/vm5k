@@ -73,8 +73,9 @@ A generated one can be found in vm5k outdir after deployment or in examples dire
 vm5k package.
  
  
-Choose the hardware and define the virtual hardware 
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Choose the hosts hardware and define the VMs components 
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 If you want to test your application on a specific hardware (CPU, RAM, ...), you can select the 
 Grid'5000 elements you want to use by giving a list of cluster or sites::
 
