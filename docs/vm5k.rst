@@ -41,7 +41,7 @@ Workflow
 .. image:: _static/vm5k_workflow.png 
 
 
-Basic Usage
+Basic usage
 -----------
 
 The basic usage is to create a certain number of virtual machines on Grid'5000.
@@ -60,35 +60,17 @@ Default distribution follow a ``round-robin`` mechanism, i.e. adding vm to host 
 them and checking that it can sustain more VM. But you may want to have a the same number of VM on
 all hosts. For that use ``n_by_hosts``::
 
-  vm5k -r granduc:5,petitprince:5 -n 100 -d n_by_hosts
+  vm5k -r grid5000:20 -n 100 -d n_by_hosts
   
 You can also have a ``concentrated`` distribution meaning that next host will be used when 
 the previous one cannot sustain more VM, i.e. have enough memory to start it:: 
 
-  vm5k -r grid5000:20 -n 200 -d concentrated
+  vm5k -r grid5000:20 -n 100 -d concentrated
 
 To control more finely the distribution, you must use the infile option, that is described in
 `Topology file <http://vm5k.readthedocs.org/en/latest/vm5k.html#use-a-topology-file>`_. 
 A generated one can be found in vm5k outdir after deployment or in examples directory of 
 vm5k package.
-
-Customize the environments of the hosts and VMs
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-To perform your experiments, you may want to use specific environments to test the effect of 
-various configurations (distribution version, kernel parameters, vm disk, ...). You can 
-choose the hosts operating system with::
-
- vm5k --n_vm 50 --walltime 2:00:00 --env_name wheezy-x64-prod
- vm5k --n_vm 50 --walltime 2:00:00 --env_name user:env_name
- vm5k --n_vm 50 --walltime 2:00:00 --env_file path/to/your/env_file
-
-You may also want to use your virtual machines disk::
-
- vm5k --n_vm 50 --walltime 2:00:00 --vm_backing_file path_to_my_qcow2_file_on_g5k
- 
-For more complex situtation, i.e. using different backing_file for the VMs, you need to use the XML 
-`Topology file <http://vm5k.readthedocs.org/en/latest/vm5k.html#use-a-topology-file>`_
  
  
 Choose the hardware and define the virtual hardware 
@@ -107,7 +89,7 @@ more details on the cluster hardware.
 
 You can customize the virtual machines hardware by defining a template::
 
- vm5k --n_vm 20 --vm_template '<vm mem="4096" hdd="10" cpu="4" cpuset="auto"/>' 
+ vm5k --n_vm 20 --vm_template '<vm mem="4096" hdd="10" n_cpu="4" cpuset="auto"/>' 
  
 or using the `Topology file <http://vm5k.readthedocs.org/en/latest/vm5k.html#use-a-topology-file>`_
   
@@ -120,9 +102,48 @@ You may use an existing reservation::
  vm5k --n_vm 10 -j grenoble:1657430
  vm5k --n_vm 45 -j grenoble:1657430,toulouse:415866,rennes:673350
  
- 
 It will retrieve the hosts that you have, deploy and configure it, and finally distribute the VM 
 on them.
+
+You can also know how many VM can be run on a list of hosts (checking RAM availability)
+using::
+
+ vm5k_max_vms -j 42895 -t '<vm mem="2048" hdd="10" cpu="4" cpuset="auto"/>'
+
+Launch a program after the deployment
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you already have an experimental scripts that must be run on the deployed hosts and VM,
+you can use -p option::
+
+ vm5k --n_vm 100 -p myscript.sh -o myxp
+ 
+You can access the list of hosts and VMs in myxp directory in simple csv or in XML format.
+Have a look to the file vm5k/examples/boot_time.py for a simple example in Python.
+
+.. literalinclude::../examples/boot_time.py
+
+
+Advanced usage
+--------------
+
+Customize the environments of the hosts and VMs
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To perform your experiments, you may want to use specific environments to test the effect of 
+various configurations (distribution version, kernel parameters, vm disk, ...). You can 
+choose the hosts operating system with::
+
+ vm5k --n_vm 50 --walltime 2:00:00 --env_name wheezy-x64-prod
+ vm5k --n_vm 50 --walltime 2:00:00 --env_name user:env_name
+ vm5k --n_vm 50 --walltime 2:00:00 --env_file path/to/your/env_file
+
+You may also want to use your virtual machines disk::
+
+ vm5k --n_vm 50 --walltime 2:00:00 --vm_backing_file path_to_my_qcow2_file_on_g5k
+ 
+For more complex situtation, i.e. using different backing_file for the VMs, you need to use the XML 
+`Topology file <http://vm5k.readthedocs.org/en/latest/vm5k.html#use-a-topology-file>`_
 
 
 Deploy in an isolated vlan 
