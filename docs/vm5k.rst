@@ -73,8 +73,8 @@ A generated one can be found in vm5k outdir after deployment or in examples dire
 vm5k package.
  
  
-Choose the hosts hardware and define the VMs components 
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Choose the hosts hardware 
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 If you want to test your application on a specific hardware (CPU, RAM, ...), you can select the 
 Grid'5000 elements you want to use by giving a list of cluster or sites::
@@ -88,11 +88,13 @@ or select the number of hosts you want on each element::
 See https://www.grid5000.fr/mediawiki/index.php/Special:G5KHardware for 
 more details on the cluster hardware.
 
+Define the VMs template 
+^^^^^^^^^^^^^^^^^^^^^^^
+
 You can customize the virtual machines hardware by defining a template::
 
  vm5k --n_vm 20 --vm_template '<vm mem="4096" hdd="10" n_cpu="4" cpuset="auto"/>' 
  
-or using the `Topology file <http://vm5k.readthedocs.org/en/latest/vm5k.html#use-a-topology-file>`_
   
 Use an existing job
 ^^^^^^^^^^^^^^^^^^^
@@ -103,8 +105,8 @@ You may use an existing reservation::
  vm5k --n_vm 10 -j grenoble:1657430
  vm5k --n_vm 45 -j grenoble:1657430,toulouse:415866,rennes:673350
  
-It will retrieve the hosts that you have, deploy and configure it, and finally distribute the VM 
-on them.
+It will retrieve the hosts that you have, deploy and configure them, and finally 
+distribute the VM on them.
 
 You can also know how many VM can be run on a list of hosts (checking RAM availability)
 using::
