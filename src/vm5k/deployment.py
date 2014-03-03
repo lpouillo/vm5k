@@ -504,6 +504,7 @@ class vm5k_deployment():
         if other_packages:
             logger.info('Installing extra packages \n%s',
                         style.emph(other_packages))
+            other_packages.replace(',', ' ')
             cmd = 'export DEBIAN_MASTER=noninteractive ; ' + \
                 'apt-get update && apt-get install -y --force-yes ' + \
                 other_packages

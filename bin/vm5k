@@ -146,14 +146,15 @@ optdeploy.add_argument('--forcedeploy',
 optdeploy.add_argument('--nodeploy',
                 action="store_true",
                 help='consider that hosts are already deployed and configured')
+hosts.add_argument('--host-packages',
+                dest='host_packages',
+                help='comma separated list of packages to be installed ' + \
+                    'on the hosts')
 #hosts.add_argument('--host-munin',
 #                dest='host_munin',
 #                action="store_true",
 #                help='monitor hosts with munin')
-#hosts.add_argument('--host-packages',
-#                dest='host_packages',
-#                help='comma separated list of packages to be installed ' + \
-#                    'on the hosts')
+
 
 
 ## VMs configuration
@@ -364,8 +365,8 @@ else:
     print_step('Managing packages')
     vm5k.packages_management(upgrade=True,
                              other_packages=args.host_packages)
-    if args.host_munin:
-        vm5k.ser
+#    if args.host_munin:
+#        vm5k.ser
     print_step('Configuring libvirt')
     vm5k.configure_libvirt()
 # Saving the list of hosts in outdir
