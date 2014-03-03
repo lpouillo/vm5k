@@ -9,7 +9,6 @@ It is composed of:
 * an experimental engine that conduct user defined workflow for a set of parameters (vm5k_engine)
 * a lib to setup Debian hosts with libvirt and manage virtual machines 
 
-
 Developped by the Inria Hemera initiative 2010-2014 
 https://www.grid5000.fr/mediawiki/index.php/Hemera
 
@@ -20,7 +19,7 @@ Requirements
 The module requires:
 
 * execo 2.2, <http://execo.gforge.inria.fr/>
-* matplotlib 1.2 <http://matplotlib.org/> for plotting
+* optionnally matplotlib 1.2 <http://matplotlib.org/> and networkx 1.7 for plotting
 
 
 Installation
@@ -31,12 +30,11 @@ Connect on a Grid'5000 frontend and type the following commands::
   export https_proxy="https://proxy:3128"
   easy_install --user execo
   easy_install --user matplotlib
-  cd /grid5000/code/staging/
-  python setup.py install --user
+  easy_install --user networkx
+  mkdir -p vm5k && rsync -avuP /grid5000/code/staging/vm5k/ vm5k
+  cd vm5k && python setup.py install --user 
 
-Configure your PATH according to 
-http://execo.gforge.inria.fr/doc/userguide.html#installation
-
+Add .local/bin to your path and run vm5k !
 
 
 People
@@ -45,8 +43,8 @@ People
 Contributors
 ------------
 * Laurent Pouilloux
-* Jonathan Rouzaud-Cornabas
 * Daniel Balouek-Thomert
+* Jonathan Rouzaud-Cornabas
 * Flavien Quesnel
 * Jonathan Pastor
 * Takahiro Hirofuchi

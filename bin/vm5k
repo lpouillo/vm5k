@@ -48,7 +48,6 @@ prog = 'vm5k'
 desc = 'A tool to deploy and configure nodes and virtual machines with ' + \
     style.log_header('Debian') + ' and ' + style.log_header('libvirt') + \
     '\non the ' + style.log_header('Grid5000') + ' platform in a ' + \
-    style.log_header('KaVLAN') + \
     '.\nYou must select one of these options combinations:' + \
     '\n - ' + style.host('n_vm + oargrid_job_id') + \
     ' = use an existing reservation and specify number of VMs' + \
@@ -62,6 +61,8 @@ desc = 'A tool to deploy and configure nodes and virtual machines with ' + \
 epilog = style.host('Examples:') + '\nDeploy 100 VM with the default ' + \
     'environnements for 3h ' + \
     style.command('\n %(prog)s -n 100 -w 3:00:00') + \
+    '\nDocumentation can be found on ' + \
+    style.emph('http://vm5k.readthedocs.org/en/latest/vm5k.html') + \
     '\nIssues/features requests can be reported to ' + \
     style.emph('https://github.com/lpouillo/vm5k')
 
