@@ -146,14 +146,14 @@ optdeploy.add_argument('--forcedeploy',
 optdeploy.add_argument('--nodeploy',
                 action="store_true",
                 help='consider that hosts are already deployed and configured')
-hosts.add_argument('--host-munin',
-                dest='host_munin',
-                action="store_true",
-                help='monitor hosts with munin')
-hosts.add_argument('--host-packages',
-                dest='host_packages',
-                help='comma separated list of packages to be installed ' + \
-                    'on the hosts')
+#hosts.add_argument('--host-munin',
+#                dest='host_munin',
+#                action="store_true",
+#                help='monitor hosts with munin')
+#hosts.add_argument('--host-packages',
+#                dest='host_packages',
+#                help='comma separated list of packages to be installed ' + \
+#                    'on the hosts')
 
 
 ## VMs configuration
@@ -179,14 +179,14 @@ vms.add_argument('--vm-clean-disks',
                 dest='vm_clean_disks',
                 action="store_true",
                 help='force to use a fresh copy of the vms backing_file')
-vms.add_argument('--vm-munin',
-                dest='vm_munin',
-                action="store_true",
-                help='monitor VM with munin')
-vms.add_argument('--vm-packages',
-                dest='vm_packages',
-                help='comma separated list of packages to be installed ' + \
-                'on the vms')
+#vms.add_argument('--vm-munin',
+#                dest='vm_munin',
+#                action="store_true",
+#                help='monitor VM with munin')
+#vms.add_argument('--vm-packages',
+#                dest='vm_packages',
+#                help='comma separated list of packages to be installed ' + \
+#                'on the vms')
 
 args = parser.parse_args()
 
