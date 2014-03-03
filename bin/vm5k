@@ -161,7 +161,7 @@ vms = parser.add_argument_group(style.host('Virtual machines'),
 vms.add_argument('-t', '--vm_template',
                     dest='vm_template',
                     help='XML string describing the virtual machine',
-                    default='<vm mem="1024" hdd="10" cpu="1" cpuset="auto"/>')
+                    default='<vm mem="1024" hdd="10" n_cpu="1" cpuset="auto"/>')
 vms.add_argument('-f', '--vm_backing_file',
                     dest='vm_backing_file',
                     default='/grid5000/images/KVM/wheezy-x64-base.qcow2',
@@ -411,6 +411,9 @@ for step in sorted(execution_time.keys()):
 logger.info('Details: \nFiles saved in %s %s', style.emph(args.outdir), log)
 
 
+##############################################################################
+# LAUNCHING PROGRAM
+##############################################################################
 if args.program is not None:
     print_step('Lauching program')
     logger.info(args.program)
