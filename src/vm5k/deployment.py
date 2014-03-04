@@ -179,7 +179,7 @@ class vm5k_deployment():
         self._enable_bridge()
         if not file:
             self._libvirt_uniquify()
-            self._libvirt_bridged_network(bridge)
+        self._libvirt_bridged_network(bridge)
         logger.info('Restarting %s', style.emph('libvirt'))
         self.fact.get_remote('service libvirt-bin restart', self.hosts).run()
 
@@ -337,7 +337,7 @@ class vm5k_deployment():
         self.fact.get_remote(cmd, self.hosts).run()
 
     def _libvirt_bridged_network(self, bridge):
-        logger.debug('Configuring libvirt network ...')
+        logger.info('Configuring libvirt network')
         # Creating an XML file describing the network
         root = Element('network')
         name = SubElement(root, 'name')
@@ -351,7 +351,6 @@ class vm5k_deployment():
         logger.debug('Destroying existing network')
         destroy = self.fact.get_remote('virsh net-destroy default; ' + \
                             'virsh net-undefine default', self.hosts)
-        destroy.nolog_exit_code = True
         put = TaktukPut(self.hosts, [network_xml],
                         remote_location='/etc/libvirt/qemu/networks/')
         start = self.fact.get_remote(
@@ -363,7 +362,6 @@ class vm5k_deployment():
         self._actions_hosts(netconf)
 
     # Hosts configuration
-
     def _enable_bridge(self, name='br0'):
         """We need a bridge to have automatic DHCP configuration for the VM."""
         logger.info('Configuring the bridge')
@@ -412,11 +410,8 @@ class vm5k_deployment():
             while (not if_up) and nmap_tries < 20:
                 sleep(20)
                 nmap_tries += 1
-                nmap = SshProcess('nmap ' + \
-                    ' '.join([host for host in nobr_hosts]) + ' -p 22',
-                      Host(g5k_configuration['default_frontend']),
-                      connection_params=default_frontend_connection_params
-                      ).run()
+                nmap = Process('nmap ' + \
+                    ' '.join([host for host in nobr_hosts]) + ' -p 22').run()
                 for line in nmap.stdout.split('\n'):
                     if 'Nmap done' in line:
                         if_up = line.split()[2] == line.split()[5].replace('(',
@@ -502,9 +497,10 @@ class vm5k_deployment():
         self._actions_hosts(install_libvirt)
 
         if other_packages:
+            other_packages = other_packages.replace(',', ' ')
             logger.info('Installing extra packages \n%s',
                         style.emph(other_packages))
-            other_packages.replace(',', ' ')
+
             cmd = 'export DEBIAN_MASTER=noninteractive ; ' + \
                 'apt-get update && apt-get install -y --force-yes ' + \
                 other_packages
@@ -640,7 +636,7 @@ class vm5k_deployment():
     def _set_vms_ip_mac(self):
         """Not finished """
         if isinstance(self.ip_mac, dict):
-            i_vm = {site: 0 for site in self.sites }
+            i_vm = {site: 0 for site in self.sites}
             for vm in self.vms:
                 vm_site = get_host_site(vm['host'])
                 vm['ip'], vm['mac'] = self.ip_mac[vm_site][i_vm[vm_site]]
@@ -659,7 +655,8 @@ class vm5k_deployment():
             SubElement(_state, 'site', attrib={'id': site})
         logger.debug('Sites added \n %s', prettify(_state))
         for cluster in self.clusters:
-            el_site = _state.find("./site[@id='" + get_cluster_site(cluster) + "']")
+            el_site = _state.find("./site[@id='" + get_cluster_site(cluster) \
+                                  + "']")
             SubElement(el_site, 'cluster', attrib={'id': cluster})
         logger.debug('Clusters added \n %s', prettify(_state))
         for host in self.hosts:

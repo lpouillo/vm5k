@@ -7,8 +7,7 @@ from math import ceil, log
 from execo import logger, SshProcess, Put, Remote, Host, TaktukRemote, \
     Process, TaktukPut
 from execo.log import style
-from execo_g5k import get_g5k_sites, default_frontend_connection_params, \
-    g5k_configuration
+from execo_g5k import get_g5k_sites
 
 
 def vms_lists(vms, server):
@@ -20,8 +19,7 @@ def vms_lists(vms, server):
     f.close()
     Put([server], [vms_list], remote_location='/etc/').run()
     SshProcess('[ -f /etc/hosts.bak ] && cp /etc/hosts.bak /etc/hosts || ' + \
-               ' cp /etc/hosts /etc/hosts.bak',
-           server).run()
+               ' cp /etc/hosts /etc/hosts.bak', server).run()
     Remote('cat /etc/' + vms_list.split('/')[-1] + ' >> /etc/hosts',
            [server]).run()
     Process('rm ' + vms_list).run()
@@ -32,9 +30,9 @@ def get_server_ip(host):
     if isinstance(host, Host):
         host = host.address
     logger.debug('Retrieving IP from %s', style.host(host))
-    get_ip = SshProcess('host ' + host + ' |cut -d \' \' -f 4',
-                  g5k_configuration['default_frontend'],
-                  connection_params=default_frontend_connection_params).run()
+    get_ip = Process('host ' + host + ' |cut -d \' \' -f 4')
+    get_ip.shell = True
+    get_ip.run()
     ip = get_ip.stdout.strip()
     return ip
 
@@ -43,7 +41,7 @@ def get_server_iface(server):
     """Get the default network interface of the serve """
     logger.debug('Retrieving default interface from %s',
                 style.host(server.address))
-    get_if = SshProcess('ip route |grep default |cut -f 5 -d " "',
+    get_if = SshProcess('ip route |grep default |cut -d " " -f 5',
                 server).run()
     return get_if.stdout.strip()
 
@@ -124,7 +122,6 @@ def dnsmasq_server(server, clients=None, vms=None, dhcp=True):
     logger.debug('Restarting service ...')
     cmd = 'service dnsmasq stop ; rm /var/lib/misc/dnsmasq.leases ; service dnsmasq start',
     SshProcess(cmd, server).run()
-
 
 
 
