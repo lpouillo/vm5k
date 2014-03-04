@@ -2,7 +2,7 @@
 vm5k: automatic virtual machines deployment
 *******************************************
 
-The vm5k script provides a tool to deploy a large number of virtual machines 
+Vm5k is a tool to deploy a large number of virtual machines 
 on the Grid'5000 platform. It provides several options to customize your 
 environments and topology.
 
@@ -73,7 +73,7 @@ A generated one can be found in vm5k outdir after deployment or in examples dire
 vm5k package.
  
  
-Choose the hosts hardware 
+Select the hosts hardware 
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 If you want to test your application on a specific hardware (CPU, RAM, ...), you can select the 
@@ -91,27 +91,11 @@ more details on the cluster hardware.
 Define the VMs template 
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-You can customize the virtual machines hardware by defining a template::
+You can customize the virtual machines components by defining a template::
 
  vm5k --n_vm 20 --vm_template '<vm mem="4096" hdd="10" n_cpu="4" cpuset="auto"/>' 
  
-  
-Use an existing job
-^^^^^^^^^^^^^^^^^^^
-
-You may use an existing reservation::
-
- vm5k --n_vm 100 -j 42895 
- vm5k --n_vm 10 -j grenoble:1657430
- vm5k --n_vm 45 -j grenoble:1657430,toulouse:415866,rennes:673350
- 
-It will retrieve the hosts that you have, deploy and configure them, and finally 
-distribute the VM on them.
-
-You can also know how many VM can be run on a list of hosts (checking RAM availability)
-using::
-
- vm5k_max_vms -j 42895 -t '<vm mem="2048" hdd="10" cpu="4" cpuset="auto"/>'
+or using `Topology file <http://vm5k.readthedocs.org/en/latest/vm5k.html#use-a-topology-file>`_. 
 
 Launch a program after the deployment
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -129,6 +113,24 @@ Have a look to the file vm5k/examples/boot_time.py for a simple example in Pytho
 
 Advanced usage
 --------------
+
+Use an existing job
+^^^^^^^^^^^^^^^^^^^
+
+You may use an existing reservation::
+
+ vm5k --n_vm 100 -j 42895 
+ vm5k --n_vm 10 -j grenoble:1657430
+ vm5k --n_vm 45 -j grenoble:1657430,toulouse:415866,rennes:673350
+ 
+It will retrieve the hosts that you have, deploy and configure them, and finally 
+distribute the VM on them.
+
+You can also know how many VM can be run on a list of hosts (checking RAM availability)
+using::
+
+ vm5k_max_vms -j 42895 -t '<vm mem="2048" hdd="10" cpu="4" cpuset="auto"/>'
+
 
 Customize the environments of the hosts and VMs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -160,7 +162,8 @@ use it in vm5k with::
  vm5k --n_vm 100 -r taurus:4,nancy:10 -w 2:00:00 -k
  vm5k --n_vm 600 -r grid5000:100 -w 2:00:00 -k -b reims
  
-When using global kavlan, you must blacklist reims due to bug 
+When using global kavlan, i.e. a isolated VLAN on multiple sites, you must blacklist 
+reims due to `bug 4634 <https://intranet.grid5000.fr/bugzilla/show_bug.cgi?id=4634`_ 
 
 Use a topology file 
 ^^^^^^^^^^^^^^^^^^^
