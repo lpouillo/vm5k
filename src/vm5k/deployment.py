@@ -26,8 +26,6 @@ from execo.action import ActionFactory
 from execo.log import style
 from execo.config import TAKTUK, CHAINPUT
 from execo_g5k import deploy, Deployment
-from execo_g5k.config import g5k_configuration, \
-    default_frontend_connection_params
 from execo_g5k.api_utils import get_host_cluster, \
     get_cluster_site, get_host_site, canonical_host_name
 from execo_g5k.utils import get_kavlan_host_name
@@ -546,6 +544,14 @@ class vm5k_deployment():
             # multi site in prod network
             self.ip_mac = {site: resource['ip_mac']
                             for site, resource in resources.iteritems()}
+        if isinstance(self.ip_mac, list) and len(self.ip_mac) == 0:
+            logger.error('No ip_range given in the resources')
+            exit()
+        elif isinstance(self.ip_mac, list):
+            for ip_mac in self.ip_mac.itervalues():
+                if len(ip_mac) == 0:
+                    logger.error('No ip_range given in the resources')
+                    exit()
 
     def _get_resources_elements(self, resources=None):
         """ """
