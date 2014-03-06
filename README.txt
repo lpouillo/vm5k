@@ -9,7 +9,7 @@ It is composed of:
 * an experimental engine that conduct user defined workflow for a set of parameters (vm5k_engine)
 * a lib to setup Debian hosts with libvirt and manage virtual machines 
 
-Developped by the Inria Hemera initiative 2010-2014 
+Developed by the Inria Hemera initiative 2010-2014 
 https://www.grid5000.fr/mediawiki/index.php/Hemera
 
 See documentation on http://vm5k.readthedocs.org
