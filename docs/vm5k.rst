@@ -2,7 +2,7 @@
 vm5k: automatic virtual machines deployment
 *******************************************
 
-Vm5k is a tool to deploy a large number of virtual machines 
+Vm5k is a tool used to deploy a large number of virtual machines 
 on the Grid'5000 platform. It provides several options to customize your 
 environments and topology.
 
@@ -45,7 +45,7 @@ Basic usage
 -----------
 
 The basic usage is to create a certain number of virtual machines on Grid'5000.
-To deploy 100 VM on *wheezy-x64-base* hosts and with the *wheezy-x64-base.qcow2* KVM image
+To deploy 100 VMs on *wheezy-x64-base* hosts and with the *wheezy-x64-base.qcow2* KVM image
 on any Grid5000 cluster with hardware virtualization, for 2 hours::
 
   vm5k --n_vm 100 -w 2:00:00
@@ -57,7 +57,7 @@ Choose a distribution for the VMs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Default distribution follow a ``round-robin`` mechanism, i.e. adding vm to host while cycling around
-them and checking that it can sustain more VM. But you may want to have a the same number of VM on
+them and checking that it can sustain more VM. But you may want to have a the same number of VMs on
 all hosts. For that use ``n_by_hosts``::
 
   vm5k -r grid5000:20 -n 100 -d n_by_hosts
@@ -100,7 +100,7 @@ or using `Topology file <http://vm5k.readthedocs.org/en/latest/vm5k.html#use-a-t
 Launch a program after the deployment
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If you already have an experimental scripts that must be run on the deployed hosts and VM,
+If you already have an experimental script that must be run on the deployed hosts and VMs,
 you can use -p option::
 
  vm5k --n_vm 100 -p myscript.sh -o myxp
@@ -124,9 +124,9 @@ You may use an existing reservation::
  vm5k --n_vm 45 -j grenoble:1657430,toulouse:415866,rennes:673350
  
 It will retrieve the hosts that you have, deploy and configure them, and finally 
-distribute the VM on them.
+distribute the VMs on them.
 
-You can also know how many VM can be run on a list of hosts (checking RAM availability)
+You can also know how many VMs can be run on a list of hosts (checking RAM availability)
 using::
 
  vm5k_max_vms -j 42895 -t '<vm mem="2048" hdd="10" cpu="4" cpuset="auto"/>'
@@ -137,7 +137,7 @@ Customize the environments of the hosts and VMs
 
 To perform your experiments, you may want to use specific environments to test the effect of 
 various configurations (distribution version, kernel parameters, vm disk, ...). You can 
-choose the hosts operating system with::
+choose hosts operating system with::
 
  vm5k --n_vm 50 --walltime 2:00:00 --env_name wheezy-x64-prod
  vm5k --n_vm 50 --walltime 2:00:00 --env_name user:env_name
@@ -168,7 +168,8 @@ reims due to `bug 4634 <https://intranet.grid5000.fr/bugzilla/show_bug.cgi?id=46
 Use a topology file 
 ^^^^^^^^^^^^^^^^^^^
 
-To have the finest control on the deployment topology, you can use an input file that described the topology and VM
+To have the finest control on the deployment topology, you can use an input file that described the 
+topology and VMs
 characteristics::
 
  vm5k -i topology_file.xml -w 6:00:00
@@ -181,7 +182,6 @@ where `topology_file.xml` is:
 Options
 -------
 
-
 Execution
 ^^^^^^^^^
 
@@ -192,9 +192,10 @@ Manage how vm5k is executed
   -q, --quiet           print only warning and error messages
   -o OUTDIR, --outdir OUTDIR
                         where to store the vm5k log files
-                        default=vm5k_20140219_003738_+0100
+                        default=vm5k_20140307_013045_+0100
   -p PROGRAM, --program PROGRAM
                         Launch a program at the end of the deployment
+  --plot                draw a topological graph of the deployment
 
 Mode
 ^^^^
@@ -203,12 +204,13 @@ Define the mode of vm5k
 
   -n N_VM, --n_vm N_VM  number of virtual machines
   -i INFILE, --infile INFILE
-                        XML file describing the placement of VM on G5K sites and clusters
+                        XML file describing the placement of VMs on G5K sites and clusters
   -j JOB_ID, --job_id JOB_ID
                         use the hosts from a oargrid_job or a oar_job.
   -w WALLTIME, --walltime WALLTIME
                         duration of your reservation
-  -k, --kavlan          Deploy the VM in a KaVLAN
+  -k, --kavlan          Deploy the VMs in a KaVLAN
+
 
 Physical hosts
 ^^^^^^^^^^^^^^
@@ -224,10 +226,10 @@ Tune the physical hosts.
   -a ENV_FILE, --env_file ENV_FILE
                         path to the Kadeploy environment file
   --forcedeploy         force the deployment of the hosts
-  --nodeploy            consider that hosts are already deployed
-  --host-munin          monitor hosts with munin
+  --nodeploy            consider that hosts are already deployed and configured
   --host-packages HOST_PACKAGES
                         comma separated list of packages to be installed on the hosts
+
 
 Virtual machines
 ^^^^^^^^^^^^^^^^
@@ -241,10 +243,8 @@ Tune the virtual machines.
   -l VM_DISK_LOCATION, --vm_disk_location VM_DISK_LOCATION
                         Where to create the qcow2: one (default) or all)
   -d VM_DISTRIBUTION, --vm_distribution VM_DISTRIBUTION
-                        how to distribute the VM distributed (default) or concentrated
+                        how to distribute the VMs distributed (default) or concentrated
   --vm-clean-disks      force to use a fresh copy of the vms backing_file
-  --vm-munin            monitor VM with munin
-  --vm-packages VM_PACKAGES
-                        comma separated list of packages to be installed on the vms
+
 
 

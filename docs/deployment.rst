@@ -13,7 +13,7 @@ using a preconfigured version of debian wheezy.
 * libvirt-bin and qemu-kvm from debian testing (jessie)
 * a bridged networking for virtual machines
 
-It needs a range of IP, either from g5k-subnets or kavlan to configure the VMs.
+It needs an IP address range, either from g5k-subnets or kavlan to configure the VMs.
 
 
 .. autoclass:: vm5k.deployment.vm5k_deployment
