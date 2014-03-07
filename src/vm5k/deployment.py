@@ -181,8 +181,7 @@ class vm5k_deployment():
         logger.info('Restarting %s', style.emph('libvirt'))
         self.fact.get_remote('service libvirt-bin restart', self.hosts).run()
 
-    def deploy_vms(self, clean_disks=False, disk_location='one',
-            backing_file='/grid5000/images/KVM/wheezy-x64-base.qcow2'):
+    def deploy_vms(self, clean_disks=False, disk_location='one'):
         """Destroy the existing VMS, create the virtual disks, install the vms
         start them and wait until they have rebooted"""
         logger.info('Destroying existing virtual machines')
@@ -190,7 +189,7 @@ class vm5k_deployment():
         if clean_disks:
             self._remove_existing_disks()
         logger.info('Creating the virtual disks ')
-        self._create_backing_file(from_disk=backing_file)
+        self._create_backing_file()
         if disk_location == 'one':
             create_disks(self.vms).run()
         elif disk_location == 'all':
@@ -206,11 +205,12 @@ class vm5k_deployment():
 #        logger.info('Done in %s seconds',
 #                    style.emph(self.boot_time.elapsed()))
 
-    def get_state(self, output=True, mode='compact', plot=False):
+    def get_state(self, name=None, output=True, mode='compact', plot=False):
         """ """
+        if not name:
+            name = 'vm5k_' + strftime('%Y%m%d_%H%M%S', localtime())
         if output:
-            output = self.outdir + '/vm5k_' + \
-                strftime('%Y%m%d_%H%M%S', localtime()) + '.xml'
+            output = self.outdir + '/' + name + '.xml'
             f = open(output, 'w')
             f.write(prettify(self.state))
             f.close()
@@ -271,50 +271,50 @@ class vm5k_deployment():
                 connection_params={'taktuk_options': taktuk_conf}).run()
         self._actions_hosts(conf_ssh)
 
-    def _create_backing_file(self,
-            from_disk='/grid5000/images/KVM/wheezy-x64-base.qcow2',
-            to_disk='/tmp/vm-base.img'):
+    def _create_backing_file(self):
         """ """
+        disks = list(set([vm['backing_file'] for vm in self.vms]))
+        for from_disk in disks:
+            logger.info('Treating ' + from_disk)
+            to_disk = '/tmp/' + from_disk.split('/')[-1]
 
-        logger.debug("Checking frontend disk vs host disk")
-        f_disk = Process('md5sum -t ' + from_disk).run()
-        disk_hash = f_disk.stdout.split(' ')[0]
-        cmd = 'if [ -f /tmp/' + from_disk.split('/')[-1] + ' ]; ' + \
-            'then md5sum  -t /tmp/' + from_disk.split('/')[-1] + '; fi'
+            logger.debug("Checking frontend disk vs host disk")
+            f_disk = Process('md5sum -t ' + from_disk).run()
+            disk_hash = f_disk.stdout.split(' ')[0]
+            cmd = 'if [ -f ' + to_disk + ' ]; ' + \
+                'then md5sum  -t ' + to_disk + '; fi'
+            h_disk = self.fact.get_remote(cmd, self.hosts).run()
+            disk_ok = True
+            for p in h_disk.processes:
+                if p.stdout.split(' ')[0] != disk_hash:
+                    disk_ok = False
+                    break
 
-        h_disk = self.fact.get_remote(cmd, self.hosts).run()
-        disk_ok = True
-        for p in h_disk.processes:
-            if p.stdout.split(' ')[0] != disk_hash:
-                disk_ok = False
-                break
+            if disk_ok:
+                logger.info("Disk is already present, skipping copy")
+            else:
+                logger.info("Copying backing file from frontends")
+                copy_file = self.fact.get_fileput(self.hosts, [from_disk],
+                                                remote_location='/tmp/').run()
+                self._actions_hosts(copy_file)
+#                logger.debug('Creating disk image on ' + to_disk)
+#                cmd = 'qemu-img convert -O raw /tmp/' + from_disk.split('/')[-1] + \
+#                        ' ' + to_disk
+#                convert = self.fact.get_remote(cmd, self.hosts).run()
+#                self._actions_hosts(convert)
 
-        if disk_ok:
-            logger.info("Disk is already present, skipping copy")
-        else:
-            logger.info("Copying backing file from frontends")
-            copy_file = self.fact.get_fileput(self.hosts, [from_disk],
-                                            remote_location='/tmp/').run()
-            self._actions_hosts(copy_file)
-
-            logger.debug('Creating disk image on ' + to_disk)
-            cmd = 'qemu-img convert -O raw /tmp/' + from_disk.split('/')[-1] + \
-                    ' ' + to_disk
-            convert = self.fact.get_remote(cmd, self.hosts).run()
-            self._actions_hosts(convert)
-
-        if default_connection_params['user'] == 'root':
-            logger.debug('Copying ssh key on ' + to_disk + ' ...')
-            cmd = 'modprobe nbd max_part=16; ' + \
-        'qemu-nbd --connect=/dev/nbd0 ' + to_disk + \
-        ' ; sleep 3 ; partprobe /dev/nbd0 ; ' + \
-        'part=`fdisk -l /dev/nbd0 |grep "*"|grep dev|cut -f 1 -d " "` ; ' + \
-        'mount $part /mnt ; mkdir /mnt/root/.ssh ; ' + \
-        'cp /root/.ssh/authorized_keys /mnt/root/.ssh/authorized_keys ; ' + \
-        'cp -r /root/.ssh/id_rsa* /mnt/root/.ssh/ ;' + \
-        'umount /mnt; qemu-nbd -d /dev/nbd0'
-            copy_on_vm_base = self.fact.get_remote(cmd, self.hosts).run()
-            self._actions_hosts(copy_on_vm_base)
+            if default_connection_params['user'] == 'root':
+                logger.info('Copying ssh key on ' + to_disk + ' ...')
+                cmd = 'modprobe nbd max_part=16; ' + \
+            'qemu-nbd --connect=/dev/nbd0 ' + to_disk + \
+            ' ; sleep 3 ; partprobe /dev/nbd0 ; ' + \
+            'part=`fdisk -l /dev/nbd0 |grep "*"|grep dev|cut -f 1 -d " "` ; ' + \
+            'mount $part /mnt ; mkdir /mnt/root/.ssh ; ' + \
+            'cp /root/.ssh/authorized_keys /mnt/root/.ssh/authorized_keys ; ' + \
+            'cp -r /root/.ssh/id_rsa* /mnt/root/.ssh/ ;' + \
+            'umount /mnt; qemu-nbd -d /dev/nbd0'
+                copy_on_vm_base = self.fact.get_remote(cmd, self.hosts).run()
+                self._actions_hosts(copy_on_vm_base)
 
     def _remove_existing_disks(self, hosts=None):
         """Remove all img and qcow2 file from /tmp directory """
@@ -547,7 +547,7 @@ class vm5k_deployment():
         if isinstance(self.ip_mac, list) and len(self.ip_mac) == 0:
             logger.error('No ip_range given in the resources')
             exit()
-        elif isinstance(self.ip_mac, list):
+        elif isinstance(self.ip_mac, dict):
             for ip_mac in self.ip_mac.itervalues():
                 if len(ip_mac) == 0:
                     logger.error('No ip_range given in the resources')

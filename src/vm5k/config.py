@@ -3,7 +3,7 @@ from execo import configuration
 
 default_vm = {'id': None, 'host': None, 'ip': None, 'mac': None,
     'mem': 512, 'n_cpu': 1, 'cpuset': 'auto',
-    'hdd': 10, 'backing_file': '/tmp/vm-base.img',
+    'hdd': 10, 'backing_file': '/grid5000/images/KVM/wheezy-x64-base.qcow2',
     'state': 'KO'}
 
 configuration['color_styles']['OK'] = 'green',  'bold'

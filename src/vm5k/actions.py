@@ -207,12 +207,13 @@ def destroy_vms(hosts):
         TaktukRemote('{{cmds}}', hosts_with_vms).run()
 
 
-def create_disks(vms, backing_file='/tmp/vm-base.img', backing_fmt='raw'):
+def create_disks(vms):
     """ Return an action to create the disks for the VMs on the hosts"""
     hosts_cmds = {}
     for vm in vms:
-        cmd = 'qemu-img create -f qcow2 -o backing_file=' + backing_file + \
-            ',backing_fmt=' + backing_fmt + ' /tmp/' + \
+        backing_file = vm['backing_file'].split('/')[-1]
+        cmd = 'qemu-img create -f qcow2 -o backing_file=/tmp/' + \
+            backing_file + ',backing_fmt=qcow2 /tmp/' + \
             vm['id'] + '.qcow2 ' + str(vm['hdd']) + 'G ; '
         hosts_cmds[vm['host']] = cmd if not vm['host'] in hosts_cmds \
             else hosts_cmds[vm['host']] + cmd
@@ -222,15 +223,14 @@ def create_disks(vms, backing_file='/tmp/vm-base.img', backing_fmt='raw'):
     return TaktukRemote('{{hosts_cmds.values()}}', list(hosts_cmds.keys()))
 
 
-def create_disks_on_hosts(vms, hosts, backing_file='/tmp/vm-base.img',
-                          backing_fmt='raw'):
+def create_disks_on_hosts(vms, hosts):
     """ Return a Parallel action to create the qcow2 disks on all hosts"""
     host_actions = []
     for host in hosts:
         tmp_vms = deepcopy(vms)
         for vm in tmp_vms:
             vm['host'] = host
-        host_actions.append(create_disks(tmp_vms, backing_file, backing_fmt))
+        host_actions.append(create_disks(tmp_vms))
     return ParallelActions(host_actions)
 
 
