@@ -275,7 +275,7 @@ class vm5k_deployment():
         """ """
         disks = list(set([vm['backing_file'] for vm in self.vms]))
         for from_disk in disks:
-            logger.info('Treating ' + from_disk)
+            logger.info('Treating ' + style.emph(from_disk))
             to_disk = '/tmp/' + from_disk.split('/')[-1]
 
             logger.debug("Checking frontend disk vs host disk")
@@ -293,7 +293,7 @@ class vm5k_deployment():
             if disk_ok:
                 logger.info("Disk is already present, skipping copy")
             else:
-                logger.info("Copying backing file from frontends")
+                logger.debug("Copying backing file from frontends")
                 copy_file = self.fact.get_fileput(self.hosts, [from_disk],
                                                 remote_location='/tmp/').run()
                 self._actions_hosts(copy_file)
@@ -304,7 +304,7 @@ class vm5k_deployment():
 #                self._actions_hosts(convert)
 
             if default_connection_params['user'] == 'root':
-                logger.info('Copying ssh key on ' + to_disk + ' ...')
+                logger.debug('Copying ssh key on ' + to_disk + ' ...')
                 cmd = 'modprobe nbd max_part=16; ' + \
             'qemu-nbd --connect=/dev/nbd0 ' + to_disk + \
             ' ; sleep 3 ; partprobe /dev/nbd0 ; ' + \

@@ -111,10 +111,10 @@ def dnsmasq_server(server, clients=None, vms=None, dhcp=True):
     test_running = Process('nmap ' + server + ' -p 53 | grep domain')
     test_running.shell = True
     test_running.run()
-    if 'domain' in test_running.stdout:
+    if 'open' in test_running.stdout:
         logger.info('DNS server already running, updating configuration')
     else:
-        cmd ='export DEBIAN_MASTER=noninteractive ; apt-get update ; apt-get -y purge dnsmasq-base ; '+\
+        cmd = 'export DEBIAN_MASTER=noninteractive ; apt-get update ; apt-get -y purge dnsmasq-base ; '+\
              'apt-get install -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confnew" '+\
              '-y dnsmasq; echo 1 > /proc/sys/net/ipv4/ip_forward '
         SshProcess(cmd, server).run()
