@@ -304,13 +304,7 @@ if args.job_id is None:
 
     logger.debug('Jobs specifications %s', pformat(jobs_specs))
 
-    if len(jobs_specs) == 1:
-        jobs_specs[0][0].walltime = args.walltime
-        jobs_specs[0][0].additional_options = "-t deploy"
-        jobs_specs[0][0].reservation_date = startdate
-        job_id, frontend = oarsub(jobs_specs)
-    else:
-        job_id, _ = oargridsub(jobs_specs, walltime=args.walltime,
+    job_id, _ = oargridsub(jobs_specs, walltime=args.walltime,
          additional_options="-t deploy", reservation_date=startdate)
 
     if job_id is None:
