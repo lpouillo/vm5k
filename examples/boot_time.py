@@ -10,7 +10,9 @@ from numpy import array, median
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-from execo import TaktukRemote, logger
+from execo import TaktukRemote, logger, default_connection_params
+
+default_connection_params['user'] = 'root'
 
 logger.info('Measuring boot time')
 
@@ -64,4 +66,4 @@ n, bins, patches = plt.hist(uptime, bins=5,
 plt.xlabel('Boot duration')
 plt.ylabel('Number of VMs')
 plt.grid(True)
-plt.savefig(run_dir + 'boot_time.png')
+plt.savefig(run_dir + '/boot_time.png')
