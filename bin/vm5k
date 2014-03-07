@@ -20,15 +20,13 @@ from xml.etree.ElementTree import fromstring, parse, dump
 from execo import logger, Process, default_connection_params
 from execo.log import style
 from execo.time_utils import Timer, format_date, format_duration
-from execo_g5k import oargridsub
+from execo_g5k import oargridsub, oarsub
 from execo_g5k.oargrid import get_oargridsub_commandline
 from execo_g5k.planning import get_planning, compute_slots, show_resources, \
     find_free_slot, get_jobs_specs, distribute_hosts
 from execo_engine import copy_outputs
 from vm5k import vm5k_deployment, define_vms, get_oar_job_vm5k_resources, \
     get_max_vms, get_oargrid_job_vm5k_resources, get_vms_slot, print_step
-from vm5k.services import setup_munin
-
 
 
 ##############################################################################
@@ -58,7 +56,7 @@ desc = 'A tool to deploy and configure nodes and virtual machines with ' + \
     '\n - ' + style.host('infile + walltime') + \
     ' = perform a reservation according to the placement XML infile' + \
     '.\nBased on execo-2.2, ' + style.emph('http://execo.gforge.inria.fr/doc/')
-epilog = style.host('Examples:') + '\nDeploy 100 VM with the default ' + \
+epilog = style.host('Examples:') + '\nDeploy 100 VMs with the default ' + \
     'environnements for 3h ' + \
     style.command('\n %(prog)s -n 100 -w 3:00:00') + \
     '\nDocumentation can be found on ' + \
@@ -92,7 +90,7 @@ run.add_argument("-p", "--program",
 run.add_argument("--plot",
                 dest='plot',
                 action="store_true",
-                help='draw a graph of the deployment')
+                help='draw a topological graph of the deployment')
 #run.add_argument("--live-plot",
 #                action="store_true",
 #                help='Open a figure to track the deployment process')
@@ -107,7 +105,7 @@ optnvm.add_argument('-n', '--n_vm',
                 help='number of virtual machines')
 optnvm.add_argument('-i', '--infile',
                 dest="infile",
-                help='XML file describing the placement of VM ' + \
+                help='XML file describing the placement of VMs ' + \
                     'on G5K sites and clusters')
 optresa = mode.add_mutually_exclusive_group()
 optresa.add_argument('-j', '--job_id',
@@ -120,7 +118,7 @@ mode.add_argument('-k', '--kavlan',
                 dest='kavlan',
                 action="store_true",
                 default=False,
-                help='Deploy the VM in a KaVLAN')
+                help='Deploy the VMs in a KaVLAN')
 
 ## Hosts configuration
 hosts = parser.add_argument_group(style.host('Physical hosts'),
@@ -156,14 +154,13 @@ hosts.add_argument('--host-packages',
 #                help='monitor hosts with munin')
 
 
-
 ## VMs configuration
 vms = parser.add_argument_group(style.host('Virtual machines'),
                 "Tune the virtual machines.")
 vms.add_argument('-t', '--vm_template',
                     dest='vm_template',
                     help='XML string describing the virtual machine',
-                    default='<vm mem="1024" hdd="10" n_cpu="1" cpuset="auto"/>')
+                    default='<vm mem="1024" hdd="10" n_cpu="1" cpuset="auto" />')
 vms.add_argument('-f', '--vm_backing_file',
                     dest='vm_backing_file',
                     default='/grid5000/images/KVM/wheezy-x64-base.qcow2',
@@ -174,7 +171,7 @@ vms.add_argument('-l', '--vm_disk_location',
                     help='Where to create the qcow2: one (default) or all)')
 vms.add_argument('-d', '--vm_distribution',
                     dest='vm_distribution',
-                    help='how to distribute the VM distributed (default) ' + \
+                    help='how to distribute the VMs distributed (default) ' + \
                         'or concentrated')
 vms.add_argument('--vm-clean-disks',
                 dest='vm_clean_disks',
@@ -215,7 +212,7 @@ print_step('VM5K: deployment of VMs on Grid\'5000 *')
 if args.n_vm is None and args.infile is None:
     logger.warning('No options: -n %s or -i %s, setting %s to %s',
                  style.emph('n_vm'), style.emph('infile'),
-                 style.emph('n_vm'), style.emph(str(10)))
+                 style.emph('n_vm'), style.emph(str(30)))
     args.n_vm = 30
 if args.walltime is None and args.job_id is None:
     logger.warning('No options: -w %s or -j %s, setting %s to %s',
@@ -229,7 +226,7 @@ logger.info('Options\n' + '\n'.join([style.emph(option.ljust(20)) + \
 
 
 ### DEFINING VMS AND ELEMENTS
-if args.infile is not None:
+if args.infile:
     # parse the XML file given in arguments
     logger.info('Using %s for the topology', style.emph(args.infile))
     vm5k = parse(args.infile).getroot()
@@ -241,8 +238,12 @@ if args.infile is not None:
     elements = {cluster.get('id'): len(cluster.findall('./host'))
                 for cluster in vm5k.findall('.//cluster')}
 else:
+    logger.info('Defining VMs from template %s', style.emph(args.vm_template))
+    template = fromstring(args.vm_template)
+    if 'backing_file' not in template.attrib:
+        template.attrib['backing_file'] = args.vm_backing_file
     vms = define_vms(['vm-' + str(i + 1) for i in range(args.n_vm)],
-                     template=fromstring(args.vm_template))
+                     template=template)
     elements = {}
     for element in args.resources.split(','):
         if ':' in element:
@@ -252,7 +253,6 @@ else:
         elements[element_uid] = int(n_nodes)
 
 execution_time['1-INIT'] = timer.elapsed()
-
 
 ##############################################################################
 # MANAGING RESERVATION
@@ -304,7 +304,13 @@ if args.job_id is None:
 
     logger.debug('Jobs specifications %s', pformat(jobs_specs))
 
-    (job_id, _) = oargridsub(jobs_specs, walltime=args.walltime,
+    if len(jobs_specs) == 1:
+        jobs_specs[0][0].walltime = args.walltime
+        jobs_specs[0][0].additional_options = "-t deploy"
+        jobs_specs[0][0].reservation_date = startdate
+        job_id, frontend = oarsub(jobs_specs)
+    else:
+        job_id, _ = oargridsub(jobs_specs, walltime=args.walltime,
          additional_options="-t deploy", reservation_date=startdate)
 
     if job_id is None:
@@ -394,11 +400,10 @@ f = open(args.outdir + '/vms.list', 'w')
 for vm in vm5k.vms:
     f.write(vm['ip'] + '\t' + vm['id'] + '\n')
 f.close()
-vm5k.get_state()
+vm5k.get_state(name='initial_topo')
 vm5k.deploy_vms(clean_disks=args.vm_clean_disks,
-                disk_location=args.vm_disk_location,
-                backing_file=args.vm_backing_file)
-vm5k.get_state(plot=args.plot)
+                disk_location=args.vm_disk_location)
+vm5k.get_state(name='final_topo', plot=args.plot)
 
 execution_time['5-VMS'] = timer.elapsed()
 
