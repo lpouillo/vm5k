@@ -605,6 +605,10 @@ class vm5k_deployment():
                 logger.error('List of hosts from resources differs from infile' + \
                     '\n resource %s \n infile %s', self.hosts, hosts)
                 ok = False
+            else:
+                for i in range(len(hosts)):
+                    el_host = xml.find(".//host/[@id='" + hosts[i] + "']")
+                    el_host.attrib['id'] = self.hosts[i]
 
         return ok
 
