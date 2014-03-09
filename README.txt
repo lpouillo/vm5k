@@ -28,7 +28,8 @@ Connect on a Grid'5000 frontend and type the following commands::
 
   export http_proxy="http://proxy:3128"
   export https_proxy="https://proxy:3128"
-  easy_install --user execo
+  wget http://execo.gforge.inria.fr/downloads/execo-2.2.tar.gz
+  tar -xzf execo-2.2.tar.gz && cd execo-2.2 && python setup.py install --user
   easy_install --user matplotlib
   easy_install --user networkx
   mkdir -p vm5k && rsync -avuP /grid5000/code/staging/vm5k/ vm5k
