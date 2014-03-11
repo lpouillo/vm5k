@@ -11,11 +11,14 @@ class MicroArchBenchmark( vm5k_engine ):
         self.env_name = 'wheezy-x64-base'
         self.stress_time = 300
         self.default_memory = 512
+        self.memory_per_cpu = 2048
         self.options_parser.add_option("--mem", dest = "cachebench",
                     help = "", action = "store_true")
 	self.options_parser.add_option("--membw", dest = "mbw",
                     help = "", action = "store_true")
-        self.options_parser.add_option("--nomulti", dest = "nomulti",
+        self.options_parser.add_option("--memshare", dest = "memshare",
+                    help = "", action = "store_true")
+	self.options_parser.add_option("--nomulti", dest = "nomulti",
                     help = "", action = "store_true")
 	
 	self.fact = ActionFactory(remote_tool = SSH,
@@ -86,10 +89,16 @@ class MicroArchBenchmark( vm5k_engine ):
             cpusets = []
             n_mem = []
             vm_numatune = {}
+            vm_cpu_mapping = {}
             
             for i in range(len(comb['dist'])):
                 index = cpu_index[i]
                 for j in range(int(comb['dist'][i])):
+                    if index not in vm_cpu_mapping.keys():
+		      vm_cpu_mapping[index] = 0
+		    else:
+		      vm_cpu_mapping[index] = vm_cpu_mapping[index] + 1
+		      
                     cpusets.append(str(index))
                     n_mem.append(str(self.default_memory))
             # Adding the multi_cpu vm if it exists
@@ -97,10 +106,35 @@ class MicroArchBenchmark( vm5k_engine ):
             if n_cpu > 1:
                 cpusets.append( ','.join( str(cpu_index[i]) for i in range(n_cpu) ) )
                 multi_cpu = True
+                for i in range(n_cpu):
+                    index = cpu_index[i]
+                    if index not in vm_cpu_mapping.keys():
+                        vm_cpu_mapping[index] = 0
+                    else:
+                        vm_cpu_mapping[index] = vm_cpu_mapping[index] + 1
+		     
                 n_mem.append(str(self.default_memory*n_cpu))
             else:
                 multi_cpu = False
 
+            if self.options.mem_share:
+	      n_mem = []
+	      # not multi
+	      for i in range(len(comb['dist'])):
+                index = cpu_index[i]
+                for j in range(int(comb['dist'][i])):
+		  n_mem.append(str(self.memory_per_cpu / vm_cpu_mapping[index]))
+	      
+	      # multi  
+	      n_cpu = sum( [ int(i) for i in comb['multi_cpu'] ])
+	      if n_cpu > 1:
+		memory_vm = 0
+		for i in range(n_cpu):
+		  index = cpu_index[i]
+		  memory_vm += self.memory_per_cpu / vm_cpu_mapping[index]
+		
+		n_mem.append(memory_vm)
+	      
             n_cpus = 1 if not multi_cpu else [1]*(n_vm-1)+[n_cpu]
             vm_ids = ['vm-'+str(i+1) for i in range(n_vm)] if not multi_cpu else ['vm-'+str(i+1) for i in range(n_vm-1)]+['vm-multi']
 #<<<<<<< HEAD
