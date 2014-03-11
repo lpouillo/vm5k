@@ -4,52 +4,62 @@
 from os import fdopen
 from tempfile import mkstemp
 from math import ceil, log
-from execo import logger, SshProcess, Put, Remote, Host, TaktukRemote, Process, TaktukPut
+from execo import logger, SshProcess, Put, Remote, Host, TaktukRemote, \
+    Process, TaktukPut
 from execo.log import style
-from execo_g5k import get_g5k_sites, default_frontend_connection_params, g5k_configuration
+from execo_g5k import get_g5k_sites
 
 
 def vms_lists(vms, server):
     """Generate the list of virtual machines """
     logger.debug('Adding the VM in /etc/hosts ...')
-    fd, vms_list = mkstemp(dir = '/tmp/', prefix='vms_')
+    fd, vms_list = mkstemp(dir='/tmp/', prefix='vms_')
     f = fdopen(fd, 'w')
-    f.write('\n'+'\n'.join( [vm['ip']+' \t '+vm['id'] for vm in vms ] ) )
+    f.write('\n' + '\n'.join([vm['ip'] + ' \t ' + vm['id'] for vm in vms]))
     f.close()
-    Put([server], [vms_list], remote_location= '/etc/').run()
-    SshProcess('[ -f /etc/hosts.bak ] && cp /etc/hosts.bak /etc/hosts || cp /etc/hosts /etc/hosts.bak',
-           server).run()
-    Remote('cat /etc/'+vms_list.split('/')[-1]+' >> /etc/hosts', [server]).run()
-    Process('rm '+vms_list).run()
+    Put([server], [vms_list], remote_location='/etc/').run()
+    SshProcess('[ -f /etc/hosts.bak ] && cp /etc/hosts.bak /etc/hosts || ' + \
+               ' cp /etc/hosts /etc/hosts.bak', server).run()
+    Remote('cat /etc/' + vms_list.split('/')[-1] + ' >> /etc/hosts',
+           [server]).run()
+    Process('rm ' + vms_list).run()
+
 
 def get_server_ip(host):
     """Get the server IP"""
     if isinstance(host, Host):
         host = host.address
     logger.debug('Retrieving IP from %s', style.host(host))
-    get_ip = SshProcess('host '+host+' |cut -d \' \' -f 4', g5k_configuration['default_frontend'],
-                  connection_params = default_frontend_connection_params).run()
-    ip =  get_ip.stdout.strip()
+    get_ip = Process('host ' + host + ' |cut -d \' \' -f 4')
+    get_ip.shell = True
+    get_ip.run()
+    ip = get_ip.stdout.strip()
     return ip
+
 
 def get_server_iface(server):
     """Get the default network interface of the serve """
-    logger.debug('Retrieving default interface from %s', style.host(server.address))
-    get_if = SshProcess('ip route |grep default |cut -f 5 -d " "', server).run()
+    logger.debug('Retrieving default interface from %s',
+                style.host(server.address))
+    get_if = SshProcess('ip route |grep default |cut -d " " -f 5',
+                server).run()
     return get_if.stdout.strip()
 
 
 def resolv_conf(server, clients):
-    """Generate the resolv.conf with dhcp parameters and put it on the server"""
-    fd, resolv = mkstemp(dir = '/tmp/', prefix='resolv_')
+    """Generate the resolv.conf with dhcp parameters and put it on the server
+    """
+    fd, resolv = mkstemp(dir='/tmp/', prefix='resolv_')
     f = fdopen(fd, 'w')
-    f.write('domain grid5000.fr\nsearch grid5000.fr '+\
-            ' '.join( [site+'.grid5000.fr' for site in get_g5k_sites()] )+\
-            '\nnameserver '+get_server_ip(server) )
+    f.write('domain grid5000.fr\nsearch grid5000.fr ' + \
+            ' '.join([site + '.grid5000.fr' for site in get_g5k_sites()]) + \
+            '\nnameserver ' + get_server_ip(server))
     f.close()
-    TaktukPut(clients, [resolv], remote_location = '/etc/').run()
-    TaktukRemote('cd /etc && cp '+resolv.split('/')[-1]+' resolv.conf', clients).run()
-    Process('rm '+resolv).run()
+    TaktukPut(clients, [resolv], remote_location='/etc/').run()
+    TaktukRemote('cd /etc && cp ' + resolv.split('/')[-1] + ' resolv.conf',
+                 clients).run()
+    Process('rm ' + resolv).run()
+
 
 def dhcp_conf(server, vms):
     """Generate the dnsmasq.conf with dhcp parameters and put it on the server"""
@@ -70,6 +80,7 @@ def dhcp_conf(server, vms):
     SshProcess('cd /etc && cp '+dnsmasq.split('/')[-1]+' dnsmasq.conf', server).run()
     Process('rm '+dnsmasq).run()
 
+
 def sysctl_conf(server, vms):
     """Change the default value of net.ipv4.neigh.default.gc_thresh* to handle large number of IP"""
     val = int(2**ceil(log(len(vms), 2)))
@@ -85,7 +96,7 @@ def sysctl_conf(server, vms):
     Process('rm '+sysctl).run()
 
 
-def dnsmasq_server(server, clients, vms, dhcp = True):
+def dnsmasq_server(server, clients=None, vms=None, dhcp=True):
     """Configure a DHCP server with dnsmasq
 
     :param server: host where the server will be installed
@@ -96,22 +107,28 @@ def dnsmasq_server(server, clients, vms, dhcp = True):
 
     """
     logger.debug('Installing and configuring a DNS/DHCP server on %s', server)
-    cmd ='export DEBIAN_MASTER=noninteractive ; apt-get update ; apt-get -y purge dnsmasq-base ; '+\
-         'apt-get install -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confnew" '+\
-         '-y dnsmasq; echo 1 > /proc/sys/net/ipv4/ip_forward '
-    SshProcess(cmd, server).run()
+
+    test_running = Process('nmap ' + server + ' -p 53 | grep domain')
+    test_running.shell = True
+    test_running.run()
+    if 'open' in test_running.stdout:
+        logger.info('DNS server already running, updating configuration')
+    else:
+        cmd = 'export DEBIAN_MASTER=noninteractive ; apt-get update ; apt-get -y purge dnsmasq-base ; '+\
+             'apt-get install -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confnew" '+\
+             '-y dnsmasq; echo 1 > /proc/sys/net/ipv4/ip_forward '
+        SshProcess(cmd, server).run()
 
     vms_lists(vms, server)
-    resolv_conf(server, clients)
-    if dhcp is not None:
+    if clients:
+        resolv_conf(server, clients)
+    if dhcp:
         sysctl_conf(server, vms)
         dhcp_conf(server, vms)
 
     logger.debug('Restarting service ...')
     cmd = 'service dnsmasq stop ; rm /var/lib/misc/dnsmasq.leases ; service dnsmasq start',
-    SshProcess( cmd, server).run()
-
-
+    SshProcess(cmd, server).run()
 
 
 
