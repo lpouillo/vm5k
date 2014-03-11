@@ -18,13 +18,10 @@ class MicroArchBenchmark(vm5k_engine):
                     help = "", action = "store_true")
         self.options_parser.add_option("--memshare", dest = "memshare",
                     help = "", action = "store_true")
-	self.options_parser.add_option("--nomulti", dest = "nomulti",
+        self.options_parser.add_option("--nomulti", dest = "nomulti",
                     help = "", action = "store_true")
         
-	self.fact = ActionFactory(remote_tool = SSH,
-			fileput_tool = SCP,
-			fileget_tool = SCP)
-
+        
     def define_parameters(self):
         """ Create the parameters for the engine :
         - distribution of VM
@@ -95,10 +92,10 @@ class MicroArchBenchmark(vm5k_engine):
                 index = cpu_index[i]
                 for j in range(int(comb['dist'][i])):
                     if index not in vm_cpu_mapping.keys():
-		      vm_cpu_mapping[index] = 0
-		    else:
-		      vm_cpu_mapping[index] = vm_cpu_mapping[index] + 1
-		      
+                        vm_cpu_mapping[index] = 0
+                    else:
+                        vm_cpu_mapping[index] = vm_cpu_mapping[index] + 1
+
                     cpusets.append(str(index))
                     n_mem.append(str(self.default_memory))
             # Adding the multi_cpu vm if it exists
@@ -112,54 +109,48 @@ class MicroArchBenchmark(vm5k_engine):
                         vm_cpu_mapping[index] = 0
                     else:
                         vm_cpu_mapping[index] = vm_cpu_mapping[index] + 1
-		     
+
                 n_mem.append(str(self.default_memory*n_cpu))
             else:
                 multi_cpu = False
 
             if self.options.mem_share:
-	      n_mem = []
-	      # not multi
-	      for i in range(len(comb['dist'])):
-                index = cpu_index[i]
-                for j in range(int(comb['dist'][i])):
-		  n_mem.append(str(self.memory_per_cpu / vm_cpu_mapping[index]))
-	      
-	      # multi  
-	      n_cpu = sum( [ int(i) for i in comb['multi_cpu'] ])
-	      if n_cpu > 1:
-		memory_vm = 0
-		for i in range(n_cpu):
-		  index = cpu_index[i]
-		  memory_vm += self.memory_per_cpu / vm_cpu_mapping[index]
-		
-		n_mem.append(memory_vm)
-	      
+                n_mem = []
+                # not multi
+                for i in range(len(comb['dist'])):
+                    index = cpu_index[i]
+                    for j in range(int(comb['dist'][i])):
+                        n_mem.append(str(self.memory_per_cpu / vm_cpu_mapping[index]))
+                
+                # multi
+                n_cpu = sum( [ int(i) for i in comb['multi_cpu'] ])
+                if n_cpu > 1:
+                    memory_vm = 0
+                    for i in range(n_cpu):
+                        index = cpu_index[i]
+                        memory_vm += self.memory_per_cpu / vm_cpu_mapping[index]
+                    
+                    n_mem.append(memory_vm)
+                          
             n_cpus = 1 if not multi_cpu else [1]*(n_vm-1)+[n_cpu]
             vm_ids = ['vm-'+str(i+1) for i in range(n_vm)] if not multi_cpu else ['vm-'+str(i+1) for i in range(n_vm-1)]+['vm-multi']
-#<<<<<<< HEAD
             vms = define_vms(vm_ids, ip_mac = ip_mac,
                              n_cpu = n_cpus, cpusets = cpusets, mem = n_mem)
 
             for vm in vms:
                 vm['host'] = hosts[0]
-		vm_cpusets = vm['cpuset'].split(',')
-		if len(vm_cpusets) > 1:
-		  numalist = []
-		  for vcpu in vm_cpusets:
-		    numalist.append(self.cpuToNuma(vcpu))
-		  vm_numatune[vm['id']] = numalist
-		else:
-		  vm_numatune[vm['id']] = [self.cpuToNuma(vm['cpuset'])]
-		logger.info(vm['id']+' is using NUMA node(s) : '+str(vm_numatune[vm['id']]) )     
-#=======
-            #if not self.options.cachebench:
-                #vms = define_vms(vm_ids, ip_mac = ip_mac,
-                #n_cpu = n_cpus, cpusets = cpusets, mem = n_mem)
-            #else:
-                #for vm in vms:
-                    #vm['host'] = hosts[0]
-#>>>>>>> c7fd7f7a6d401181fa4e0aa8ea11cb2cb6b6d874
+                
+            vm_cpusets = vm['cpuset'].split(',')
+            if len(vm_cpusets) > 1:
+                numalist = []
+                for vcpu in vm_cpusets:
+                    numalist.append(self.cpuToNuma(vcpu))
+                    vm_numatune[vm['id']] = numalist
+            else:
+                vm_numatune[vm['id']] = [self.cpuToNuma(vm['cpuset'])]
+                
+            logger.info(vm['id']+' is using NUMA node(s) : '+str(vm_numatune[vm['id']]) )     
+
             logger.info(', '.join( [vm['id']+' '+ vm['ip']+' '+str(vm['n_cpu'])+'('+vm['cpuset']+')' for vm in vms]))
 
             # Create disks, install vms and boot by core
@@ -187,36 +178,28 @@ class MicroArchBenchmark(vm5k_engine):
                     exit()
                     
             if self.options.cachebench:
-#<<<<<<< HEAD
-		## Force pinning of VM memory to CPU sets
-		#for vm in vms:
-		  #cmd = '; '.join( [ 'virsh numatune '+str(vm['id'])+' --mode strict --nodeset '+vm['cpuset']+' --live --current'] )
-		  #vcpu_pin = SshProcess(cmd, hosts[0]).run()
-		  #if not vcpu_pin.ok:
-		      #logger.error(host+': Unable to pin the memory for vm %s  %s', (vm['id'], slugify(comb)))
-		      #exit()
-#=======
+
             ## Force pinning of VM memory to CPU sets
                 for vm in vms:
-		    if len(vm_numatune[vm['id']]) > 1:
-		      numaset = vm_numatune[vm['id']][0]
-		    else:
-		      numaset = ','.join( str(vm_numatune[vm['id']][i]) for i in range(len(vm_numatune[vm['id']])) )
+                    if len(vm_numatune[vm['id']]) > 1:
+                        numaset = vm_numatune[vm['id']][0]
+                    else:
+                        numaset = ','.join( str(vm_numatune[vm['id']][i]) for i in range(len(vm_numatune[vm['id']])) )
+                    
                     cmd = '; '.join( [ 'virsh numatune '+str(vm['id'])+' --mode strict --nodeset '+numaset+' --live'] )
                     vcpu_pin = SshProcess(cmd, hosts[0]).run()
                     if not vcpu_pin.ok:
                         logger.error(host+': Unable to pin the memory for vm %s  %s', vm['id'], slugify(comb))
                         exit()
-#>>>>>>> c7fd7f7a6d401181fa4e0aa8ea11cb2cb6b6d874
 
 
             # Prepare virtual machines for experiments
             stress = []
             logger.info(host+': Installing kflops on vms and creating stress action')
             if self.options.cachebench:
-	      stress.append( self.cpu_kflops([vm for vm in vms]) )
-	    else:
-	      stress.append( self.cpu_kflops([vm for vm in vms if vm['n_cpu'] == 1 ]) )
+                stress.append( self.cpu_kflops([vm for vm in vms]) )
+            else:
+                stress.append( self.cpu_kflops([vm for vm in vms if vm['n_cpu'] == 1 ]) )
 
             if multi_cpu and not self.options.cachebench:
                 logger.info(host+': Installing numactl and kflops on multicore vms')
@@ -328,14 +311,14 @@ class MicroArchBenchmark(vm5k_engine):
         vms_out = [vm['ip']+'_'+vm['cpuset'] for vm in vms]
         if not install_only:
             return TaktukRemote('./kflops/kflops > {{vms_out}}.out', vms_ip)
-	  
+        
     def configure_cgroup(self):
         from_disk = "conf_template/mount.sh"
-	copy_file = self.fact.get_fileput(self.hosts, [from_disk], remote_location='/tmp/').run()
+        copy_file = self.fact.get_fileput(self.hosts, [from_disk], remote_location='/tmp/').run()
         self._actions_hosts(copy_file)
 
         from_disk = "conf_template/qemu.conf"
-	copy_file = self.fact.get_fileput(self.hosts, [from_disk], remote_location='/etc/libvirt/').run()
+        copy_file = self.fact.get_fileput(self.hosts, [from_disk], remote_location='/etc/libvirt/').run()
         self._actions_hosts(copy_file)
                 
         cmd = 'sh /tmp/mount.sh'
@@ -347,12 +330,13 @@ class MicroArchBenchmark(vm5k_engine):
         self._actions_hosts(convert)
         
     def cpuToNuma(self, cpuId):
-      cellId = -1
-      for cellList in self.cpu_topology:
-	cellId+=1
-	if int(cpuId) in cellList:
-	  return cellId
-      return -1
+        cellId = -1
+        for cellList in self.cpu_topology:
+            cellId+=1
+            
+            if int(cpuId) in cellList:
+                return cellId
+        return -1
         
     def setup_hosts(self):
         """ """
@@ -381,21 +365,3 @@ class MicroArchBenchmark(vm5k_engine):
                 logger.warn('%s is KO', p.host)
                 hosts_ko.append(p.host)
 
-#    def mem_update(self, vms, size, speed):
-#        """Copy, compile memtouch, calibrate and return memtouch action """
-#
-#        logger.debug('VMS: %s', pformat (vms) )
-#        vms_ip = [Host(vm['ip']) for vm in vms]
-#        #ChainPut(vms_ip, 'memtouch.tgz' ).run()
-#        Put(vms_ip, 'memtouch.tgz' ).run()
-#        Remote('tar -xzf memtouch.tgz; cd memtouch; gcc -O2 -lm -std=gnu99 -Wall memtouch-with-busyloop3.c -o memtouch-with-busyloop3',
-#               vms_ip ).run()
-#        calibration = SshProcess('./memtouch/memtouch-with-busyloop3 --cmd-calibrate '+str(size), vms_ip[0] ).run()
-#        args = None
-#        for line in calibration.stdout().split('\n'):
-#            if '--cpu-speed' in line:
-#                args = line
-#        if args is None:
-#            return False
-#        logger.debug('%s', args)
-#        return Remote('./memtouch/memtouch-with-busyloop3 --cmd-makeload '+args+' '+str(size)+' '+str(speed), vms_ip)
