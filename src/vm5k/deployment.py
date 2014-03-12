@@ -524,11 +524,12 @@ class vm5k_deployment():
                 exit()
 
         self._add_xml_elements()
-        if len(self.vms) > 0:
+        if self.vms:
             distribute_vms(self.vms, self.hosts, self.distribution)
             self._set_vms_ip_mac()
-
-        self._add_xml_vms()
+            self._add_xml_vms()
+        else:
+            self.vms = []
 
     def _get_ip_mac(self, resources):
         """ """
@@ -749,7 +750,7 @@ class vm5k_deployment():
                          hosts_list(hosts_ko))
             exit()
 
-        if len(self.vms) > 0:
+        if self.vms:
             distribute_vms(self.vms, self.hosts, self.distribution)
             self._set_vms_ip_mac()
 
