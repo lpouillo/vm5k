@@ -524,8 +524,9 @@ class vm5k_deployment():
                 exit()
 
         self._add_xml_elements()
-        distribute_vms(self.vms, self.hosts, self.distribution)
-        self._set_vms_ip_mac()
+        if len(self.vms) > 0:
+            distribute_vms(self.vms, self.hosts, self.distribution)
+            self._set_vms_ip_mac()
 
         self._add_xml_vms()
 
