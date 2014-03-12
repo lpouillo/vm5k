@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Vm5k.  If not, see <http://www.gnu.org/licenses/>
 
-from os import path
+from os import path, mkdir, listdir, remove
 from pprint import pformat
 from xml.etree.ElementTree import fromstring, parse, ElementTree
 from time import time
