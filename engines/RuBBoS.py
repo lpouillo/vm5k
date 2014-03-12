@@ -686,47 +686,7 @@ class RuBBoS(vm5k_engine):
         """Calculate the number of virtual machines in the combination"""
         n_vm = sum(int(comb['nbHTTP']) + int(comb['nbApp']) + int(comb['nbDB']) + 3)
         return n_vm
-    
-    def setup_hosts(self):
-        """ """
-        logger.info('Initialize vm5k_deployment')
-        setup = vm5k_deployment(resources = self.resources, env_name = self.options.env_name, env_file = self.options.env_file)
-        setup.fact = ActionFactory  (remote_tool = TAKTUK,
-                                fileput_tool = CHAINPUT,
-                                fileget_tool = SCP)
-        logger.info('Deploy hosts')
-        setup.hosts_deployment()
-        logger.info('Install packages')
-        setup.packages_management()
-        logger.info('Configure libvirt')
-        setup.configure_libvirt()
-        logger.info('Create backing file')
-        setup._create_backing_file(from_disk = '/home/jrouzaud/VMs/vm-http-lb.qcow2', 
-                                   to_disk = '/tmp/vm-http-lb.img')
-        
-        setup._create_backing_file(from_disk = '/home/jrouzaud/VMs/vm-client.qcow2', 
-                                   to_disk = '/tmp/vm-client.img')
-        
-        
-        setup._create_backing_file(from_disk = '/home/jrouzaud/VMs/vm-http.qcow2', 
-                                   to_disk = '/tmp/vm-http.img')
-        
-        
-        setup._create_backing_file(from_disk = '/home/jrouzaud/VMs/vm-app.qcow2', 
-                                   to_disk = '/tmp/vm-app.img')
-        
-        
-        setup._create_backing_file(from_disk = '/home/jrouzaud/VMs/vm-app-lb.qcow2', 
-                                   to_disk = '/tmp/vm-app-lb.img')
-        
-        
-        setup._create_backing_file(from_disk = '/home/jrouzaud/VMs/vm-db.qcow2', 
-                                   to_disk = '/tmp/vm-db.img')
-        
-        
-        setup._create_backing_file(from_disk = '/home/jrouzaud/VMs/vm-db-lb.qcow2', 
-                                   to_disk = '/tmp/vm-db-lb.img')
-      
+          
 def boot_vms_by_tier(vms):
     if boot_vms_list(vms["vm-db"]):
         if boot_vms_list(vms["vm-db-lb"]):
