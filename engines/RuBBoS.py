@@ -1,4 +1,4 @@
-from vm5k_engine import *
+from vm5k.engine import *
 from shutil import copy2
 from os import rename
 
@@ -31,7 +31,6 @@ class RuBBoS(vm5k_engine):
         self.options_parser.add_option("--nbdb-maxmem", dest="nb_db_max_mem",
 	      help="maximum amount of memory (in GB) per VM for Database tier", type="int", default=1)
         
-        self.options.n_nodes = 4
         
     def define_parameters(self):
         """ Create the parameters for the engine :
@@ -155,7 +154,7 @@ class RuBBoS(vm5k_engine):
                     ncpus.append(core_vm_http)
                     vm_ids.append("vm-http-" + str(i))
                     mems.append(mem_vm_http * 1024)
-                    backingfile.append('/tmp/vm-http.img')
+                    backingfile.append('/home/jrouzaud/VMs/vm-http.qcow2')
 
 
                 # HTTP Load balancer
@@ -166,7 +165,7 @@ class RuBBoS(vm5k_engine):
                 global_cpusets["vm-http-lb"] = []
                 global_cpusets["vm-http-lb"].append(str(index))
                 mems.append(512)
-                backingfile.append('/tmp/vm-http-lb.img')
+                backingfile.append('/home/jrouzaud/VMs/vm-http-lb.qcow2')
                 
                 allcpusets.append(cpusets)
                 allncpu.append(ncpus)
@@ -197,7 +196,7 @@ class RuBBoS(vm5k_engine):
                     ncpus.append(core_vm_app)
                     vm_ids.append("vm-app-" + str(i))
                     mems.append(mem_vm_app * 1024)
-                    backingfile.append('/tmp/vm-app.img')
+                    backingfile.append('/home/jrouzaud/VMs/vm-app.qcow2')
                     
                 # Load balancer
                 index = cpu_index[global_index]
@@ -207,7 +206,7 @@ class RuBBoS(vm5k_engine):
                 global_cpusets["vm-app-lb"] = []
                 global_cpusets["vm-app-lb"].append(str(index))
                 mems.append(512)
-                backingfile.append('/tmp/vm-app-lb.img')
+                backingfile.append('/home/jrouzaud/VMs/vm-app-lb.qcow2')
 
                 allcpusets.append(cpusets)
                 allncpu.append(ncpus)
@@ -233,13 +232,13 @@ class RuBBoS(vm5k_engine):
                     else:
                         index = cpu_index[global_index]
                         cpusets.append(str(index))
-                        global_cpusets["vm-app-" + str(i)].append(str(index))
+                        global_cpusets["vm-db-" + str(i)].append(str(index))
                     
                     global_index += core_vm_db
                     ncpus.append(core_vm_db)
                     vm_ids.append("vm-db-" + str(i))
                     mems.append(mem_vm_db * 1024)
-                    backingfile.append('/tmp/vm-db.img')
+                    backingfile.append('/home/jrouzaud/VMs/vm-db.qcow2')
                     
                 # Load balancer
                 index = cpu_index[global_index]
@@ -249,7 +248,7 @@ class RuBBoS(vm5k_engine):
                 global_cpusets["vm-db-lb"] = []
                 global_cpusets["vm-db-lb"].append(str(index))
                 mems.append(512)
-                backingfile.append('/tmp/vm-db-lb.img')
+                backingfile.append('/home/jrouzaud/VMs/vm-db-lb.qcow2')
                     
                 allcpusets.append(cpusets)
                 allncpu.append(ncpus)
