@@ -55,8 +55,8 @@ class RuBBoS(vm5k_engine_para):
 
         parameters = {
             'nbHTTP': range(1, self.options.nb_http + 1),
-            'nbAppServer': range(1, self.options.nb_app + 1),
-            'nbDBServer': range(1, self.options.nb_db + 1),
+            'nbApp': range(1, self.options.nb_app + 1),
+            'nbDB': range(1, self.options.nb_db + 1),
             'nbHTTPMaxCore': range(1, self.options.nb_http_max_core + 1),
             'nbHTTPMaxMem': range(1, self.options.nb_http_max_mem + 1),
             'nbAppMaxCore': range(1, self.options.nb_app_max_core + 1),
@@ -71,7 +71,7 @@ class RuBBoS(vm5k_engine_para):
 
     def workflow(self, comb, hosts, ip_mac):
         """ Perform a cpu stress on the VM """
-        host = style.Thread(hosts[0].address.split('.')[0])
+        host = style.Thread(hosts[0].split('.')[0])
         comb_ok = False
         try:
             logger.info(style.step('Performing combination ' + slugify(comb) + ' on ' + host))
@@ -609,8 +609,7 @@ class RuBBoS(vm5k_engine_para):
 
     def comb_nvm(self, comb):
         """Calculate the number of virtual machines in the combination"""
-        n_vm = sum(int(comb['nbHTTP']) + int(comb['nbApp']) + int(comb['nbDB'])
-                    + 3)
+        n_vm = int(comb['nbHTTP']) + int(comb['nbApp']) + int(comb['nbDB']) + 3
         return n_vm
 
 
