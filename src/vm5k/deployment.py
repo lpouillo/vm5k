@@ -271,9 +271,10 @@ class vm5k_deployment():
                 connection_params={'taktuk_options': taktuk_conf}).run()
         self._actions_hosts(conf_ssh)
 
-    def _create_backing_file(self):
+    def _create_backing_file(self, disks=None):
         """ """
-        disks = list(set([vm['backing_file'] for vm in self.vms]))
+        if not disks:
+            disks = list(set([vm['backing_file'] for vm in self.vms]))
         for from_disk in disks:
             logger.info('Treating ' + style.emph(from_disk))
             to_disk = '/tmp/' + from_disk.split('/')[-1]
