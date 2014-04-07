@@ -80,7 +80,6 @@ class vm5k_engine(Engine):
         self.options_parser.add_argument("cluster",
                         "The cluster on which to run the experiment")
 
-        self.oar_job_id = None
         self.frontend = None
         self.parameters = None
 
@@ -195,27 +194,34 @@ class vm5k_engine_para(vm5k_engine):
         slots = compute_slots(planning, self.options.walltime)
         startdate = slots[0][0]
         i_slot = 0
-        n_nodes = slots[i_slot][2][self.cluster]
+        n_nodes = self.options.n_nodes * \
+                (slots[i_slot][2][self.cluster] // self.options.n_nodes)
         while n_nodes < self.options.n_nodes:
             logger.debug(slots[i_slot])
             startdate = slots[i_slot][0]
-            n_nodes = slots[i_slot][2][self.cluster]
+            n_nodes = self.options.n_nodes * \
+                (slots[i_slot][2][self.cluster] // self.options.n_nodes)
             i_slot += 1
             if i_slot == len(slots) - 1:
                 return False, False
+        logger.debug('Reserving %s nodes at %s', n_nodes, format_date(startdate))
         return startdate, n_nodes
 
     def run(self):
         """The main experimental workflow, as described in
         ``Using the Execo toolkit to perform ...``
         """
+        self.force_options()
+
         print_step('Defining parameters')
         # The argument is a cluster
         self.cluster = self.args[0]
         self.frontend = get_cluster_site(self.cluster)
         # Analyzing options
-        if self.options.oar_job_id is not None:
+        if self.options.oar_job_id:
             self.oar_job_id = self.options.oar_job_id
+        else:
+            self.oar_job_id = None
 
         try:
             # Creation of the main iterator which is used for the first control loop.
@@ -261,7 +267,6 @@ class vm5k_engine_para(vm5k_engine):
                     comb = self.sweeper.get_next()
                     if not comb:
                         while len(threads.keys()) > 0:
-
                             tmp_threads = dict(threads)
                             for t in tmp_threads:
                                 if not t.is_alive():
@@ -298,14 +303,14 @@ class vm5k_engine_para(vm5k_engine):
                     logger.info('Keeping job alive for debugging')
 
 
-def get_cpu_topology(cluster, dir=None):
+def get_cpu_topology(cluster, xpdir=None):
     """ """
     logger.info('Determining the architecture of cluster ' + \
                 style.emph(cluster))
     root = None
     # Trying to reed topology from a directory
-    if dir:
-        fname = dir+'/topo_'+cluster+'.xml'
+    if xpdir:
+        fname = xpdir + '/topo_' + cluster + '.xml'
         try:
             tree = parse(fname)
             root = tree.getroot()
@@ -328,7 +333,7 @@ def get_cpu_topology(cluster, dir=None):
             ).run()
         oardel([(job_id, frontend)])
         root = fromstring(capa.stdout)
-        if dir is not None:
+        if xpdir is not None:
             tree = ElementTree(root)
             tree.write(fname)
 
