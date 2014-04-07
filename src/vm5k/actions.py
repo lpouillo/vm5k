@@ -101,7 +101,7 @@ def define_vms(vms_id, template=None, ip_mac=None, state=None, host=None,
     ip_mac = [(None, None)] * n_vm if ip_mac is None else ip_mac
 
     vms = [{'id': vms_id[i], 'mem': mem[i], 'n_cpu': n_cpu[i],
-            'cpuset': cpusets[i], 'hdd': hdd[i], 'host': None,
+            'cpuset': cpusets[i], 'hdd': hdd[i], 'host': host[i],
              'backing_file': backing_file[i], 'state': state[i],
              'ip': ip_mac[i][0], 'mac': ip_mac[i][1]} for i in range(n_vm)]
 
