@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 from vm5k.engine import *
 from shutil import copy2
-from os import rename
+from os import rename, mkdir, listdir, remove, fdopen
+from tempfile import mkstemp
 
 
 class RuBBoS(vm5k_engine_para):
@@ -15,32 +16,32 @@ class RuBBoS(vm5k_engine_para):
         self.nb_client = 1
         self.n_nodes = 4
 
-        self.options_parser.add_option("--nbhttp",
-            dest="nb_http", type="int", default=1,
+        self.options_parser.add_option("--http",
+            dest="http", type="int", default=1,
             help="maximum number of instances of the HTTP tier")
-        self.options_parser.add_option("--nbapp",
-            dest="nb_app", type="int", default=1,
+        self.options_parser.add_option("--app",
+            dest="app", type="int", default=1,
             help="maximum number of instances of the Application tier")
-        self.options_parser.add_option("--nbdb",
-            dest="nb_db", type="int", default=1,
+        self.options_parser.add_option("--db",
+            dest="db", type="int", default=1,
             help="maximum number of instances of the Database tier")
-        self.options_parser.add_option("--nbhttp-maxcore",
-            dest="nb_http_max_core", type="int", default=1,
+        self.options_parser.add_option("--http-maxcore",
+            dest="http_max_core", type="int", default=1,
             help="maximum amount of cores per VM for HTTP tier")
-        self.options_parser.add_option("--nbhttp-maxmem",
-            dest="nb_http_max_mem", type="int", default=1,
+        self.options_parser.add_option("--http-maxmem",
+            dest="http_max_mem", type="int", default=1,
             help="maximum amount of memory (in GB) per VM for HTTP tier")
-        self.options_parser.add_option("--nbapp-maxcore",
-            dest="nb_app_max_core", type="int", default=1,
+        self.options_parser.add_option("--app-maxcore",
+            dest="app_max_core", type="int", default=1,
             help="maximum amount of cores per VM for Application tier")
-        self.options_parser.add_option("--nbapp-maxmem",
-            dest="nb_app_max_mem", type="int", default=1,
+        self.options_parser.add_option("--app-maxmem",
+            dest="app_max_mem", type="int", default=1,
             help="maximum amount of memory (in GB) per VM for Application tier")
-        self.options_parser.add_option("--nbdb-maxcore",
-            dest="nb_db_max_core", type="int", default=1,
+        self.options_parser.add_option("--db-maxcore",
+            dest="db_max_core", type="int", default=1,
             help="maximum amount of cores per VM for Database tier")
-        self.options_parser.add_option("--nbdb-maxmem",
-            dest="nb_db_max_mem", type="int", default=1,
+        self.options_parser.add_option("--db-maxmem",
+            dest="db_max_mem", type="int", default=1,
             help="maximum amount of memory (in GB) per VM for Database tier")
 
     def define_parameters(self):
@@ -53,15 +54,15 @@ class RuBBoS(vm5k_engine_para):
         self.cpu_topology = get_cpu_topology(cluster, xpdir=self.result_dir)
 
         parameters = {
-            'nbHTTP': range(1, self.options.nb_http + 1),
-            'nbApp': range(1, self.options.nb_app + 1),
-            'nbDB': range(1, self.options.nb_db + 1),
-            'nbHTTPCore': range(1, self.options.nb_http_max_core + 1),
-            'nbHTTPMem': range(1, self.options.nb_http_max_mem + 1),
-            'nbAppCore': range(1, self.options.nb_app_max_core + 1),
-            'nbAppMem': range(1, self.options.nb_app_max_mem + 1),
-            'nbDBCore': range(1, self.options.nb_db_max_core + 1),
-            'nbDBMem': range(1, self.options.nb_db_max_mem + 1),
+            'HTTP': range(1, self.options.http + 1),
+            'App': range(1, self.options.app + 1),
+            'DB': range(1, self.options.db + 1),
+            'HTTPCore': range(1, self.options.http_max_core + 1),
+            'HTTPMem': range(1, self.options.http_max_mem + 1),
+            'AppCore': range(1, self.options.app_max_core + 1),
+            'AppMem': range(1, self.options.app_max_mem + 1),
+            'DBCore': range(1, self.options.db_max_core + 1),
+            'DBMem': range(1, self.options.db_max_mem + 1),
             'mapping': ['all_tier_one_host', 'one_tier_one_host']}
 
         logger.debug(parameters)
@@ -72,7 +73,9 @@ class RuBBoS(vm5k_engine_para):
         """ Perform a cpu stress on the VM """
         logger.debug('hosts %s', hosts)
         logger.debug('ip_mac %s', ip_mac)
-        thread_name = style.Thread(slugify(comb)) + '\n'
+
+        thread_name = style.Thread(' '.join(sorted(map(lambda x: x.split('.')[0], hosts))) \
+                                    + '\n')
         comb_ok = False
         try:
             logger.info(style.step('Performing combination ' + slugify(comb)))
@@ -81,7 +84,7 @@ class RuBBoS(vm5k_engine_para):
             logger.detail('Destroying all vms on hosts')
             destroy_vms(hosts)
 
-            n_vm = comb['nbHTTP'] + comb['nbApp'] + comb['nbDB'] + 4
+            n_vm = comb['HTTP'] + comb['App'] + comb['DB'] + 4
             logger.info(thread_name + ': Defining %s virtual machines', n_vm)
 
             # Defining load balancers and client virtual machines
@@ -97,44 +100,44 @@ class RuBBoS(vm5k_engine_para):
                            '/home/jorouzaudcornabas/VMs/vm-client.qcow2']
 
             # Defining parameters independant from mapping
-            ids += ['http-' + str(i) for i in range(comb['nbHTTP'])] + \
-                    ['app-' + str(i) for i in range(comb['nbApp'])] + \
-                    ['db-' + str(i) for i in range(comb['nbDB'])]
-            n_cpus += [comb['nbHTTPCore']] * comb['nbHTTP'] + \
-                [comb['nbAppCore']] * comb['nbApp'] + \
-                [comb['nbDBCore']] * comb['nbDB']
-            mems += [comb['nbHTTPMem'] * 1024] * comb['nbHTTP'] + \
-                [comb['nbAppMem'] * 1024] * comb['nbApp'] + \
-                [comb['nbDBMem'] * 1024] * comb['nbDB']
-            backing_files += ['/home/jorouzaudcornabas/VMs/vm-http.qcow2'] * comb['nbHTTP'] + \
-                ['/home/jorouzaudcornabas/VMs/vm-app.qcow2'] * comb['nbApp'] + \
-                ['/home/jorouzaudcornabas/VMs/vm-db.qcow2'] * comb['nbDB']
+            ids += ['http-' + str(i) for i in range(comb['HTTP'])] + \
+                    ['app-' + str(i) for i in range(comb['App'])] + \
+                    ['db-' + str(i) for i in range(comb['DB'])]
+            n_cpus += [comb['HTTPCore']] * comb['HTTP'] + \
+                [comb['AppCore']] * comb['App'] + \
+                [comb['DBCore']] * comb['DB']
+            mems += [comb['HTTPMem'] * 1024] * comb['HTTP'] + \
+                [comb['AppMem'] * 1024] * comb['App'] + \
+                [comb['DBMem'] * 1024] * comb['DB']
+            backing_files += ['/home/jorouzaudcornabas/VMs/vm-http.qcow2'] * comb['HTTP'] + \
+                ['/home/jorouzaudcornabas/VMs/vm-app.qcow2'] * comb['App'] + \
+                ['/home/jorouzaudcornabas/VMs/vm-db.qcow2'] * comb['DB']
 
             if comb['mapping'] == 'all_tier_one_host':
                 # Distributing one service on one host
-                vms_hosts += [hosts[0]] * comb['nbHTTP'] + \
-                            [hosts[1]] * comb['nbApp'] + \
-                            [hosts[2]] * comb['nbDB']
+                vms_hosts += [hosts[0]] * comb['HTTP'] + \
+                            [hosts[1]] * comb['App'] + \
+                            [hosts[2]] * comb['DB']
                 cpusets += [','.join([str(1 + i) for i in range((j - 1) \
-                         * comb['nbHTTPCore'], j * comb['nbHTTPCore'])])
-                         for j in range(1, comb['nbHTTP'] + 1)] + \
+                         * comb['HTTPCore'], j * comb['HTTPCore'])])
+                         for j in range(1, comb['HTTP'] + 1)] + \
                          [','.join([str(1 + i) for i in range((j - 1) \
-                         * comb['nbAppCore'], j * comb['nbAppCore'])])
-                         for j in range(1, comb['nbApp'] + 1)] + \
+                         * comb['AppCore'], j * comb['AppCore'])])
+                         for j in range(1, comb['App'] + 1)] + \
                          [','.join([str(1 + i) for i in range((j - 1) \
-                         * comb['nbDBCore'], j * comb['nbDBCore'])])
-                         for j in range(1, comb['nbDB'] + 1)]
+                         * comb['DBCore'], j * comb['DBCore'])])
+                         for j in range(1, comb['DB'] + 1)]
             elif comb['mapping'] == 'one_tier_one_host':
                 # Distributing one service instance per host
-                vms_hosts += hosts[0:comb['nbHTTP']] + \
-                            hosts[0:comb['nbApp']] + \
-                            hosts[0:comb['nbDB']]
+                vms_hosts += hosts[0:comb['HTTP']] + \
+                            hosts[0:comb['App']] + \
+                            hosts[0:comb['DB']]
                 cpusets += [','.join([str(1 + i) \
-                    for i in range(comb['nbHTTPCore'])])] * comb['nbHTTP'] + \
-                    [','.join([str(1 + i + comb['nbHTTPCore'])
-                    for i in range(comb['nbAppCore'])])] * comb['nbApp'] + \
-                    [','.join([str(1 + i + comb['nbHTTPCore'] + comb['nbAppCore']) 
-                    for i in range(comb['nbDBCore'])])] * comb['nbDB']
+                    for i in range(comb['HTTPCore'])])] * comb['HTTP'] + \
+                    [','.join([str(1 + i + comb['HTTPCore'])
+                    for i in range(comb['AppCore'])])] * comb['App'] + \
+                    [','.join([str(1 + i + comb['HTTPCore'] + comb['AppCore'])
+                    for i in range(comb['DBCore'])])] * comb['DB']
             logger.trace('ids %s', pformat(ids))
             logger.trace('ip_mac %s', pformat(ip_mac))
             logger.trace('vms_hosts %s', pformat(vms_hosts))
@@ -149,7 +152,7 @@ class RuBBoS(vm5k_engine_para):
                         mem=mems,
                         hdd=disks,
                         backing_file=backing_files)
-
+            logger.detail('VMS %s ', pformat(vms))
             # Create disks, install vms and boot by core
             logger.info(thread_name + ': Creating disks')
             create = create_disks(vms).run()
@@ -169,51 +172,114 @@ class RuBBoS(vm5k_engine_para):
                 logger.error(thread_name + ': Unable to boot all the VMS')
                 exit()
 
-#             # Force pinning of vm-multi vcpus
+            # Force pinning of vm-multi vcpus
+            for vm in vms:
+                cmd = '; '.join(['virsh vcpupin ' + vm['id'] + ' ' + str(i) + \
+                    ' ' + str(vm['cpuset'].split(',')[i]) 
+                    for i in range(vm['n_cpu'])])
+                vcpu_pin = SshProcess(cmd, vm['host']).run()
+                if not vcpu_pin.ok:
+                    logger.error(thread_name + \
+                        ': Unable to pin the vcpus of vm-multi %s', slugify(comb))
+                    exit()
+            # Creating service configuration
+            services = {
+                'lb-http':
+                    {'func': generate_http_proxy,
+                     'template': 'default_http_lb',
+                     'remote_dest': '/etc/apache2/site-available/',
+                     'launch_cmd': '/etc/init.d/apache2 restart',
+                     'member_vms': filter(lambda x: 'http-' in x['id'], vms),
+                     'log_files': ['/var/log/apache2/access.log',
+                                   '/var/log/apache2/error.log']},
+                'lb-app':
+                    {'func': generate_tomcat_proxy,
+                     'template': 'default_tomcat_lb',
+                     'remote_dest': '/etc/apache2/site-available/',
+                     'launch_cmd': '/etc/init.d/apache2 restart',
+                     'member_vms': filter(lambda x: 'app-' in x['id'], vms),
+                     'log_files': ['/var/log/apache2/access.log',
+                                   '/var/log/apache2/error.log']},
+                'lb-db':
+                    {'func': generate_db_proxy,
+                     'template': 'haproxy.cfg',
+                     'remote_dest': '/etc/haproxy/',
+                     'launch_cmd': 'haproxy -f /etc/haproxy/haproxy.cfg',
+                     'member_vms': filter(lambda x: 'db-' in x['id'], vms),
+                     'log_files': None},
+                'http-':
+                    {'func': generate_http,
+                     'template': 'default_http',
+                     'remote_dest': '/etc/apache2/site-available/',
+                     'launch_cmd': '/etc/init.d/apache2 restart',
+                     'member_vms': filter(lambda x: 'lb-app' in x['id'], vms),
+                     'log_files': ['/var/log/apache2/access.log',
+                                   '/var/log/apache2/error.log']},
+                'app-':
+                    {'func': generate_app,
+                     'template': 'mysql.properties',
+                     'remote_dest': '/var/www/',
+                     'launch_cmd': '/etc/init.d/tomcat6 restart',
+                     'member_vms': filter(lambda x: 'lb-db' in x['id'], vms),
+                     'log_files': ['/var/lib/tomcat6/logs/rubbos.log']},
+                'db-':
+                    {'func': None,
+                     'template': None,
+                     'remote_dest': None,
+                     'launch_cmd': None,
+                     'member_vms': None},
+                'client':
+                    {'func': generate_client,
+                     'template': 'rubbos.properties',
+                     'remote_dest': '/root/RUBBoS/Client/',
+                     'launch_cmd': 'cd /root/RUBBoS/Client/ && ' + \
+                     'java -Xmx256m -Xms128m -server -classpath . ' + \
+                     'edu.rice.rubbos.client.ClientEmulator',
+                     'member_vms': filter(lambda x: 'lb-' in x['id'], vms)}
+                    }
+
+            for service, conf in services.iteritems():
+                if conf['template']:
+                    print service
+                    print conf['member_vms']
+                    f_template = open('conf_template/' + conf['template'])
+                    fd, outfile = mkstemp(dir='/tmp/', prefix='http-lb_')
+                    f = fdopen(fd, 'w')
+                    conf['func'](f, f_template, conf['member_vms'])
+                    f_template.close()
+                    print 'conf_genrated in ' + outfile
+                    put_file = Put(map(lambda y: y['ip'],
+                            filter(lambda x: service in x['id'], vms)),
+                        [outfile], remote_location=conf['remote_dest'],
+                        connection_params={'user': 'root'})
+                    print put_file
+            # Starting services
+            for service in ['lb-db', 'app-', 'lb-app', 'http-', 'lb-http']:
+                conf = services[service]
+                print filter(lambda x: service in x['id'], vms)
+                print map(lambda y: y['ip'],
+                           filter(lambda x: service in x['id'], vms))
+                SshProcess(conf['launch_cmd'], map(lambda y: y['ip'],
+                           filter(lambda x: service in x['id'], vms))).run()
+
 #             for vm in vms:
-#                 if vm['n_cpu'] > 1:
-#                     cmd = '; '.join(['virsh vcpupin ' + vm['id'] + ' ' + str(i) + 
-#                         ' ' + str(global_cpusets[vm['id']][i]) for i in range(vm['n_cpu'])])
-#                     vcpu_pin = SshProcess(cmd, vm['host']).run()
-#                     if not vcpu_pin.ok:
-#                         logger.error(thread_name + 
-#                             ': Unable to pin the vcpus of vm-multi %s', slugify(comb))
-#                         exit()
-# 
-#             # Contextualize the VM services
-#             tmp_dir = self.result_dir + '/tmp/'
-#             try:
-#                 mkdir(tmp_dir)
-#             except:
-#                 logger.warning('Temporary directory for %s already exists, removing existing files', tmp_dir)
-#                 for f in listdir(tmp_dir):
-#                     remove(tmp_dir + f)
-# 
-#             for vm in vms:
-#                 if "vm-http-lb" == vm['id']:
-#                     generate_http_proxy("conf_template/default_http_lb", tmp_dir + "default_http_lb", vm_per_tier["vm-http"])
-#                     # Upload file
 #                     Put(vm['ip'], [tmp_dir + "default_http_lb"]).run()
 #                     SshProcess('mv /root/default_http_lb /etc/apache2/site-available/', vm['ip']).run()
 #                 elif "vm-app-lb" == vm['id']:
-#                     generate_tomcat_proxy("conf_template/default_tomcat_lb", tmp_dir + "default_tomcat_lb", vm_per_tier["vm-app"])
-#                     # Upload file
 #                     Put(vm['ip'], [tmp_dir + "default_tomcat_lb"]).run()
 #                     SshProcess('mv /root/default_tomcat_lb /etc/apache2/site-available/', vm['ip']).run()
 #                 elif "vm-db-lb" == vm['id']:
-#                     copy2("conf_template/haproxy.cfg", tmp_dir + "haproxy.cfg")
-#                     f = open(tmp_dir + "haproxy.cfg", 'a')
-#                     for vm_db in vm_per_tier["vm-db"]:
-#                         f.write("server " + vm_db['id'] + " " + vm_db['ip'] + ":3306 check")
-#                     f.close()
+#                     
 #                     Put(vm['ip'], [tmp_dir + "haproxy.cfg"] ).run()
 #                     SshProcess('mv /root/haproxy.cfg /etc/', vm['ip']).run()
 #                 elif "vm-http" in vm['id']:
-#                     grep("conf_template/default_http", tmp_dir + "default_http", 'HTTP_LOADBALANCER', vm_per_tier["vm-app-lb"]['ip'])
+#                     grep("conf_template/default_http", tmp_dir + "default_http", 
+#                            'HTTP_LOADBALANCER', vm_per_tier["vm-app-lb"]['ip'])
 #                     Put(vm['ip'], [tmp_dir + "default_http"] ).run()
 #                     SshProcess('mv /root/default_http /etc/apache2/site-available/', vm['ip']).run()
 #                 elif "vm-app" in vm['id']:
-#                     grep("conf_template/mysql.properties", tmp_dir + "mysql.properties", 'MYSQL_LOADBALANCER', vm_per_tier["vm-db-lb"]['ip'])
+#                     grep("conf_template/mysql.properties", tmp_dir + "mysql.properties", 
+#                'MYSQL_LOADBALANCER', vm_per_tier["vm-db-lb"]['ip'])
 #                     Put(vm['ip'], [tmp_dir + "mysql.properties"] ).run()
 #                     SshProcess('mv /root/mysql.properties /var/www/', vm['ip']).run()
 # 
@@ -271,7 +337,8 @@ class RuBBoS(vm5k_engine_para):
 # 
 #             # Launch benchmark
 #             client_benchmark = []
-#             client_benchmark.append(TaktukRemote('cd /root/RUBBoS/Client/ &&  java -Xmx256m -Xms128m -server -classpath . edu.rice.rubbos.client.ClientEmulator', 
+#             client_benchmark.append(TaktukRemote('cd /root/RUBBoS/Client/ 
+# &&  java -Xmx256m -Xms128m -server -classpath . edu.rice.rubbos.client.ClientEmulator', 
 #                                                      vms_ip))
 # 
 #             # Sleep for 10 minutes and kill the benchmark
@@ -346,7 +413,7 @@ class RuBBoS(vm5k_engine_para):
 
     def comb_nvm(self, comb):
         """Calculate the number of virtual machines in the combination"""
-        n_vm = int(comb['nbHTTP']) + int(comb['nbApp']) + int(comb['nbDB']) + 4
+        n_vm = int(comb['HTTP']) + int(comb['App']) + int(comb['DB']) + 4
         return n_vm
 
     def setup_hosts(self):
@@ -358,11 +425,8 @@ class RuBBoS(vm5k_engine_para):
         setup.fact = ActionFactory(remote_tool=TAKTUK,
                                 fileput_tool=CHAINPUT,
                                 fileget_tool=SCP)
-        logger.info('Deploy hosts')
         setup.hosts_deployment()
-        logger.info('Install packages')
         setup.packages_management()
-        logger.info('Configure libvirt')
         setup.configure_libvirt()
 
         disks = ['vm-app-lb.qcow2', 'vm-client.qcow2', 'vm-db.qcow2',
@@ -403,8 +467,7 @@ def get_log_files(vms, logfile, suffix, host, comb_dir):
 
 
 def boot_vms_list(vms_to_boot):
-    logger.info('Starting VMS ' + ', '.join([vm['id']
-                                for vm in sorted(vms_to_boot)]))
+    logger.detail(', '.join([vm['id'] for vm in sorted(vms_to_boot)]))
     start_vms(vms_to_boot).run()
     booted = wait_vms_have_started(vms_to_boot)
 
@@ -427,39 +490,58 @@ def grep(infilepath, outfilepath, oldstring, newstring):
     outfile.close()
 
 
-def generate_http_proxy(infilepath, outfilepath, vms):
-    infile = open(infilepath)
-    outfile = open(outfilepath)
-
+def generate_http_proxy(f, f_template, vms):
     cpt_line = 0
-    for line in infile:
+    for line in f_template:
         if cpt_line == 7:
             for vm in vms:
-                outfile.write("        BalancerMember http://" + vm['ip'])
+                f.write("        BalancerMember http://" + vm['ip'])
         else:
-            cpt_line += 1
-            outfile.write(line)
-
-    infile.close()
-    outfile.close()
+            f.write(line)
+        cpt_line += 1
 
 
-def generate_tomcat_proxy(infilepath, outfilepath, vms):
-    infile = open(infilepath)
-    outfile = open(outfilepath)
-
+def generate_tomcat_proxy(f, f_template, vms):
     cpt_line = 0
-    for line in infile:
+    for line in f_template:
         if cpt_line == 7:
             for vm in vms:
-                outfile.write("        BalancerMember http://" + vm['ip'] + \
+                f.write("        BalancerMember http://" + vm['ip'] + \
                               ":8080/rubbos/")
         else:
-            cpt_line += 1
-            outfile.write(line)
+            f.write(line)
+        cpt_line += 1
 
-    infile.close()
-    outfile.close()
+
+def generate_db_proxy(f, f_template, vms):
+    for line in f_template:
+        f.write(line)
+    for vm in vms:
+        f.write("server " + vm['id'] + " " + vm['ip'] + ":3306 check")
+
+
+def generate_http(f, f_template, vms):
+    """ """
+    for line in f_template:
+        line = line.replace('APP_LOADBALANCER', vms[0]['ip'])
+        f.write(line)
+
+def generate_app(f, f_template, vms):
+    """ """
+    for line in f_template:
+        line = line.replace('MYSQL_LOADBALANCER', vms[0]['ip'])
+        f.write(line)
+
+def generate_client(f, f_template, vms):
+    """ """
+    for line in f_template:
+        line = line.replace('HTTP_APACHE_SERVER', 
+                            filter(lambda x: 'lb-http' in x['id'], vms)[0]['ip'])
+        line = line.replace('TOMCAT_SERVER', 
+                            filter(lambda x: 'lb-app' in x['id'], vms)[0]['ip'])
+        line = line.replace('MARIADB_SERVER', 
+                            filter(lambda x: 'lb-db' in x['id'], vms)[0]['ip'])
+        f.write(line)
 
 
 if __name__ == "__main__":
