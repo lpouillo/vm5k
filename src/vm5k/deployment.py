@@ -298,15 +298,9 @@ class vm5k_deployment():
                 copy_file = self.fact.get_fileput(self.hosts, [from_disk],
                                                 remote_location='/tmp/').run()
                 self._actions_hosts(copy_file)
-#                logger.debug('Creating disk image on ' + to_disk)
-#                cmd = 'qemu-img convert -O raw /tmp/' + from_disk.split('/')[-1] + \
-#                        ' ' + to_disk
-#                convert = self.fact.get_remote(cmd, self.hosts).run()
-#                self._actions_hosts(convert)
 
-            if default_connection_params['user'] == 'root':
-                logger.debug('Copying ssh key on ' + to_disk + ' ...')
-                cmd = 'modprobe nbd max_part=16; ' + \
+            logger.detail('Copying ssh key on ' + to_disk + ' ...')
+            cmd = 'modprobe nbd max_part=16; ' + \
             'qemu-nbd --connect=/dev/nbd0 ' + to_disk + \
             ' ; sleep 3 ; partprobe /dev/nbd0 ; ' + \
             'part=`fdisk -l /dev/nbd0 |grep "*"|grep dev|cut -f 1 -d " "` ; ' + \
@@ -314,8 +308,9 @@ class vm5k_deployment():
             'cp /root/.ssh/authorized_keys /mnt/root/.ssh/authorized_keys ; ' + \
             'cp -r /root/.ssh/id_rsa* /mnt/root/.ssh/ ;' + \
             'umount /mnt; qemu-nbd -d /dev/nbd0'
-                copy_on_vm_base = self.fact.get_remote(cmd, self.hosts).run()
-                self._actions_hosts(copy_on_vm_base)
+            logger.detail(cmd)
+            copy_on_vm_base = self.fact.get_remote(cmd, self.hosts).run()
+            self._actions_hosts(copy_on_vm_base)
 
     def _remove_existing_disks(self, hosts=None):
         """Remove all img and qcow2 file from /tmp directory """
