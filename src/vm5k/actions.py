@@ -209,6 +209,7 @@ def destroy_vms(hosts):
 
 def create_disks(vms):
     """ Return an action to create the disks for the VMs on the hosts"""
+    logger.detail(', '.join([vm['id'] for vm in sorted(vms)]))
     hosts_cmds = {}
     for vm in vms:
         backing_file = vm['backing_file'].split('/')[-1]
@@ -236,6 +237,7 @@ def create_disks_on_hosts(vms, hosts):
 
 def install_vms(vms):
     """ Return an action to install the VM on the hosts"""
+    logger.detail(', '.join([vm['id'] for vm in sorted(vms)]))
     hosts_cmds = {}
     for vm in vms:
         cmd = 'virt-install -d --import --connect qemu:///system ' + \
@@ -248,7 +250,6 @@ def install_vms(vms):
         hosts_cmds[vm['host']] = cmd if not vm['host'] in hosts_cmds \
             else hosts_cmds[vm['host']] + cmd
 
-    logger.debug(pformat(hosts_cmds))
     return TaktukRemote('{{hosts_cmds.values()}}', list(hosts_cmds.keys()))
 
 
