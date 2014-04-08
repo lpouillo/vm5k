@@ -251,6 +251,7 @@ class RuBBoS(vm5k_engine_para):
                     f = fdopen(fd, 'w')
                     conf['func'](f, f_template, conf['member_vms'])
                     f_template.close()
+                    f.close()
                     logger.detail('conf generated in ' + outfile)
                     logger.setLevel('DEBUG')
                     put_file = Put(service_vms, [outfile]).run()
@@ -264,10 +265,6 @@ class RuBBoS(vm5k_engine_para):
                 conf = services[service]
                 launch = Remote(conf['launch_cmd'], map(lambda y: y['ip'],
                            filter(lambda x: service in x['id'], vms))).run()
-                for p in launch.processes:
-                    print p.host
-                    print p.stdout
-                    print p.stderr
 
             # Launching client
             rubbos_stress = SshProcess(services['client']['launch_cmd'],
@@ -287,45 +284,32 @@ class RuBBoS(vm5k_engine_para):
                                'removing existing files', comb_dir)
                 for f in listdir(comb_dir):
                     remove(comb_dir + f)
+            for vm in vms:
+                vm_result_dir = comb_dir + '/' + vm['id'] + '/'
+                try:
+                    mkdir(vm_result_dir)
+                except:
+                    logger.warning(thread_name + '%s already exists, ' + \
+                               'removing existing files', vm_result_dir)
+                    for f in listdir(vm_result_dir):
+                        remove(vm_result_dir + f)
+
 
             for service, conf in services.iteritems():
                 if conf['log_files']:
-                    print conf['log_files']
-# 
+                    vms_result_dir = map(lambda y: comb_dir + '/' +
+                                         y['id'] + '/',
+                                         filter(lambda x: service in x['id'],
+                                                vms))
+                    Get(map(lambda y: y['ip'],
+                           filter(lambda x: service in x['id'], vms)),
+                        conf['log_files'], local_location=vms_result_dir).run()
 
-# 
-#             logger.info(host + ': Retrieving file from VMs')
-#             comb_dir = self.result_dir + '/' + slugify(comb) + '/'
-# 
-#             # Get log files
-#             for vm in vms_client:
-#                 # Directory /root/RUBBoS/bench sur VM Client
-#                 get = Get(vm['ip'], ['/root/RUBBoS/bench/'], local_location = comb_dir).run()
-# 
-#                 for p in get.processes:
-#                     if not p.ok:
-#                         logger.error(host+': Unable to retrieve the vm_multi files for combination %s', slugify(comb))
-#                         exit()
-# 
-#                 rename(comb_dir+'bench/', comb_dir+'bench_client_'+vm['ip'])
-# 
-#             get_log_files(vm_per_tier["vm-http-lb"], '/var/log/apache2/access.log',
-#                           '.http_lb_', host, comb_dir)
-#             get_log_files(vm_per_tier["vm-http-lb"], '/var/log/apache2/error.log',
-#                           '.http_lb_', host, comb_dir)
-# 
-#             get_log_files(vm_per_tier["vm-http"], '/var/log/apache2/access.log',
-#                           '.http_', host, comb_dir)
-#             get_log_files(vm_per_tier["vm-http"], '/var/log/apache2/error.log',
-#                           '.http_', host, comb_dir)
-# 
-#             get_log_files(vm_per_tier["vm-app-lb"], '/var/log/apache2/access.log',
-#                           '.app_lb_', host, comb_dir)
-#             get_log_files(vm_per_tier["vm-app-lb"], '/var/log/apache2/error.log',
-#                           '.app_lb_', host, comb_dir)
-# 
-#             get_log_files(vm_per_tier["vm-app"], '/var/lib/tomcat6/logs/rubbos.log',
-#                           '.app_', host, comb_dir)
+            fileVM = comb_dir + 'vm.txt'
+            with open(fileVM, 'w') as fp:
+                for p in vms:
+                    fp.write("%s\n" % p)
+
             comb_ok = True
         finally:
 
@@ -419,23 +403,23 @@ def grep(infilepath, outfilepath, oldstring, newstring):
 
 
 def generate_http_proxy(f, f_template, vms):
-    cpt_line = 0
+    cpt_line = 1
     for line in f_template:
         if cpt_line == 7:
             for vm in vms:
-                f.write("        BalancerMember http://" + vm['ip'])
+                f.write("        BalancerMember http://" + vm['ip'] + "\n")
         else:
             f.write(line)
         cpt_line += 1
 
 
 def generate_tomcat_proxy(f, f_template, vms):
-    cpt_line = 0
+    cpt_line = 1
     for line in f_template:
         if cpt_line == 7:
             for vm in vms:
                 f.write("        BalancerMember http://" + vm['ip'] + \
-                              ":8080/rubbos/")
+                              ":8080/rubbos/\n")
         else:
             f.write(line)
         cpt_line += 1
@@ -445,7 +429,7 @@ def generate_db_proxy(f, f_template, vms):
     for line in f_template:
         f.write(line)
     for vm in vms:
-        f.write("server " + vm['id'] + " " + vm['ip'] + ":3306 check")
+        f.write("        server " + vm['id'] + " " + vm['ip'] + ":3306 check")
 
 
 def generate_http(f, f_template, vms):
@@ -463,11 +447,13 @@ def generate_app(f, f_template, vms):
 def generate_client(f, f_template, vms):
     """ """
     for line in f_template:
-        line = line.replace('HTTP_APACHE_SERVER', 
-                            filter(lambda x: 'lb-http' in x['id'], vms)[0]['ip'])
-        line = line.replace('TOMCAT_SERVER', 
-                            filter(lambda x: 'lb-app' in x['id'], vms)[0]['ip'])
-        line = line.replace('MARIADB_SERVER', 
+        line = line.replace('HTTP_APACHE_SERVER',
+                            filter(lambda x: 'lb-http' in x['id'],
+                                   vms)[0]['ip'])
+        line = line.replace('TOMCAT_SERVER',
+                            filter(lambda x: 'lb-app' in x['id'],
+                                   vms)[0]['ip'])
+        line = line.replace('MARIADB_SERVER',
                             filter(lambda x: 'lb-db' in x['id'], vms)[0]['ip'])
         f.write(line)
 
