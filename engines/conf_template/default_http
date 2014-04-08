@@ -6,8 +6,8 @@
 	ProxyPass /rubbos/servlet/ balancer://cluster/
 
 	<Proxy balancer://cluster>
-        	BalancerMember http://HTTP_LOADBALANCER/rubbos/servlet/
-    	</Proxy>
+        	BalancerMember http://APP_LOADBALANCER/rubbos/servlet/
+  	</Proxy>
 
 
 	<Directory />
