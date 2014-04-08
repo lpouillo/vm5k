@@ -303,9 +303,9 @@ class vm5k_deployment():
             cmd = 'modprobe nbd max_part=16; ' + \
             'qemu-nbd --connect=/dev/nbd0 ' + to_disk + \
             ' ; sleep 3 ; partprobe /dev/nbd0 ; ' + \
-            'part=`fdisk -l /dev/nbd0 |grep "*"|grep dev|cut -f 1 -d " "` ; ' + \
-            'mount $part /mnt ; mkdir /mnt/root/.ssh ; ' + \
-            'cp /root/.ssh/authorized_keys /mnt/root/.ssh/authorized_keys ; ' + \
+            'part=`fdisk -l /dev/nbd0 |grep dev|grep Linux| grep -v swap|cut -f 1 -d " "` ; ' + \
+            'mount $part /mnt ; mkdir -p /mnt/root/.ssh ; ' + \
+            'cat /root/.ssh/authorized_keys >> /mnt/root/.ssh/authorized_keys ; ' + \
             'cp -r /root/.ssh/id_rsa* /mnt/root/.ssh/ ;' + \
             'umount /mnt; qemu-nbd -d /dev/nbd0'
             logger.detail(cmd)
