@@ -744,7 +744,6 @@ class vm5k_deployment():
         if len(self.hosts) == 0:
             logger.error('No hosts available, because %s are KO',
                          hosts_list(hosts_ko))
-            exit()
 
         if self.vms:
             distribute_vms(self.vms, self.hosts, self.distribution)

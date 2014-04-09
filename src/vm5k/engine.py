@@ -238,6 +238,8 @@ class vm5k_engine_para(vm5k_engine):
                 self.get_resources()
                 # Hosts deployment and configuration
                 self.setup_hosts()
+                if len(self.hosts) == 0:
+                    break
 
                 # Initializing the resources and threads
                 available_hosts = list(self.hosts)
