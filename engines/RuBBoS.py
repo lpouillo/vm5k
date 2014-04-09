@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from vm5k.engine import *
 from shutil import copy2
-from os import rename, mkdir, listdir, remove, fdopen
+from os import rename, mkdir, listdir, remove, fdopen, rmdir
 from tempfile import mkstemp
 
 
@@ -12,10 +12,12 @@ class RuBBoS(vm5k_engine_para):
     def __init__(self):
         super(RuBBoS, self).__init__()
         self.env_name = 'wheezy-x64-base'
-        self.stress_time = 30
         self.nb_client = 1
         self.n_nodes = 4
 
+        self.options_parser.add_option("--stress-time",
+            dest="stress_time", type="int", default=600,
+            help="maximum number of instances of the HTTP tier")
         self.options_parser.add_option("--http",
             dest="http", type="int", default=1,
             help="maximum number of instances of the HTTP tier")
@@ -183,6 +185,7 @@ class RuBBoS(vm5k_engine_para):
                         ': Unable to pin the vcpus of vm-multi %s', slugify(comb))
                     exit()
             # Creating service configuration
+            logger.info('Configuring services on VMs')
             services = {
                 'lb-http':
                     {'func': generate_http_proxy,
@@ -237,9 +240,8 @@ class RuBBoS(vm5k_engine_para):
                      'java -Xmx256m -Xms128m -server -classpath . ' + \
                      'edu.rice.rubbos.client.ClientEmulator',
                      'member_vms': filter(lambda x: 'lb-' in x['id'], vms),
-                     'log_files': ['/root/RUBBoS/bench/']}
+                     'log_files': ['/root/RUBBoS/Client/bench/']}
                     }
-
             for service, conf in services.iteritems():
                 if conf['template']:
                     service_vms = map(lambda y: y['ip'],
@@ -253,7 +255,6 @@ class RuBBoS(vm5k_engine_para):
                     f_template.close()
                     f.close()
                     logger.detail('conf generated in ' + outfile)
-                    logger.setLevel('DEBUG')
                     put_file = Put(service_vms, [outfile]).run()
                     if not put_file.ok:
                         exit()
@@ -271,9 +272,10 @@ class RuBBoS(vm5k_engine_para):
                     map(lambda y: y['ip'], filter(lambda x: 'client' in x['id'],
                                                   vms))[0])
             rubbos_stress.ignore_exit_code = rubbos_stress.nolog_exit_code = True
+            logger.info('Starting stress for %s', format_duration(self.options.stress_time))
             rubbos_stress.start()
 
-            sleep(self.stress_time)
+            sleep(self.options.stress_time)
             rubbos_stress.kill()
             # Gathering results
             comb_dir = self.result_dir + '/' + slugify(comb) + '/'
@@ -283,7 +285,11 @@ class RuBBoS(vm5k_engine_para):
                 logger.warning(thread_name + '%s already exists, ' + \
                                'removing existing files', comb_dir)
                 for f in listdir(comb_dir):
-                    remove(comb_dir + f)
+                    try:
+                        remove(comb_dir + f)
+                    except:
+                        rmdir(comb_dir + f)
+
             for vm in vms:
                 vm_result_dir = comb_dir + '/' + vm['id'] + '/'
                 try:
@@ -294,16 +300,15 @@ class RuBBoS(vm5k_engine_para):
                     for f in listdir(vm_result_dir):
                         remove(vm_result_dir + f)
 
-
             for service, conf in services.iteritems():
                 if conf['log_files']:
-                    vms_result_dir = map(lambda y: comb_dir + '/' +
-                                         y['id'] + '/',
-                                         filter(lambda x: service in x['id'],
-                                                vms))
-                    Get(map(lambda y: y['ip'],
-                           filter(lambda x: service in x['id'], vms)),
-                        conf['log_files'], local_location=vms_result_dir).run()
+                    ids = map(lambda y: y['id'],
+                           filter(lambda x: service in x['id'], vms))
+                    result_dir = comb_dir + '{{ids}}/'
+                    logger.detail('Retrieving log files %s in %s', conf['log_files'],
+                                  result_dir)
+                    Get(map(lambda y: y['ip'], filter(lambda x: service in x['id'], vms)), 
+                        conf['log_files'], local_location=result_dir).run()
 
             fileVM = comb_dir + 'vm.txt'
             with open(fileVM, 'w') as fp:
@@ -312,14 +317,14 @@ class RuBBoS(vm5k_engine_para):
 
             comb_ok = True
         finally:
-
             if comb_ok:
                 self.sweeper.done(comb)
-                logger.info(thread_name + ': ' + slugify(comb) + ' has been done')
+                logger.info(thread_name + ': ' + slugify(comb) + \
+                             ' has been done')
             else:
                 self.sweeper.cancel(comb)
                 logger.warning(thread_name + ': ' + slugify(comb) + \
-                               ' has been canceled')
+                            ' has been canceled')
             logger.info(style.step('%s Remaining'),
                         len(self.sweeper.get_remaining()))
 
