@@ -322,7 +322,7 @@ def wait_vms_have_started(vms, restart=True):
                 restart_vms([vm for vm in vms if vm['state'] == 'KO'])
             nmap_tries += 1
         if not all_up:
-            logger.info(str(nmap_tries) + ': ' + str(len(started_vms)) + '/' +\
+            logger.detail(str(nmap_tries) + ': ' + str(len(started_vms)) + '/' +\
                         str(len(vms)))
         nmap.reset()
 
