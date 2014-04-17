@@ -13,6 +13,7 @@ except:
 
 
 def xml_to_graph(xml, name='vm5k'):
+    """Read the XML topology and return a graph"""
     G = nx.Graph(name=name)
     G.add_node(name, dict(size=2000, color='#FF6363', element='vm5k'))
     for site in xml.findall('site'):
