@@ -21,7 +21,7 @@ from xml.etree.ElementTree import Element, SubElement, parse, dump
 from time import localtime, strftime
 from tempfile import mkstemp
 from execo import logger, Process, SshProcess, SequentialActions, Host, \
-    Local, sleep, default_connection_params, TaktukPut, Timer
+    Local, sleep, TaktukPut, Timer
 from execo.action import ActionFactory
 from execo.log import style
 from execo.config import TAKTUK, CHAINPUT
@@ -36,7 +36,8 @@ from vm5k.utils import prettify, print_step, get_fastest_host, \
     hosts_list
 from vm5k.services import dnsmasq_server
 from vm5k.plots import topology_plot
-
+import networkx as nx
+import matplotlib.pyplot as plt
 
 class vm5k_deployment():
     """ Base class to control a deployment of hosts and virtual machines on
@@ -51,7 +52,7 @@ class vm5k_deployment():
     def __init__(self, infile=None, resources=None,
                  env_name=None, env_file=None,
                  vms=None, distribution=None,
-                 outdir=None):
+                 outdir=None, live_plot=False):
         """:param infile: an XML file that describe the topology of the
         deployment
 
@@ -99,6 +100,8 @@ class vm5k_deployment():
 
         self.state = Element('vm5k')
         self._define_elements(infile, resources, vms, distribution)
+        if live_plot:
+            self.init_live_plot()
         network = 'IP range from KaVLAN' if self.kavlan else 'IP range from g5k-subnet'
         logger.info('%s\n%s %s \n%s %s \n%s %s \n%s %s',
                     network,
@@ -759,3 +762,10 @@ class vm5k_deployment():
                 hosts_ko.append(p.host)
         hosts_ok, hosts_ko = list(set(hosts_ok)), list(set(hosts_ko))
         self._update_hosts_state(hosts_ok, hosts_ko)
+
+    def init_live_plot(self):
+        """Open an image of the deployment"""
+        logger.info('Initializing Live plot')
+        plt.figure(figsize=(15, 15))
+        plt.ion()
+        plt.show()

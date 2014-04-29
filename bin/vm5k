@@ -91,9 +91,10 @@ run.add_argument("--plot",
                 dest='plot',
                 action="store_true",
                 help='draw a topological graph of the deployment')
-#run.add_argument("--live-plot",
-#                action="store_true",
-#                help='Open a figure to track the deployment process')
+run.add_argument("--live-plot",
+                dest="live_plot",
+                action="store_true",
+                help='Open a figure to track the deployment process')
 
 ## Reservation
 mode = parser.add_argument_group(style.host("Mode"),
@@ -353,7 +354,8 @@ vm5k = vm5k_deployment(
             distribution=args.vm_distribution,
             env_name=args.env_name,
             env_file=args.env_file,
-            outdir=args.outdir)
+            outdir=args.outdir,
+            live_plot=args.live_plot)
 
 print_step('Deploying the hosts')
 if args.nodeploy:

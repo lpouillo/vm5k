@@ -37,8 +37,7 @@ def xml_to_graph(xml, name='vm5k'):
 
 
 def topology_plot(xml, outdir='.', outfmt='png'):
-    """ """
-
+    """Generate an iamge """
     G = xml_to_graph(xml)
     plt.figure(figsize=(20, 20))
     logger.info('Edges and nodes defined')

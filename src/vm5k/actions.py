@@ -97,9 +97,11 @@ def define_vms(vms_id, template=None, ip_mac=None, state=None, host=None,
             else [template.get('backing_file')] * n_vm
         state = [default_vm['state']] * n_vm if 'state' not in template.attrib \
             else [template.get('state')] * n_vm
+        host = [default_vm['host']] * n_vm if 'host' not in template.attrib \
+            else [template.get('host')] * n_vm
 
     ip_mac = [(None, None)] * n_vm if ip_mac is None else ip_mac
-
+    
     vms = [{'id': vms_id[i], 'mem': mem[i], 'n_cpu': n_cpu[i],
             'cpuset': cpusets[i], 'hdd': hdd[i], 'host': host[i],
              'backing_file': backing_file[i], 'state': state[i],
