@@ -484,7 +484,7 @@ class vm5k_deployment():
         install_base = self.fact.get_remote(cmd, self.hosts).run()
         self._actions_hosts(install_base)
 
-        libvirt_packages = 'libvirt-bin virtinst python2.7 python-pycurl python-libxml2 qemu-kvm nmap'
+        libvirt_packages = 'libvirt-bin virtinst python2.7 python-pycurl python-libxml2 qemu-kvm nmap libgmp10'
         logger.info('Installing libvirt packages \n%s',
                     style.emph(libvirt_packages))
         cmd = 'export DEBIAN_MASTER=noninteractive ; apt-get update && apt-get install -y --force-yes '+\
