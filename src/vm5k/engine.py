@@ -22,7 +22,7 @@ from xml.etree.ElementTree import fromstring, parse, ElementTree
 from time import time
 from datetime import timedelta
 from execo import Host, SshProcess, sleep, Remote, TaktukRemote, Get, Put, ChainPut, \
-    ParallelActions, format_date, format_duration
+    SequentialActions, ParallelActions, format_date, format_duration
 from execo.time_utils import timedelta_to_seconds
 from execo.config import SSH, SCP, TAKTUK, CHAINPUT
 from execo.log import style
