@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<data>
+    <event type="update_cpu_load" time="5" target="vm-85" value="60"/>
+    <event type="update_cpu_load" time="6" target="vm-100" value="40"/>
+    <event type="update_cpu_load" time="30" target="vm-1" value="10"/>
+</data>
