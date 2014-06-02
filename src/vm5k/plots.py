@@ -36,7 +36,7 @@ def xml_to_graph(xml, name='vm5k'):
     return G
 
 
-def topology_plot(xml, outdir='.', outfmt='png'):
+def topology_plot(xml, show=False, outdir='.', outfmt='png'):
     """Generate an iamge """
     G = xml_to_graph(xml)
     plt.figure(figsize=(20, 20))
@@ -69,7 +69,10 @@ def topology_plot(xml, outdir='.', outfmt='png'):
                             font_size=16, font_weight='bold')
     nx.draw_networkx_edges(G, pos, alpha=0.5, width=2)
 
-    plt.savefig(outdir + '/vm5k.' + outfmt)
+    if show:
+        plt.show()
+    else:
+        plt.savefig(outdir + '/vm5k.' + outfmt)
 
 #def init_live_plot(xml):
 #    """Create  """
