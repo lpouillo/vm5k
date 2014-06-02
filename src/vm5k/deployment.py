@@ -178,8 +178,7 @@ class vm5k_deployment():
         with a bridged network for the virtual machines, and restart service.
         """
         self._enable_bridge()
-        if not file:
-            self._libvirt_uniquify()
+        self._libvirt_uniquify()
         self._libvirt_bridged_network(bridge)
         logger.info('Restarting %s', style.emph('libvirt'))
         self.fact.get_remote('service libvirt-bin restart', self.hosts).run()
@@ -327,9 +326,10 @@ class vm5k_deployment():
     def _libvirt_uniquify(self):
         logger.info('Making libvirt host unique')
         cmd = 'uuid=`uuidgen` ' + \
-    '&& sed -i "s/.*host_uuid.*/host_uuid=\"${uuid}\"/g" ' + \
-    '/etc/libvirt/libvirtd.conf ' + \
-    '&& service libvirt-bin restart'
+        '&& sed -i "s/.*host_uuid.*/host_uuid=\\"${uuid}\\"/g" ' + \
+        '/etc/libvirt/libvirtd.conf ' + \
+        '&& service libvirt-bin restart'
+        logger.debug(cmd)
         self.fact.get_remote(cmd, self.hosts).run()
 
     def _libvirt_bridged_network(self, bridge):
