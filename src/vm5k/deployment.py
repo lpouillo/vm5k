@@ -17,7 +17,7 @@
 # along with Vm5k.  If not, see <http://www.gnu.org/licenses/>
 
 from os import fdopen
-from xml.etree.ElementTree import Element, SubElement, parse, dump
+from xml.etree.ElementTree import Element, SubElement, parse
 from time import localtime, strftime
 from tempfile import mkstemp
 from execo import logger, Process, SshProcess, SequentialActions, Host, \
@@ -36,8 +36,8 @@ from vm5k.utils import prettify, print_step, get_fastest_host, \
     hosts_list
 from vm5k.services import dnsmasq_server
 from vm5k.plots import topology_plot
-import networkx as nx
 import matplotlib.pyplot as plt
+
 
 class vm5k_deployment():
     """ Base class to control a deployment of hosts and virtual machines on
