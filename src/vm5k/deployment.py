@@ -348,9 +348,9 @@ class vm5k_deployment():
         destroy = self.fact.get_remote('virsh net-destroy default; ' + \
                             'virsh net-undefine default', self.hosts)
         put = TaktukPut(self.hosts, [network_xml],
-                        remote_location='/etc/libvirt/qemu/networks/')
+                        remote_location='/root/')
         start = self.fact.get_remote(
-            'virsh net-define /etc/libvirt/qemu/networks/' + \
+            'virsh net-define /root/' + \
             network_xml.split('/')[-1] + ' ; ' + \
             'virsh net-start default; virsh net-autostart default;',
             self.hosts)
