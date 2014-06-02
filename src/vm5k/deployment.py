@@ -327,9 +327,8 @@ class vm5k_deployment():
     def _libvirt_uniquify(self):
         logger.info('Making libvirt host unique')
         cmd = 'uuid=`uuidgen` ' + \
-    '&& sed -i "s/00000000-0000-0000-0000-000000000000/${uuid}/g" ' + \
+    '&& sed -i "s/.*host_uuid.*/host_uuid = \\"${uuid}\\"/g" ' + \
     '/etc/libvirt/libvirtd.conf ' + \
-    '&& sed -i "s/#host_uuid/host_uuid/g" /etc/libvirt/libvirtd.conf ' + \
     '&& service libvirt-bin restart'
         self.fact.get_remote(cmd, self.hosts).run()
 
