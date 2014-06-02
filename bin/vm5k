@@ -324,7 +324,6 @@ else:
             jobs.append((job_id, frontend))
     else:
         frontend, job_id = None, args.job_id
-#        get_oargrid_job_info(args.job_id)['start_date']
 
 execution_time['2-RESERVATION'] = timer.elapsed()
 
