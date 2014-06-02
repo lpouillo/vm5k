@@ -38,7 +38,7 @@ timer = Timer()
 
 ## Constants
 deployment_tries = 1
-blacklisted = ['helios', 'sagittaire']
+blacklisted = ['helios', 'sagittaire', 'graphite']
 default_connection_params['user'] = 'root'
 
 ## Parsing options
