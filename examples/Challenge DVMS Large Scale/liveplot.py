@@ -19,7 +19,6 @@ for site in sites:
     hosts += map(lambda host: get_kavlan_host_name(host,
                     kavlan), resources[site]['hosts'])
 
-pprint(hosts)
 
 for host in hosts:
     site = get_host_site(host)
