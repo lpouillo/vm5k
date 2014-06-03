@@ -32,29 +32,6 @@ class VMBootMeasurement(vm5k_engine_para):
 
         return parameters
 
-# envisionned scenarios
-# Objective: be able to put an accurate delay when booting a VM according to the collocated VMs
-# Scenario 1: Same VM IMAGE
-# for (i=1  ; i<=nb_cores ; i++)
-#     echo 3 > /proc/sys/vm/drop_caches
-#     boot i VMsNotPined(vmimageA);  // boot i VMs (each VM leverages the same vm image)
-#     getbooting_time of each i VMs; 
-#     stop i VMs
-#   echo 3 > /proc/sys/vm/drop_caches
-#     boot i VMsPinned(vmimageA);
-#     getbooting_time of each i VMs; 
-#     stop i VMs
-# Scenario 2: Distinct VM Images
-# for (i=1  ; i<=nb_cores ; i++)
-#     echo 3 > /proc/sys/vm/drop_caches
-#     boot i VMsNotPined(vmimageA_i);  // boot i VMs (each VM leverages a distinct vm image)
-#     getbooting_time of each i VMs; 
-#     stop i VMs
-#     echo 3 > /proc/sys/vm/drop_caches
-#     boot i VMsPinned(vmimageA_i);
-#     getbooting_time of each i VMs; 
-#     stop i VMs
-
 
     def comb_nvm(self, comb):
         """Calculate the number of virtual machines in the combination,
@@ -88,6 +65,10 @@ required to attribute a number of IP/MAC for a parameter combination """
                     
             backing_file='/home/lpouilloux/synced/images/benchs_vms.qcow2'    
 
+            real_file = False
+            if comb['image_policy'] == 'one_per_vm':
+                real_file = True
+
             # Define the virtual machines for the combination
             vms = define_vms(['vm-' + i for i in range(comb['n_vm'])],
                               ip_mac=ip_mac,
@@ -95,15 +76,14 @@ required to attribute a number of IP/MAC for a parameter combination """
                               n_cpu=comb['n_cpu'],
                               cpusets=cpusets,
                               mem=comb['n_mem'] * 1024,
-                              backing_file=backing_files)
+                              backing_file=backing_files,
+                              real_file=real_file)
             
             # Create disks, install vms and boot by core
             logger.info(host + ': Creating disks')
                 
-            if comb['image_policy'] == 'one':
-                create = create_disks(vms).run()
-            else:
-                create = create_disks(vms, one_backingfile_to_many=True).run()
+            
+            create = create_disks(vms).run()
             
             if not create.ok:
                 logger.error(host + ': Unable to create the VMS disks %s',
@@ -175,3 +155,8 @@ required to attribute a number of IP/MAC for a parameter combination """
                             ' has been canceled')
             logger.info(style.step('%s Remaining'),
                         len(self.sweeper.get_remaining()))
+            
+            
+if __name__ == "__main__":
+    engine = VMBootTime()
+    engine.start()
