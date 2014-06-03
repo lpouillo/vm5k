@@ -70,7 +70,11 @@ def topology_plot(xml, show=False, outdir='.', outfmt='png'):
     nx.draw_networkx_edges(G, pos, alpha=0.5, width=2)
 
     if show:
+        plt.ion()
         plt.show()
+        while True:
+            sleep(1)
+            plt.draw()
     else:
         plt.savefig(outdir + '/vm5k.' + outfmt)
 
