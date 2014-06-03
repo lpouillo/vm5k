@@ -183,7 +183,7 @@ class vm5k_deployment():
         logger.info('Restarting %s', style.emph('libvirt'))
         self.fact.get_remote('service libvirt-bin restart', self.hosts).run()
 
-    def deploy_vms(self, clean_disks=False, disk_location='one'):
+    def deploy_vms(self, clean_disks=False, disk_location='one', one_backingfile_to_many=False):
         """Destroy the existing VMS, create the virtual disks, install the vms
         start them and wait until they have rebooted"""
         logger.info('Destroying existing virtual machines')
@@ -193,9 +193,9 @@ class vm5k_deployment():
         logger.info('Creating the virtual disks ')
         self._create_backing_file()
         if disk_location == 'one':
-            create_disks(self.vms).run()
+            create_disks(self.vms, one_backingfile_to_many).run()
         elif disk_location == 'all':
-            create_disks_on_hosts(self.vms, self.hosts).run()
+            create_disks_on_hosts(self.vms, one_backingfile_to_many, self.hosts).run()
         logger.info('Installing the virtual machines')
         install_vms(self.vms).run()
         logger.info('Starting the virtual machines')

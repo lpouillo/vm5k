@@ -209,17 +209,29 @@ def destroy_vms(hosts):
         TaktukRemote('{{cmds}}', hosts_with_vms).run()
 
 
-def create_disks(vms):
+def create_disks(vms, one_backingfile_to_many = False):
     """ Return an action to create the disks for the VMs on the hosts"""
     logger.detail(', '.join([vm['id'] for vm in sorted(vms)]))
     hosts_cmds = {}
-    for vm in vms:
-        backing_file = vm['backing_file'].split('/')[-1]
-        cmd = 'qemu-img create -f qcow2 -o backing_file=/tmp/' + \
-            backing_file + ',backing_fmt=qcow2 /tmp/' + \
-            vm['id'] + '.qcow2 ' + str(vm['hdd']) + 'G ; '
-        hosts_cmds[vm['host']] = cmd if not vm['host'] in hosts_cmds \
-            else hosts_cmds[vm['host']] + cmd
+    if one_backingfile_to_many:
+        for vm in vms:
+            backing_file = vm['backing_file'].split('/')[-1]
+            cmd = 'cp /tmp/'+backing_file+' /tmp/'+backing_file+'-'+vm['id']
+            backing_file = backing_file.split('.')[0]+'-'+vm['id']+'.qcow2'
+            vm['backing_file'] = backing_file
+            cmd += 'qemu-img create -f qcow2 -o backing_file=/tmp/' + \
+                backing_file + ',backing_fmt=qcow2 /tmp/' + \
+                vm['id'] + '.qcow2 ' + str(vm['hdd']) + 'G ; '
+            hosts_cmds[vm['host']] = cmd if not vm['host'] in hosts_cmds \
+                else hosts_cmds[vm['host']] + cmd
+    else:
+        for vm in vms:
+            backing_file = vm['backing_file'].split('/')[-1]
+            cmd = 'qemu-img create -f qcow2 -o backing_file=/tmp/' + \
+                backing_file + ',backing_fmt=qcow2 /tmp/' + \
+                vm['id'] + '.qcow2 ' + str(vm['hdd']) + 'G ; '
+            hosts_cmds[vm['host']] = cmd if not vm['host'] in hosts_cmds \
+                else hosts_cmds[vm['host']] + cmd
 
     logger.debug(pformat(hosts_cmds.values()))
 
