@@ -276,6 +276,7 @@ if args.job_id is None:
     if args.blacklisted is not None:
         blacklisted = list(set(blacklisted + args.blacklisted.split(',')))
 
+    logger.debug('Blacklisted elements : ' + pformat(blacklisted))
     planning = get_planning(elements, vlan=kavlan, subnet=subnet)
     slots = compute_slots(planning, walltime=args.walltime,
                           excluded_elements=blacklisted)
