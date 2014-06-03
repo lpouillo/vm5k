@@ -33,7 +33,7 @@ from vm5k.config import default_vm
 from vm5k.actions import create_disks, install_vms, start_vms, \
     wait_vms_have_started, destroy_vms, create_disks_on_hosts, distribute_vms
 from vm5k.utils import prettify, print_step, get_fastest_host, \
-    hosts_list
+    hosts_list, get_CPU_RAM_FLOPS
 from vm5k.services import dnsmasq_server
 from vm5k.plots import topology_plot
 import matplotlib.pyplot as plt
@@ -669,10 +669,13 @@ class vm5k_deployment():
                                   + "']")
             SubElement(el_site, 'cluster', attrib={'id': cluster})
         logger.debug('Clusters added \n %s', prettify(_state))
+        hosts_attr = get_CPU_RAM_FLOPS(self.hosts)
         for host in self.hosts:
             el_cluster = _state.find(".//cluster/[@id='" + get_host_cluster(host) + "']")
-            SubElement(el_cluster, 'host', attrib={'id': host, 
-                                                   'state': 'Undeployed'})
+            SubElement(el_cluster, 'host', attrib={'id': host,
+                               'state': 'Undeployed',
+                               'cpu': str(hosts_attr[host]['CPU'] * 100),
+                               'mem': str(hosts_attr[host]['RAM'])})
         logger.debug('Hosts added \n %s', prettify(_state))
 
     def _add_xml_vms(self):
