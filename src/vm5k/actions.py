@@ -44,7 +44,8 @@ def show_vms(vms):
 
 
 def define_vms(vms_id, template=None, ip_mac=None, state=None, host=None,
-        n_cpu=None, cpusets=None, mem=None, hdd=None, backing_file=None):
+        n_cpu=None, cpusets=None, mem=None, hdd=None, backing_file=None, 
+        real_file=None):
     """Create a list of virtual machines, where VM parameter is a dict
     similar to
     {'id': None, 'host': None, 'ip': None, 'mac': None,
@@ -52,7 +53,7 @@ def define_vms(vms_id, template=None, ip_mac=None, state=None, host=None,
     'hdd': 10, 'backing_file': '/tmp/vm-base.img',
     'state': 'KO'}
 
-    Can be generated from a template or using user defined parameters (that
+    Can be generated from a template or using user defined parameters that
     can be a single element or a list of element
 
     :param vms_id: a list of string that will be used as vm id
@@ -66,6 +67,8 @@ def define_vms(vms_id, template=None, ip_mac=None, state=None, host=None,
     :param host: the host of the VM
 
     :param n_cpu: the number of virtual CPU of the VMs
+
+    :param real_file: boolean to use a real file
     """
 
     n_vm = len(vms_id)
@@ -80,6 +83,8 @@ def define_vms(vms_id, template=None, ip_mac=None, state=None, host=None,
             else [hdd] * n_vm if isinstance(hdd, int) else hdd
         backing_file = [default_vm['backing_file']] * n_vm if backing_file is None \
             else [backing_file] * n_vm if isinstance(backing_file, str) else backing_file
+        real_file = [default_vm['real_file']] * n_vm if real_file is None \
+            else [real_file] * n_vm if isinstance(real_file, bool) else real_file
         state = [default_vm['state']] * n_vm if state is None \
             else [state] * n_vm if isinstance(state, str) else state
         host = [default_vm['host']] * n_vm if host is None \
@@ -95,6 +100,8 @@ def define_vms(vms_id, template=None, ip_mac=None, state=None, host=None,
             else [int(template.get('hdd'))] * n_vm
         backing_file = [default_vm['backing_file']] * n_vm if 'backing_file' not in template.attrib \
             else [template.get('backing_file')] * n_vm
+        real_file = [default_vm['real_file']] * n_vm if 'real_file' not in template.attrib \
+            else [template.get('real_file')] * n_vm
         state = [default_vm['state']] * n_vm if 'state' not in template.attrib \
             else [template.get('state')] * n_vm
         host = [default_vm['host']] * n_vm if 'host' not in template.attrib \
@@ -104,7 +111,8 @@ def define_vms(vms_id, template=None, ip_mac=None, state=None, host=None,
 
     vms = [{'id': vms_id[i], 'mem': mem[i], 'n_cpu': n_cpu[i],
             'cpuset': cpusets[i], 'hdd': hdd[i], 'host': host[i],
-             'backing_file': backing_file[i], 'state': state[i],
+             'backing_file': backing_file[i], 'real_file': real_file[i],
+             'state': state[i],
              'ip': ip_mac[i][0], 'mac': ip_mac[i][1]} for i in range(n_vm)]
 
     logger.debug('VM parameters have been defined:\n%s',
@@ -209,29 +217,23 @@ def destroy_vms(hosts):
         TaktukRemote('{{cmds}}', hosts_with_vms).run()
 
 
-def create_disks(vms, one_backingfile_to_many = False):
+def create_disks(vms):
     """ Return an action to create the disks for the VMs on the hosts"""
     logger.detail(', '.join([vm['id'] for vm in sorted(vms)]))
     hosts_cmds = {}
-    if one_backingfile_to_many:
-        for vm in vms:
-            backing_file = vm['backing_file'].split('/')[-1]
-            cmd = 'cp /tmp/'+backing_file+' /tmp/'+backing_file+'-'+vm['id']
-            backing_file = backing_file.split('.')[0]+'-'+vm['id']+'.qcow2'
-            vm['backing_file'] = backing_file
-            cmd += 'qemu-img create -f qcow2 -o backing_file=/tmp/' + \
-                backing_file + ',backing_fmt=qcow2 /tmp/' + \
-                vm['id'] + '.qcow2 ' + str(vm['hdd']) + 'G ; '
-            hosts_cmds[vm['host']] = cmd if not vm['host'] in hosts_cmds \
-                else hosts_cmds[vm['host']] + cmd
-    else:
-        for vm in vms:
-            backing_file = vm['backing_file'].split('/')[-1]
+
+    for vm in vms:
+        backing_file = vm['backing_file'].split('/')[-1]
+        if vm['real_file']:
+            cmd = 'qemu-img convert /tmp/' + backing_file + ' -O qcow2 /tmp/' + \
+                vm['id'] + '.qcow2 ;'
+        else:
             cmd = 'qemu-img create -f qcow2 -o backing_file=/tmp/' + \
                 backing_file + ',backing_fmt=qcow2 /tmp/' + \
                 vm['id'] + '.qcow2 ' + str(vm['hdd']) + 'G ; '
-            hosts_cmds[vm['host']] = cmd if not vm['host'] in hosts_cmds \
-                else hosts_cmds[vm['host']] + cmd
+        logger.detail(vm['id'] + ': ' + cmd)
+        hosts_cmds[vm['host']] = cmd if not vm['host'] in hosts_cmds \
+            else hosts_cmds[vm['host']] + cmd
 
     logger.debug(pformat(hosts_cmds.values()))
 
