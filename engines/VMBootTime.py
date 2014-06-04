@@ -30,7 +30,8 @@ class VMBootMeasurement(vm5k_engine_para):
             'n_cpu': range(1, self.options.n_cpu + 1),
             'n_vm': range(1, self.options.n_vm + 1),
             'vm_policy': ['one_vm_per_core', 'vm_one_core'],
-            'image_policy': ['one', 'one_per_vm']}
+            'image_policy': ['one', 'one_per_vm'],
+            'vm_boot_policy': ['all_at_once','one_then_others']}
 
         logger.debug(parameters)
 
@@ -109,34 +110,99 @@ required to attribute a number of IP/MAC for a parameter combination """
                 
             logger.info(style.Thread(host)+': Starting VMS '+', '.join( [vm['id'] for vm in sorted(vms)]))
             
+            Remote('echo 3 > /proc/sys/vm/drop_caches', hosts[0]).run()
+            
             now = time.time()
-
-            start_vms(vms).run()
-            booted = wait_vms_have_started(vms)
-            if not booted:
-                logger.error(host + ': Unable to boot all the VMS for %s',
-                             slugify(comb))
-                exit()
+            
+            if comb['vm_boot_policy'] == 'all_at_once':
+                start_vms(vms).run()
+                booted = wait_vms_have_started(vms)
+                if not booted:
+                    logger.error(host + ': Unable to boot all the VMS for %s',
+                                 slugify(comb))
+                    exit()
+                    
+                get_uptime = TaktukRemote('cat /proc/uptime', [vm['ip']
+                                    for vm in vms]).run()
+                boot_time = {}
+                for p in get_uptime.processes:
+                    boot_time[p.host.address] = now - float(p.stdout.strip().split(' ')[0])
                 
-            get_uptime = TaktukRemote('cat /proc/uptime', [vm['ip']
-                                for vm in vms]).run()
-            boot_time = {}
-            for p in get_uptime.processes:
-                boot_time[p.host.address] = now - float(p.stdout.strip().split(' ')[0])
+                get_ssh_up = TaktukRemote('grep listening /var/log/auth.log' + \
+                            ' |grep 0.0.0.0|awk \'{print $1" "$2" "$3}\' | tail -n 1',
+                            [vm['ip'] for vm in vms]).run()
+                
+                boot_duration = []
+                for p in get_ssh_up.processes:
+                    ssh_up = time.mktime(datetime.datetime.strptime('2014 ' + \
+                            p.stdout.strip(), "%Y %b %d %H:%M:%S").timetuple())
+                    boot_duration.append(str(ssh_up - boot_time[p.host.address]))
+    
+                uptime = string.join(boot_duration, ",")
+            else:
+                first_vm = vms[0]
+                others_vms = vms[1:]
+                
+                start_vms(first_vm).run()
+                booted = wait_vms_have_started(first_vm)
+                if not booted:
+                    logger.error(host + ': Unable to boot all the VMS for %s',
+                                 slugify(comb))
+                    exit()
+                    
+                get_uptime = TaktukRemote('cat /proc/uptime', [vm['ip']
+                                    for vm in first_vm]).run()
+                boot_time = {}
+                for p in get_uptime.processes:
+                    boot_time[p.host.address] = now - float(p.stdout.strip().split(' ')[0])
+                
+                get_ssh_up = TaktukRemote('grep listening /var/log/auth.log' + \
+                            ' |grep 0.0.0.0|awk \'{print $1" "$2" "$3}\' | tail -n 1',
+                            [vm['ip'] for vm in first_vm]).run()
+                
+                boot_duration = []
+                for p in get_ssh_up.processes:
+                    ssh_up = time.mktime(datetime.datetime.strptime('2014 ' + \
+                            p.stdout.strip(), "%Y %b %d %H:%M:%S").timetuple())
+                    boot_duration.append(str(ssh_up - boot_time[p.host.address]))
+    
+                start_vms(other_vms).run()
+                booted = wait_vms_have_started(other_vms)
+                if not booted:
+                    logger.error(host + ': Unable to boot all the VMS for %s',
+                                 slugify(comb))
+                    exit()
+                    
+                get_uptime = TaktukRemote('cat /proc/uptime', [vm['ip']
+                                    for vm in other_vms]).run()
+                boot_time = {}
+                for p in get_uptime.processes:
+                    boot_time[p.host.address] = now - float(p.stdout.strip().split(' ')[0])
+                
+                get_ssh_up = TaktukRemote('grep listening /var/log/auth.log' + \
+                            ' |grep 0.0.0.0|awk \'{print $1" "$2" "$3}\' | tail -n 1',
+                            [vm['ip'] for vm in other_vms]).run()
+                
+                for p in get_ssh_up.processes:
+                    ssh_up = time.mktime(datetime.datetime.strptime('2014 ' + \
+                            p.stdout.strip(), "%Y %b %d %H:%M:%S").timetuple())
+                    boot_duration.append(str(ssh_up - boot_time[p.host.address]))
+        
+    
+                uptime = string.join(boot_duration, ",")
             
-            get_ssh_up = TaktukRemote('grep listening /var/log/auth.log' + \
-                        ' |grep 0.0.0.0|awk \'{print $1" "$2" "$3}\' | tail -n 1',
-                        [vm['ip'] for vm in vms]).run()
+            # Get load on host
+            get_load = TaktukRemote('cat /proc/loadavg',
+                            hosts[0]).run()
             
-            boot_duration = []
-            for p in get_ssh_up.processes:
-                ssh_up = time.mktime(datetime.datetime.strptime('2014 ' + \
-                        p.stdout.strip(), "%Y %b %d %H:%M:%S").timetuple())
-                boot_duration.append(str(ssh_up - boot_time[p.host.address]))
-
-            uptime = string.join(boot_duration, ",")
+            load_host = []
             
-             # Gathering results
+            for p in get_load.processes:
+                load_host.append(p.stdout.strip())
+            
+            load_data = string.join(load_host, ",")
+             
+            # Gathering results
             comb_dir = self.result_dir + '/' + slugify(comb) + '/'
             try:
                 mkdir(comb_dir)
@@ -150,6 +216,7 @@ required to attribute a number of IP/MAC for a parameter combination """
 
             text_file = open(comb_dir+"boot_time.txt", "w")
             text_file.write(uptime+'\n')
+            text_file.write(load_data+'\n')
             text_file.close()
             
             comb_ok = True
