@@ -5,7 +5,7 @@ import sys
 import time
 import datetime
 import string
-import array
+
 
 class VMBootMeasurement(vm5k_engine_para):
     def __init__(self):
@@ -23,7 +23,6 @@ class VMBootMeasurement(vm5k_engine_para):
 
     def define_parameters(self):
         """Define the parameters you want to explore"""
-        cluster = self.cluster
         #self.cpu_topology = get_cpu_topology(cluster, xpdir=self.result_dir)
         parameters = {
             'n_mem': range(1, self.options.n_mem + 1),
@@ -36,7 +35,6 @@ class VMBootMeasurement(vm5k_engine_para):
 
         return parameters
 
-
     def comb_nvm(self, comb):
         """Calculate the number of virtual machines in the combination,
 required to attribute a number of IP/MAC for a parameter combination """
@@ -45,18 +43,18 @@ required to attribute a number of IP/MAC for a parameter combination """
 
     def workflow(self, comb, hosts, ip_mac):
         """Perform a boot measurements on the VM """
-        host = style.Thread(hosts[0].split('.')[0])
-        logger.debug('hosts %s', hosts)
+        host = hosts[0]
+
+        logger.debug('hosts %s', host)
         logger.debug('ip_mac %s', ip_mac)
 
-        thread_name = style.Thread(' '.join(sorted(map(lambda x: x.split('.')[0], \
-                                                       hosts))) + '\n')
+        thread_name = style.Thread(host.split('.')[0]) + ': '
         comb_ok = False
         try:
-            logger.info(style.step('Performing combination ' + slugify(comb)))
             logger.info(thread_name)
+            logger.info(style.step('Performing combination ' + slugify(comb)))
 
-            logger.detail('Destroying all vms on hosts')
+            logger.detail(thread_name + 'Destroying all vms on hosts')
             destroy_vms(hosts)
 
             cpusets = []
@@ -64,12 +62,12 @@ required to attribute a number of IP/MAC for a parameter combination """
             if comb['vm_policy'] == 'one_vm_per_core':
                 for i in range(comb['n_vm']):
                     cpusets.append(','.join(str(i)
-                                        for j in range(comb['n_cpu'])))
+                            for j in range(comb['n_cpu'])))
             else:
                 for i in range(comb['n_vm']):
                     cpusets.append(str(0))
-                    
-            backing_file='/home/lpouilloux/synced/images/benchs_vms.qcow2'    
+
+            backing_file = '/home/lpouilloux/synced/images/benchs_vms.qcow2'
 
             real_file = False
             if comb['image_policy'] == 'one_per_vm':
@@ -84,50 +82,42 @@ required to attribute a number of IP/MAC for a parameter combination """
                               mem=comb['n_mem'] * 1024,
                               backing_file=backing_file,
                               real_file=real_file)
-            
-            for vm in vms:
-                vm['host'] = hosts[0]
 
-            
-            # Create disks, install vms and boot by core
-            logger.info(host + ': Creating disks')
-                
-            
+            # Create disks, install vms and boot
+            logger.info(thread_name + 'Creating disks')
             create = create_disks(vms).run()
-            
             if not create.ok:
-                logger.error(host + ': Unable to create the VMS disks %s',
+                logger.error(thread_name + 'Unable to create the VMS disks %s',
                              slugify(comb))
                 exit()
-                
-            logger.info(host + ': Installing VMS')
+
+            logger.info(thread_name + 'Installing VMS')
             install = install_vms(vms).run()
             if not install.ok:
                 logger.error(host + ': Unable to install the VMS  %s',
                              slugify(comb))
                 exit()
-                
-            logger.info(style.Thread(host)+': Starting VMS '+', '.join( [vm['id'] for vm in sorted(vms)]))
-            
-            now = time.time()
+            logger.info(thread_name + 'Starting VMS ' +
+                        ', '.join([vm['id'] for vm in sorted(vms)]))
 
+            now = time.time()
             start_vms(vms).run()
             booted = wait_vms_have_started(vms)
             if not booted:
-                logger.error(host + ': Unable to boot all the VMS for %s',
+                logger.error(thread_name + 'Unable to boot all the VMS for %s',
                              slugify(comb))
                 exit()
-                
+            # Measurements of boot duration
             get_uptime = TaktukRemote('cat /proc/uptime', [vm['ip']
                                 for vm in vms]).run()
             boot_time = {}
             for p in get_uptime.processes:
                 boot_time[p.host.address] = now - float(p.stdout.strip().split(' ')[0])
-            
+
             get_ssh_up = TaktukRemote('grep listening /var/log/auth.log' + \
                         ' |grep 0.0.0.0|awk \'{print $1" "$2" "$3}\' | tail -n 1',
                         [vm['ip'] for vm in vms]).run()
-            
+
             boot_duration = []
             for p in get_ssh_up.processes:
                 ssh_up = time.mktime(datetime.datetime.strptime('2014 ' + \
@@ -135,25 +125,25 @@ required to attribute a number of IP/MAC for a parameter combination """
                 boot_duration.append(str(ssh_up - boot_time[p.host.address]))
 
             uptime = string.join(boot_duration, ",")
-            
-             # Gathering results
+
+            # Gathering results
             comb_dir = self.result_dir + '/' + slugify(comb) + '/'
             try:
                 mkdir(comb_dir)
             except:
-                logger.warning(host +
-                    ': %s already exists, removing existing files', comb_dir)
+                logger.warning(thread_name +
+                    '%s already exists, removing existing files', comb_dir)
                 for f in listdir(comb_dir):
                     remove(comb_dir + f)
 
-            logger.info(host + ': Writing boot time in result files')
+            logger.info(thread_name + 'Writing boot time in result files')
 
-            text_file = open(comb_dir+"boot_time.txt", "w")
-            text_file.write(uptime+'\n')
+            text_file = open(comb_dir + "boot_time.txt", "w")
+            text_file.write(uptime + '\n')
             text_file.close()
-            
+
             comb_ok = True
-                    
+
         finally:
             if comb_ok:
                 self.sweeper.done(comb)
@@ -165,7 +155,7 @@ required to attribute a number of IP/MAC for a parameter combination """
                             ' has been canceled')
             logger.info(style.step('%s Remaining'),
                         len(self.sweeper.get_remaining()))
-    
+
     def setup_hosts(self):
         """ """
         logger.info('Initialize vm5k_deployment')
@@ -178,15 +168,12 @@ required to attribute a number of IP/MAC for a parameter combination """
         setup.hosts_deployment()
         logger.info('Install packages')
         setup.packages_management()
-#         logger.info('Configure cgroup')
-#         self.configure_cgroup()
         logger.info('Configure libvirt')
         setup.configure_libvirt()
         logger.info('Create backing file')
         setup._create_backing_file(disks=['/home/lpouilloux/synced/images/benchs_vms.qcow2'])
 
-            
-            
+
 if __name__ == "__main__":
     engine = VMBootMeasurement()
     engine.start()
