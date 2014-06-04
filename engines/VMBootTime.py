@@ -84,7 +84,7 @@ required to attribute a number of IP/MAC for a parameter combination """
                 vm['host'] = hosts[0]
 
             # Create disks, install vms and boot by core
-            logger.info(host + ': Creating disks')
+            logger.info(thread_name + ': Creating disks')
                 
             create = create_disks(vms).run()
             if not create.ok:
@@ -133,7 +133,9 @@ required to attribute a number of IP/MAC for a parameter combination """
     
                 uptime = string.join(boot_duration, ",")
             else:
-                first_vm = vms[0]
+                first_vm = [] 
+                first_vm.append(vms[0])
+                
                 others_vms = vms[1:]
                 
                 start_vms(first_vm).run()
@@ -159,15 +161,15 @@ required to attribute a number of IP/MAC for a parameter combination """
                             p.stdout.strip(), "%Y %b %d %H:%M:%S").timetuple())
                     boot_duration.append(str(ssh_up - boot_time[p.host.address]))
     
-                start_vms(other_vms).run()
-                booted = wait_vms_have_started(other_vms)
+                start_vms(others_vms).run()
+                booted = wait_vms_have_started(others_vms)
                 if not booted:
                     logger.error(host + ': Unable to boot all the VMS for %s',
                                  slugify(comb))
                     exit()
                     
                 get_uptime = TaktukRemote('cat /proc/uptime', [vm['ip']
-                                    for vm in other_vms]).run()
+                                    for vm in others_vms]).run()
                 boot_time = {}
                 for p in get_uptime.processes:
                     boot_time[p.host.address] = now - float(p.stdout.strip().split(' ')[0])
@@ -188,7 +190,7 @@ required to attribute a number of IP/MAC for a parameter combination """
             
             # Get load on host
             get_load = TaktukRemote('cat /proc/loadavg',
-                            hosts[0]).run()
+                            [hosts[0]]).run()
             
             load_host = []
             
