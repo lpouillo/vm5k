@@ -299,9 +299,6 @@ def wait_vms_have_started(vms, restart=True):
     TaktukPut(hosts, [tmpfile]).run()
     logger.debug(pformat(hosts))
     # Splitting nmap scan
-
-    logger.debug('Number of VMs / Hosts'+str(len(vms))+'/'+str(len(hosts)))
-    
     n_vm_scan = ceil(len(vms) / len(hosts)) + 1
     cmds = []
     for i in range(len(hosts)):
