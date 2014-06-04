@@ -89,7 +89,6 @@ required to attribute a number of IP/MAC for a parameter combination """
             for vm in vms:
                 vm['host'] = hosts[0]
 
-            
             # Create disks, install vms and boot by core
             logger.info(host + ': Creating disks')
                 
@@ -110,7 +109,9 @@ required to attribute a number of IP/MAC for a parameter combination """
                 
             logger.info(style.Thread(host)+': Starting VMS '+', '.join( [vm['id'] for vm in sorted(vms)]))
             
-            Remote('echo 3 > /proc/sys/vm/drop_caches', hosts[0]).run()
+            Remote('echo 3 > /proc/sys/vm/drop_caches', [hosts[0]]).run()
+            
+            mpstat = Remote('mpstat 5 -P ALL > /tmp/mpstats', [hosts[0]]).start()
             
             now = time.time()
             
@@ -191,6 +192,8 @@ required to attribute a number of IP/MAC for a parameter combination """
     
                 uptime = string.join(boot_duration, ",")
             
+            mpstat.kill()
+            
             # Get load on host
             get_load = TaktukRemote('cat /proc/loadavg',
                             hosts[0]).run()
@@ -219,6 +222,15 @@ required to attribute a number of IP/MAC for a parameter combination """
             text_file.write(load_data+'\n')
             text_file.close()
             
+            get_mpstat_output = Get([hosts[0]], ['/tmp/mpstats'],
+                                     local_location=comb_dir).run()
+            for p in get_mpstat_output.processes:
+                if not p.ok:
+                    logger.error(host +
+                        ': Unable to retrieve the files for combination %s',
+                        slugify(comb))
+                    exit()
+            
             comb_ok = True
                     
         finally:
@@ -244,7 +256,7 @@ required to attribute a number of IP/MAC for a parameter combination """
         logger.info('Deploy hosts')
         setup.hosts_deployment()
         logger.info('Install packages')
-        setup.packages_management()
+        setup.packages_management(other_packages='sysstat')
 #         logger.info('Configure cgroup')
 #         self.configure_cgroup()
         logger.info('Configure libvirt')
