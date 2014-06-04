@@ -161,27 +161,29 @@ required to attribute a number of IP/MAC for a parameter combination """
                             p.stdout.strip(), "%Y %b %d %H:%M:%S").timetuple())
                     boot_duration.append(str(ssh_up - boot_time[p.host.address]))
     
-                start_vms(others_vms).run()
-                booted = wait_vms_have_started(others_vms)
-                if not booted:
-                    logger.error(host + ': Unable to boot all the VMS for %s',
-                                 slugify(comb))
-                    exit()
+    
+                if len(others_vms) != 0:
+                    start_vms(others_vms).run()
+                    booted = wait_vms_have_started(others_vms)
+                    if not booted:
+                        logger.error(host + ': Unable to boot all the VMS for %s',
+                                     slugify(comb))
+                        exit()
+                        
+                    get_uptime = TaktukRemote('cat /proc/uptime', [vm['ip']
+                                        for vm in others_vms]).run()
+                    boot_time = {}
+                    for p in get_uptime.processes:
+                        boot_time[p.host.address] = now - float(p.stdout.strip().split(' ')[0])
                     
-                get_uptime = TaktukRemote('cat /proc/uptime', [vm['ip']
-                                    for vm in others_vms]).run()
-                boot_time = {}
-                for p in get_uptime.processes:
-                    boot_time[p.host.address] = now - float(p.stdout.strip().split(' ')[0])
-                
-                get_ssh_up = TaktukRemote('grep listening /var/log/auth.log' + \
-                            ' |grep 0.0.0.0|awk \'{print $1" "$2" "$3}\' | tail -n 1',
-                            [vm['ip'] for vm in other_vms]).run()
-                
-                for p in get_ssh_up.processes:
-                    ssh_up = time.mktime(datetime.datetime.strptime('2014 ' + \
-                            p.stdout.strip(), "%Y %b %d %H:%M:%S").timetuple())
-                    boot_duration.append(str(ssh_up - boot_time[p.host.address]))
+                    get_ssh_up = TaktukRemote('grep listening /var/log/auth.log' + \
+                                ' |grep 0.0.0.0|awk \'{print $1" "$2" "$3}\' | tail -n 1',
+                                [vm['ip'] for vm in other_vms]).run()
+                    
+                    for p in get_ssh_up.processes:
+                        ssh_up = time.mktime(datetime.datetime.strptime('2014 ' + \
+                                p.stdout.strip(), "%Y %b %d %H:%M:%S").timetuple())
+                        boot_duration.append(str(ssh_up - boot_time[p.host.address]))
         
     
                 uptime = string.join(boot_duration, ",")
