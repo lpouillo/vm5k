@@ -5,11 +5,13 @@ import sys
 import time
 import datetime
 import string
+from execo import logger as ex_log
 
 
 class VMBootMeasurement(vm5k_engine_para):
     def __init__(self):
         super(VMBootMeasurement, self).__init__()
+        
         self.n_nodes = 1
         self.options_parser.add_option("--vm",
             dest="n_vm", type="int", default=1,
@@ -133,15 +135,14 @@ required to attribute a number of IP/MAC for a parameter combination """
     
                 uptime = string.join(boot_duration, ",")
             else:
-                first_vm = [] 
-                first_vm.append(vms[0])
+                first_vm = [vms[0]] 
                 
                 others_vms = vms[1:]
                 
                 start_vms(first_vm).run()
                 booted = wait_vms_have_started(first_vm)
                 if not booted:
-                    logger.error(host + ': Unable to boot all the VMS for %s',
+                    logger.error(host + ': Unable to boot all the first VMS for %s',
                                  slugify(comb))
                     exit()
                     
@@ -166,7 +167,7 @@ required to attribute a number of IP/MAC for a parameter combination """
                     start_vms(others_vms).run()
                     booted = wait_vms_have_started(others_vms)
                     if not booted:
-                        logger.error(host + ': Unable to boot all the VMS for %s',
+                        logger.error(host + ': Unable to boot all the other VMS for %s',
                                      slugify(comb))
                         exit()
                         
