@@ -178,7 +178,7 @@ required to attribute a number of IP/MAC for a parameter combination """
                     
                     get_ssh_up = TaktukRemote('grep listening /var/log/auth.log' + \
                                 ' |grep 0.0.0.0|awk \'{print $1" "$2" "$3}\' | tail -n 1',
-                                [vm['ip'] for vm in other_vms]).run()
+                                [vm['ip'] for vm in others_vms]).run()
                     
                     for p in get_ssh_up.processes:
                         ssh_up = time.mktime(datetime.datetime.strptime('2014 ' + \
