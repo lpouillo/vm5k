@@ -68,10 +68,7 @@ required to attribute a number of IP/MAC for a parameter combination """
                     cpusets.append(str(0))
 
             backing_file = '/home/lpouilloux/synced/images/benchs_vms.qcow2'
-
-            real_file = False
-            if comb['image_policy'] == 'one_per_vm':
-                real_file = True
+            real_file = True if comb['image_policy'] == 'one_per_vm' else False
 
             # Define the virtual machines for the combination
             vms = define_vms(['vm-' + str(i) for i in range(comb['n_vm'])],
