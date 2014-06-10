@@ -32,7 +32,10 @@ class VMBootMeasurement(vm5k_engine_para):
             'n_vm': range(1, self.options.n_vm + 1),
             'vm_policy': ['one_vm_per_core', 'vm_one_core'],
             'image_policy': ['one', 'one_per_vm'],
-            'vm_boot_policy': ['all_at_once','one_then_others']}
+            'vm_boot_policy': ['all_at_once','one_then_others'],
+            'number_of_collocated_vms' : range(0,4),
+            'load_injector': ['cpu','memory','mixed'],
+            'iteration': range(1,6)}
 
         logger.debug(parameters)
 
@@ -41,7 +44,7 @@ class VMBootMeasurement(vm5k_engine_para):
     def comb_nvm(self, comb):
         """Calculate the number of virtual machines in the combination,
 required to attribute a number of IP/MAC for a parameter combination """
-        n_vm = comb['n_vm']
+        n_vm = comb['n_vm'] * comb['number_of_collocated_vms']
         return n_vm
 
     def workflow(self, comb, hosts, ip_mac):
@@ -61,7 +64,8 @@ required to attribute a number of IP/MAC for a parameter combination """
             destroy_vms(hosts)
 
             cpusets = []
-
+            collocated_cpusets = []
+            
             if comb['vm_policy'] == 'one_vm_per_core':
                 for i in range(comb['n_vm']):
                     cpusets.append(','.join(str(i)
@@ -72,6 +76,76 @@ required to attribute a number of IP/MAC for a parameter combination """
 
             backing_file = '/home/lpouilloux/synced/images/benchs_vms.qcow2'
             real_file = True if comb['image_policy'] == 'one_per_vm' else False
+            
+            umount = Remote('sync; echo 3 > /proc/sys/vm/drop_caches; umount /tmp; sleep 5; mount /tmp', [hosts[0]]).run()
+            if not umount.finished_ok:
+                logger.error(host + ': Failed to unmount /tmp for  %s',
+                             slugify(comb))
+                exit()
+            
+            if comb['number_of_collocated_vms'] > 0:
+                
+                if comb['vm_policy'] == 'one_vm_per_core':
+                    vms_ids = ['collocated-vm-' + str(i) for i in range(comb['n_vm']*comb['number_of_collocated_vms'])]
+                    collocated_ip_mac = ip_mac[1:comb['n_vm']*comb['number_of_collocated_vms']]
+                    ipmac = ipmac[comb['n_vm']*comb['number_of_collocated_vms']:]
+                    for i in range(comb['n_vm']):
+                        for k in range(comb['number_of_collocated_vms']):
+                            collocated_cpusets.append(','.join(str(i)
+                                for j in range(comb['n_cpu'])))
+                else:
+                    vms_ids = ['collocated-vm-' + str(i) for i in range(comb['number_of_collocated_vms'])]
+                    
+                    collocated_ip_mac = ip_mac[1:comb['number_of_collocated_vms']]
+                    ipmac = ipmac[comb['number_of_collocated_vms']:]
+                    
+                    for k in range(comb['number_of_collocated_vms']):
+                        collocated_cpusets.append(str(0))
+                        
+                # Define and start collocated VMS
+                collocated_vms = define_vms(vms_ids,
+                              ip_mac=collocated_ip_mac,
+                              host=hosts[0],
+                              n_cpu=comb['n_cpu'],
+                              cpusets=collocated_cpusets,
+                              mem=comb['n_mem'] * 1024,
+                              backing_file=backing_file)
+                
+                for vm in collocated_vms:
+                    vm['host'] = hosts[0]
+    
+                # Create disks, install vms and boot by core
+                logger.info(thread_name + ': Creating disks for collocated VMs')
+                    
+                create = create_disks(collocated_vms).run()
+                if not create.ok:
+                    logger.error(thread_name + 'Unable to create the VMS disks %s for collocated VMs',
+                                 slugify(comb))
+                    exit()
+    
+                logger.info(thread_name + 'Installing VMS for collocated VMs')
+                install = install_vms(collocated_vms).run()
+                if not install.ok:
+                    logger.error(host + ': Unable to install the VMS  %s for collocated VMs',
+                                 slugify(comb))
+                    exit()
+                    
+                logger.info(style.Thread(host)+': Starting collocated VMS '+', '.join( [vm['id'] for vm in sorted(vms)]))
+                
+                start_vms(collocated_vms).run()
+                booted = wait_vms_have_started(collocated_vms)
+                if not booted:
+                    logger.error(host + ': Unable to boot all the collocated VMS for %s',
+                                 slugify(comb))
+                    exit()
+                    
+                if comb['load_injector'] == 'cpu':
+                    injector = self.kflops(collocated_vms).start()
+                elif comb['load_injector'] ==  'mem':
+                    injector = self.cache_bench(collocated_vms).start()
+                else:
+                    injector = []
+
 
             # Define the virtual machines for the combination
             vms = define_vms(['vm-' + str(i) for i in range(comb['n_vm'])],
@@ -103,11 +177,14 @@ required to attribute a number of IP/MAC for a parameter combination """
                 
             logger.info(style.Thread(host)+': Starting VMS '+', '.join( [vm['id'] for vm in sorted(vms)]))
             
-            Remote('echo 3 > /proc/sys/vm/drop_caches', [hosts[0]]).run()
-            
+                
+            logger.debug(host + ': Sucessfully clear fs cache')
+                
             mpstat = Remote('mpstat 5 -P ALL > /tmp/mpstats', [hosts[0]]).start()
             
             now = time.time()
+            
+            vms_sda_stat = []
             
             if comb['vm_boot_policy'] == 'all_at_once':
                 start_vms(vms).run()
@@ -122,6 +199,12 @@ required to attribute a number of IP/MAC for a parameter combination """
                 boot_time = {}
                 for p in get_uptime.processes:
                     boot_time[p.host.address] = now - float(p.stdout.strip().split(' ')[0])
+                
+                get_sda_stat = TaktukRemote('cat /sys/block/sda/stat',
+                                [vm['ip'] for vm in others_vms]).run()
+                    
+                for p in get_sda_stat.processes:
+                    vms_sda_stat.append(p.stdout.strip())
                 
                 get_ssh_up = TaktukRemote('grep listening /var/log/auth.log' + \
                             ' |grep 0.0.0.0|awk \'{print $1" "$2" "$3}\' | tail -n 1',
@@ -152,6 +235,12 @@ required to attribute a number of IP/MAC for a parameter combination """
                 for p in get_uptime.processes:
                     boot_time[p.host.address] = now - float(p.stdout.strip().split(' ')[0])
                 
+                get_sda_stat = TaktukRemote('cat /sys/block/sda/stat',
+                                [vm['ip'] for vm in others_vms]).run()
+                    
+                for p in get_sda_stat.processes:
+                    vms_sda_stat.append(p.stdout.strip())
+                        
                 get_ssh_up = TaktukRemote('grep listening /var/log/auth.log' + \
                             ' |grep 0.0.0.0|awk \'{print $1" "$2" "$3}\' | tail -n 1',
                             [vm['ip'] for vm in first_vm]).run()
@@ -164,6 +253,8 @@ required to attribute a number of IP/MAC for a parameter combination """
     
     
                 if len(others_vms) != 0:
+                    now = time.time()
+                    
                     start_vms(others_vms).run()
                     booted = wait_vms_have_started(others_vms)
                     if not booted:
@@ -176,6 +267,12 @@ required to attribute a number of IP/MAC for a parameter combination """
                     boot_time = {}
                     for p in get_uptime.processes:
                         boot_time[p.host.address] = now - float(p.stdout.strip().split(' ')[0])
+                    
+                    get_sda_stat = TaktukRemote('cat /sys/block/sda/stat',
+                                [vm['ip'] for vm in others_vms]).run()
+                    
+                    for p in get_sda_stat.processes:
+                        vms_sda_stat.append(p.stdout.strip())
                     
                     get_ssh_up = TaktukRemote('grep listening /var/log/auth.log' + \
                                 ' |grep 0.0.0.0|awk \'{print $1" "$2" "$3}\' | tail -n 1',
@@ -217,6 +314,11 @@ required to attribute a number of IP/MAC for a parameter combination """
             text_file.write(uptime+'\n')
             text_file.write(load_data+'\n')
             text_file.close()
+
+            text_file = open(comb_dir+"vms_sda_stat.txt", "w")
+            for sda_stat in vms_sda_stat:
+                text_file.write(sda_stat+'\n')
+            text_file.close()
             
             get_mpstat_output = Get([hosts[0]], ['/tmp/mpstats'],
                                      local_location=comb_dir).run()
@@ -241,6 +343,31 @@ required to attribute a number of IP/MAC for a parameter combination """
             logger.info(style.step('%s Remaining'),
                         len(self.sweeper.get_remaining()))
 
+    def cache_bench(self, vms):
+        """Prepare a benchmark command with cachebench"""
+        memsize = [str(27 + int(vm['n_cpu'])) for vm in vms]
+        vms_ip = [vm['ip'] for vm in vms]
+        vms_out = [vm['ip'] + '_' + vm['cpuset'] for vm in vms]
+        return TaktukRemote('while true ; do ./benchs/llcbench/cachebench/cachebench ' +
+                    '-m {{memsize}} -e 1 -x 2 -d 1 -b > /root/cachebench_{{vms_out}}_rmw.out ; done', vms_ip)
+
+    def kflops(self, vms):
+        """Prepare a benchmark command with kflops"""
+        vms_ip = [vm['ip'] for vm in vms]
+        vms_out = [vm['ip'] + '_' + vm['cpuset'] for vm in vms] 
+
+        no_multi_stress = TaktukRemote('./benchs/kflops/kflops > /root/kflops_{{vms_out}}.out',
+                    [vm['ip'] for vm in vms)
+        for p in no_multi_stress.processes:
+            p.ignore_exit_code = p.nolog_exit_code = True
+            
+        stress = [no_multi_stress]
+        
+        if len(stress) == 1:
+            return stress[0]
+        else:
+            return ParallelActions(stress)
+
     def setup_hosts(self):
         """ """
         logger.info('Initialize vm5k_deployment')
@@ -257,7 +384,6 @@ required to attribute a number of IP/MAC for a parameter combination """
         setup.configure_libvirt()
         logger.info('Create backing file')
         setup._create_backing_file(disks=['/home/lpouilloux/synced/images/benchs_vms.qcow2'])
-
 
 if __name__ == "__main__":
     engine = VMBootMeasurement()
