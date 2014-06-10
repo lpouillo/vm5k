@@ -1,0 +1,878 @@
+<vm5k>
+  
+  
+  <site id="grenoble">
+    
+    
+    <cluster id="edel">
+      
+      
+      <host id="edel-63-kavlan-11.grenoble.grid5000.fr" state="OK">
+        
+        
+        <vm cpuset="auto" hdd="10" id="vm-237" ip="10.7.216.237" load="0.0" mac="00:20:4e:6b:e2:85" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-9" ip="10.7.216.9" load="0.3" mac="00:20:4e:d1:f8:0c" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-427" ip="10.7.217.174" load="0.0" mac="00:20:4e:31:cc:69" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-275" ip="10.7.217.22" load="0.0" mac="00:20:4e:ce:0f:76" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-541" ip="10.7.218.35" load="0.0" mac="00:20:4e:ce:01:ec" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-503" ip="10.7.217.250" load="0.0" mac="00:20:4e:7e:20:e4" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-123" ip="10.7.216.123" load="0.3" mac="00:20:4e:38:9b:77" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-579" ip="10.7.218.73" load="0.0" mac="00:20:4e:ba:51:50" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-313" ip="10.7.217.60" load="0.3" mac="00:20:4e:2b:6e:ec" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-351" ip="10.7.217.98" load="0.0" mac="00:20:4e:ea:0e:d8" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-47" ip="10.7.216.47" load="0.3" mac="00:20:4e:c5:f5:9a" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-85" ip="10.7.216.85" load="0.0" mac="00:20:4e:3e:2c:63" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-161" ip="10.7.216.161" load="0.3" mac="00:20:4e:89:6e:57" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-199" ip="10.7.216.199" load="0.3" mac="00:20:4e:30:cf:ac" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-389" ip="10.7.217.136" load="0.0" mac="00:20:4e:59:37:74" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-465" ip="10.7.217.212" load="0.0" mac="00:20:4e:ab:77:8b" mem="1024" n_cpu="1" state="KO"/>
+      </host>
+      
+      
+      <host id="edel-64-kavlan-11.grenoble.grid5000.fr" state="OK">
+        
+        
+        <vm cpuset="auto" hdd="10" id="vm-10" ip="10.7.216.10" load="100.0" mac="00:20:4e:ac:76:dc" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-124" ip="10.7.216.124" load="21.6" mac="00:20:4e:ab:b2:49" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-352" ip="10.7.217.99" load="85.4" mac="00:20:4e:09:e6:5f" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-390" ip="10.7.217.137" load="84.8" mac="00:20:4e:17:71:e9" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-314" ip="10.7.217.61" load="42.9" mac="00:20:4e:7d:38:6b" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-276" ip="10.7.217.23" load="62.4" mac="00:20:4e:39:3d:7b" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-86" ip="10.7.216.86" load="95.1" mac="00:20:4e:7f:94:97" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-238" ip="10.7.216.238" load="3.0" mac="00:20:4e:28:fe:e3" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-466" ip="10.7.217.213" load="52.2" mac="00:20:4e:98:f5:30" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-542" ip="10.7.218.36" load="22.9" mac="00:20:4e:31:75:d3" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-48" ip="10.7.216.48" load="51.7" mac="00:20:4e:1c:98:3d" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-162" ip="10.7.216.162" load="82.1" mac="00:20:4e:dd:05:05" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-200" ip="10.7.216.200" load="83.5" mac="00:20:4e:b2:f6:60" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-504" ip="10.7.217.251" load="100.0" mac="00:20:4e:c2:eb:81" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-428" ip="10.7.217.175" load="83.5" mac="00:20:4e:8a:94:3a" mem="1024" n_cpu="1" state="KO"/>
+      </host>
+      
+      
+      <host id="edel-65-kavlan-11.grenoble.grid5000.fr" state="OK">
+        
+        
+        <vm cpuset="auto" hdd="10" id="vm-505" ip="10.7.217.252" load="44.4" mac="00:20:4e:c2:09:d5" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-391" ip="10.7.217.138" load="54.1" mac="00:20:4e:82:5b:99" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-11" ip="10.7.216.11" load="100.1" mac="00:20:4e:04:9f:b1" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-543" ip="10.7.218.37" load="99.7" mac="00:20:4e:56:97:7b" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-315" ip="10.7.217.62" load="86.4" mac="00:20:4e:92:6b:59" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-87" ip="10.7.216.87" load="63.7" mac="00:20:4e:0c:07:51" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-353" ip="10.7.217.100" load="76.4" mac="00:20:4e:1f:cf:13" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-239" ip="10.7.216.239" load="53.4" mac="00:20:4e:37:eb:13" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-163" ip="10.7.216.163" load="13.4" mac="00:20:4e:7b:9b:df" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-581" ip="10.7.218.75" load="76.0" mac="00:20:4e:76:01:81" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-49" ip="10.7.216.49" load="73.8" mac="00:20:4e:42:30:67" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-467" ip="10.7.217.214" load="93.4" mac="00:20:4e:33:e6:5d" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-201" ip="10.7.216.201" load="82.8" mac="00:20:4e:b3:15:1e" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-125" ip="10.7.216.125" load="78.6" mac="00:20:4e:8e:bd:e2" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-277" ip="10.7.217.24" load="43.2" mac="00:20:4e:23:d9:47" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-429" ip="10.7.217.176" load="53.5" mac="00:20:4e:ce:61:9d" mem="1024" n_cpu="1" state="KO"/>
+      </host>
+      
+      
+      <host id="edel-66-kavlan-11.grenoble.grid5000.fr" state="OK">
+        
+        
+        <vm cpuset="auto" hdd="10" id="vm-88" ip="10.7.216.88" load="55.8" mac="00:20:4e:c9:30:c6" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-430" ip="10.7.217.177" load="100.0" mac="00:20:4e:1d:72:bb" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-202" ip="10.7.216.202" load="43.8" mac="00:20:4e:b7:43:25" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-546" ip="10.7.218.40" load="100.0" mac="00:20:4e:58:aa:9b" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-544" ip="10.7.218.38" load="99.7" mac="00:20:4e:e9:8c:e8" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-240" ip="10.7.216.240" load="34.5" mac="00:20:4e:f3:93:ed" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-468" ip="10.7.217.215" load="99.6" mac="00:20:4e:6f:c9:46" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-316" ip="10.7.217.63" load="85.7" mac="00:20:4e:5d:9a:54" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-12" ip="10.7.216.12" load="73.9" mac="00:20:4e:79:f2:2e" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-354" ip="10.7.217.101" load="86.6" mac="00:20:4e:f6:52:87" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-164" ip="10.7.216.164" load="99.7" mac="00:20:4e:7a:97:b0" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-580" ip="10.7.218.74" load="53.6" mac="00:20:4e:f6:38:54" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-506" ip="10.7.217.253" load="70.0" mac="00:20:4e:dc:b8:f6" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-582" ip="10.7.218.76" load="44.4" mac="00:20:4e:dd:eb:ab" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-278" ip="10.7.217.25" load="55.7" mac="00:20:4e:ec:e3:6a" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-392" ip="10.7.217.139" load="68.0" mac="00:20:4e:79:31:38" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-126" ip="10.7.216.126" load="24.4" mac="00:20:4e:05:a5:f2" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-50" ip="10.7.216.50" load="54.6" mac="00:20:4e:47:86:b0" mem="1024" n_cpu="1" state="OK"/>
+      </host>
+      
+      
+      <host id="edel-70-kavlan-11.grenoble.grid5000.fr" state="OK">
+        
+        
+        <vm cpuset="auto" hdd="10" id="vm-545" ip="10.7.218.39" load="33.4" mac="00:20:4e:5e:d4:03" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-127" ip="10.7.216.127" load="70.8" mac="00:20:4e:24:8d:59" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-241" ip="10.7.216.241" load="99.7" mac="00:20:4e:02:e1:8c" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-13" ip="10.7.216.13" load="100.0" mac="00:20:4e:ae:54:32" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-165" ip="10.7.216.165" load="93.5" mac="00:20:4e:13:37:55" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-393" ip="10.7.217.140" load="72.6" mac="00:20:4e:2c:83:a2" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-51" ip="10.7.216.51" load="99.7" mac="00:20:4e:0a:f1:e5" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-89" ip="10.7.216.89" load="100.0" mac="00:20:4e:eb:f3:b5" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-431" ip="10.7.217.178" load="43.8" mac="00:20:4e:3d:35:16" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-203" ip="10.7.216.203" load="99.7" mac="00:20:4e:70:ea:f9" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-469" ip="10.7.217.216" load="100.0" mac="00:20:4e:87:e5:b9" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-507" ip="10.7.218.1" load="100.0" mac="00:20:4e:cf:6a:a8" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-355" ip="10.7.217.102" load="100.0" mac="00:20:4e:c6:7d:60" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-317" ip="10.7.217.64" load="100.0" mac="00:20:4e:27:80:0d" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-279" ip="10.7.217.26" load="83.2" mac="00:20:4e:a7:30:1a" mem="1024" n_cpu="1" state="KO"/>
+      </host>
+      
+      
+      <host id="edel-71-kavlan-11.grenoble.grid5000.fr" state="OK">
+        
+        
+        <vm cpuset="auto" hdd="10" id="vm-14" ip="10.7.216.14" load="50.3" mac="00:20:4e:c9:80:55" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-318" ip="10.7.217.65" load="53.8" mac="00:20:4e:e5:ae:88" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-90" ip="10.7.216.90" load="99.9" mac="00:20:4e:e8:f9:17" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-204" ip="10.7.216.204" load="99.9" mac="00:20:4e:8b:0a:04" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-280" ip="10.7.217.27" load="43.5" mac="00:20:4e:f4:13:65" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-470" ip="10.7.217.217" load="100.0" mac="00:20:4e:34:59:d5" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-432" ip="10.7.217.179" load="51.2" mac="00:20:4e:9f:0d:0d" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-242" ip="10.7.216.242" load="100.0" mac="00:20:4e:26:28:65" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-166" ip="10.7.216.166" load="71.6" mac="00:20:4e:80:15:00" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-52" ip="10.7.216.52" load="61.0" mac="00:20:4e:e7:5f:1b" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-394" ip="10.7.217.141" load="82.5" mac="00:20:4e:d5:00:dd" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-128" ip="10.7.216.128" load="40.4" mac="00:20:4e:dd:84:81" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-356" ip="10.7.217.103" load="21.8" mac="00:20:4e:f3:c2:a4" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-508" ip="10.7.218.2" load="65.4" mac="00:20:4e:8d:0b:24" mem="1024" n_cpu="1" state="KO"/>
+      </host>
+      
+      
+      <host id="edel-72-kavlan-11.grenoble.grid5000.fr" state="KO">
+        </host>
+      
+    
+    </cluster>
+    
+  
+  </site>
+  
+  
+  <site id="lille">
+    
+    
+    <cluster id="chimint">
+      
+      
+      <host id="chimint-3-kavlan-11.lille.grid5000.fr" state="OK">
+        
+        
+        <vm cpuset="auto" hdd="10" id="vm-381" ip="10.7.217.128" load="93.7" mac="00:20:4e:1b:4a:c6" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-343" ip="10.7.217.90" load="99.9" mac="00:20:4e:41:89:7c" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-191" ip="10.7.216.191" load="23.6" mac="00:20:4e:c1:a4:17" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-571" ip="10.7.218.65" load="1.6" mac="00:20:4e:04:75:e2" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-419" ip="10.7.217.166" load="42.2" mac="00:20:4e:29:1d:0f" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-1" ip="10.7.216.1" load="43.1" mac="00:20:4e:5e:b4:9c" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-305" ip="10.7.217.52" load="1.6" mac="00:20:4e:90:0d:77" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-229" ip="10.7.216.229" load="99.4" mac="00:20:4e:ac:34:d6" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-533" ip="10.7.218.27" load="63.1" mac="00:20:4e:4d:ab:5d" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-457" ip="10.7.217.204" load="93.6" mac="00:20:4e:d4:7e:9d" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-77" ip="10.7.216.77" load="65.7" mac="00:20:4e:71:fe:2d" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-267" ip="10.7.217.14" load="83.0" mac="00:20:4e:a7:9e:53" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-153" ip="10.7.216.153" load="55.4" mac="00:20:4e:d8:8a:83" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-39" ip="10.7.216.39" load="2.7" mac="00:20:4e:3e:fd:55" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-115" ip="10.7.216.115" load="74.1" mac="00:20:4e:4c:81:3c" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-495" ip="10.7.217.242" load="51.5" mac="00:20:4e:4d:46:fe" mem="1024" n_cpu="1" state="OK"/>
+      </host>
+      
+      
+      <host id="chimint-5-kavlan-11.lille.grid5000.fr" state="OK">
+        
+        
+        <vm cpuset="auto" hdd="10" id="vm-40" ip="10.7.216.40" load="71.7" mac="00:20:4e:12:ca:5c" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-2" ip="10.7.216.2" load="11.5" mac="00:20:4e:74:64:34" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-78" ip="10.7.216.78" load="12.0" mac="00:20:4e:a2:cf:ee" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-306" ip="10.7.217.53" load="93.0" mac="00:20:4e:47:d1:6f" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-116" ip="10.7.216.116" load="5.4" mac="00:20:4e:5f:85:99" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-192" ip="10.7.216.192" load="14.2" mac="00:20:4e:74:74:50" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-534" ip="10.7.218.28" load="52.1" mac="00:20:4e:a4:02:50" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-420" ip="10.7.217.167" load="71.7" mac="00:20:4e:0b:ef:b8" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-344" ip="10.7.217.91" load="21.9" mac="00:20:4e:80:7c:20" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-458" ip="10.7.217.205" load="75.3" mac="00:20:4e:30:a9:9a" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-382" ip="10.7.217.129" load="82.4" mac="00:20:4e:ad:1c:7e" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-268" ip="10.7.217.15" load="89.4" mac="00:20:4e:b9:35:80" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-496" ip="10.7.217.243" load="83.8" mac="00:20:4e:60:82:b4" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-154" ip="10.7.216.154" load="91.4" mac="00:20:4e:9f:64:1c" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-572" ip="10.7.218.66" load="18.5" mac="00:20:4e:43:52:bb" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-230" ip="10.7.216.230" load="22.1" mac="00:20:4e:01:97:ae" mem="1024" n_cpu="1" state="KO"/>
+      </host>
+      
+      
+      <host id="chimint-6-kavlan-11.lille.grid5000.fr" state="OK">
+        
+        
+        <vm cpuset="auto" hdd="10" id="vm-193" ip="10.7.216.193" load="40.8" mac="00:20:4e:5e:cd:17" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-3" ip="10.7.216.3" load="100.0" mac="00:20:4e:54:19:19" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-497" ip="10.7.217.244" load="100.0" mac="00:20:4e:a3:18:a5" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-535" ip="10.7.218.29" load="9.8" mac="00:20:4e:f2:1c:1c" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-307" ip="10.7.217.54" load="92.6" mac="00:20:4e:59:86:c9" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-383" ip="10.7.217.130" load="91.3" mac="00:20:4e:65:2f:82" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-459" ip="10.7.217.206" load="5.0" mac="00:20:4e:e9:ba:11" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-41" ip="10.7.216.41" load="11.9" mac="00:20:4e:ec:49:9c" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-117" ip="10.7.216.117" load="60.4" mac="00:20:4e:6f:04:a9" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-231" ip="10.7.216.231" load="71.7" mac="00:20:4e:d2:0e:30" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-345" ip="10.7.217.92" load="71.5" mac="00:20:4e:47:2a:9c" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-573" ip="10.7.218.67" load="91.2" mac="00:20:4e:ae:14:02" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-269" ip="10.7.217.16" load="19.0" mac="00:20:4e:a2:0f:7f" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-79" ip="10.7.216.79" load="70.7" mac="00:20:4e:bc:68:7e" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-155" ip="10.7.216.155" load="11.5" mac="00:20:4e:fb:09:3b" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-421" ip="10.7.217.168" load="62.7" mac="00:20:4e:1a:c6:36" mem="1024" n_cpu="1" state="KO"/>
+      </host>
+      
+      
+      <host id="chimint-7-kavlan-11.lille.grid5000.fr" state="OK">
+        
+        
+        <vm cpuset="auto" hdd="10" id="vm-574" ip="10.7.218.68" load="100.0" mac="00:20:4e:91:e9:b6" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-194" ip="10.7.216.194" load="24.7" mac="00:20:4e:6b:6d:db" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-536" ip="10.7.218.30" load="2.4" mac="00:20:4e:bf:55:4c" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-270" ip="10.7.217.17" load="20.6" mac="00:20:4e:07:cf:7d" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-156" ip="10.7.216.156" load="21.5" mac="00:20:4e:8f:83:16" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-346" ip="10.7.217.93" load="99.7" mac="00:20:4e:de:af:90" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-460" ip="10.7.217.207" load="74.2" mac="00:20:4e:d9:9e:3a" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-232" ip="10.7.216.232" load="85.5" mac="00:20:4e:53:4b:1c" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-422" ip="10.7.217.169" load="37.0" mac="00:20:4e:a2:fe:cc" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-308" ip="10.7.217.55" load="62.7" mac="00:20:4e:bd:1b:81" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-80" ip="10.7.216.80" load="61.1" mac="00:20:4e:65:db:73" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-42" ip="10.7.216.42" load="20.8" mac="00:20:4e:71:a3:50" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-118" ip="10.7.216.118" load="53.3" mac="00:20:4e:8f:72:7d" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-4" ip="10.7.216.4" load="92.3" mac="00:20:4e:0c:ee:16" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-384" ip="10.7.217.131" load="13.2" mac="00:20:4e:af:1a:ec" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-498" ip="10.7.217.245" load="12.4" mac="00:20:4e:19:bf:5a" mem="1024" n_cpu="1" state="KO"/>
+      </host>
+      
+      
+      <host id="chimint-9-kavlan-11.lille.grid5000.fr" state="OK">
+        
+        
+        <vm cpuset="auto" hdd="10" id="vm-347" ip="10.7.217.94" load="100.0" mac="00:20:4e:54:e5:fd" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-309" ip="10.7.217.56" load="81.6" mac="00:20:4e:65:35:aa" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-233" ip="10.7.216.233" load="71.4" mac="00:20:4e:0d:f9:fc" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-119" ip="10.7.216.119" load="60.0" mac="00:20:4e:9a:4f:65" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-195" ip="10.7.216.195" load="6.0" mac="00:20:4e:93:99:23" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-43" ip="10.7.216.43" load="71.4" mac="00:20:4e:e8:3c:01" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-423" ip="10.7.217.170" load="30.2" mac="00:20:4e:32:a7:6a" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-5" ip="10.7.216.5" load="8.7" mac="00:20:4e:a3:6b:0a" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-271" ip="10.7.217.18" load="14.2" mac="00:20:4e:e2:ea:1a" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-499" ip="10.7.217.246" load="50.5" mac="00:20:4e:0e:14:65" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-81" ip="10.7.216.81" load="4.4" mac="00:20:4e:97:4c:de" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-385" ip="10.7.217.132" load="3.2" mac="00:20:4e:13:7e:5c" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-537" ip="10.7.218.31" load="21.2" mac="00:20:4e:c3:5c:f9" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-461" ip="10.7.217.208" load="30.4" mac="00:20:4e:11:0f:54" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-157" ip="10.7.216.157" load="5.9" mac="00:20:4e:59:c9:79" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-575" ip="10.7.218.69" load="2.8" mac="00:20:4e:84:6d:08" mem="1024" n_cpu="1" state="KO"/>
+      </host>
+      
+      
+      <host id="chimint-16-kavlan-11.lille.grid5000.fr" state="OK">
+        
+        
+        <vm cpuset="auto" hdd="10" id="vm-158" ip="10.7.216.158" load="99.9" mac="00:20:4e:b8:c0:f8" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-386" ip="10.7.217.133" load="51.0" mac="00:20:4e:7c:87:a3" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-6" ip="10.7.216.6" load="70.0" mac="00:20:4e:46:18:9d" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-196" ip="10.7.216.196" load="61.6" mac="00:20:4e:30:20:14" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-82" ip="10.7.216.82" load="99.9" mac="00:20:4e:51:46:96" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-272" ip="10.7.217.19" load="100.0" mac="00:20:4e:f4:0b:2d" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-234" ip="10.7.216.234" load="52.4" mac="00:20:4e:bb:0f:be" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-500" ip="10.7.217.247" load="99.9" mac="00:20:4e:b7:39:41" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-424" ip="10.7.217.171" load="41.2" mac="00:20:4e:c8:49:dd" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-462" ip="10.7.217.209" load="72.1" mac="00:20:4e:95:77:be" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-348" ip="10.7.217.95" load="100.0" mac="00:20:4e:66:21:0f" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-310" ip="10.7.217.57" load="92.3" mac="00:20:4e:77:64:d0" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-538" ip="10.7.218.32" load="71.2" mac="00:20:4e:c8:09:2b" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-44" ip="10.7.216.44" load="100.0" mac="00:20:4e:d7:20:7d" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-120" ip="10.7.216.120" load="100.0" mac="00:20:4e:ae:b3:07" mem="1024" n_cpu="1" state="OK"/>
+      </host>
+      
+      
+      <host id="chimint-18-kavlan-11.lille.grid5000.fr" state="OK">
+        
+        
+        <vm cpuset="auto" hdd="10" id="vm-121" ip="10.7.216.121" load="11.1" mac="00:20:4e:f5:81:bc" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-83" ip="10.7.216.83" load="91.7" mac="00:20:4e:3d:5b:66" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-7" ip="10.7.216.7" load="76.3" mac="00:20:4e:df:7b:88" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-45" ip="10.7.216.45" load="1.8" mac="00:20:4e:49:67:a3" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-311" ip="10.7.217.58" load="2.4" mac="00:20:4e:64:96:06" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-425" ip="10.7.217.172" load="100.0" mac="00:20:4e:1b:a5:96" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-349" ip="10.7.217.96" load="19.8" mac="00:20:4e:7b:d0:72" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-273" ip="10.7.217.20" load="99.9" mac="00:20:4e:47:4e:06" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-159" ip="10.7.216.159" load="1.3" mac="00:20:4e:1f:20:de" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-463" ip="10.7.217.210" load="2.6" mac="00:20:4e:b2:c3:33" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-539" ip="10.7.218.33" load="100.0" mac="00:20:4e:62:d7:c7" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-197" ip="10.7.216.197" load="100.0" mac="00:20:4e:6d:c4:fa" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-235" ip="10.7.216.235" load="91.3" mac="00:20:4e:6f:25:ba" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-577" ip="10.7.218.71" load="91.3" mac="00:20:4e:8c:90:3b" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-501" ip="10.7.217.248" load="2.1" mac="00:20:4e:ed:6f:cf" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-387" ip="10.7.217.134" load="6.0" mac="00:20:4e:d9:8f:8e" mem="1024" n_cpu="1" state="KO"/>
+      </host>
+      
+      
+      <host id="chimint-19-kavlan-11.lille.grid5000.fr" state="OK">
+        
+        
+        <vm cpuset="auto" hdd="10" id="vm-84" ip="10.7.216.84" load="60.1" mac="00:20:4e:66:8d:33" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-426" ip="10.7.217.173" load="61.4" mac="00:20:4e:79:87:e0" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-122" ip="10.7.216.122" load="41.5" mac="00:20:4e:b3:56:af" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-464" ip="10.7.217.211" load="91.3" mac="00:20:4e:30:4e:03" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-388" ip="10.7.217.135" load="61.8" mac="00:20:4e:de:ab:f7" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-576" ip="10.7.218.70" load="21.2" mac="00:20:4e:12:44:10" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-8" ip="10.7.216.8" load="61.8" mac="00:20:4e:7f:ae:8b" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-274" ip="10.7.217.21" load="52.1" mac="00:20:4e:49:29:06" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-502" ip="10.7.217.249" load="11.4" mac="00:20:4e:c8:a4:80" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-540" ip="10.7.218.34" load="8.7" mac="00:20:4e:b9:bc:f3" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-236" ip="10.7.216.236" load="3.3" mac="00:20:4e:28:15:e8" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-46" ip="10.7.216.46" load="3.3" mac="00:20:4e:fb:d5:7a" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-198" ip="10.7.216.198" load="5.5" mac="00:20:4e:49:0a:9a" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-350" ip="10.7.217.97" load="1.8" mac="00:20:4e:b5:c8:52" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-312" ip="10.7.217.59" load="4.3" mac="00:20:4e:b2:ae:19" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-160" ip="10.7.216.160" load="3.6" mac="00:20:4e:3e:cc:b3" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-578" ip="10.7.218.72" load="6.6" mac="00:20:4e:51:65:bb" mem="1024" n_cpu="1" state="OK"/>
+      </host>
+      
+    
+    </cluster>
+    
+  
+  </site>
+  
+  
+  <site id="luxembourg">
+    
+    
+    <cluster id="granduc">
+      
+      
+      <host id="granduc-3-kavlan-11.luxembourg.grid5000.fr" state="OK">
+        
+        
+        <vm cpuset="auto" hdd="10" id="vm-167" ip="10.7.216.167" load="27.0" mac="00:20:4e:76:f2:4f" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-91" ip="10.7.216.91" load="67.7" mac="00:20:4e:9a:fb:f5" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-53" ip="10.7.216.53" load="67.3" mac="00:20:4e:74:08:07" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-547" ip="10.7.218.41" load="87.5" mac="00:20:4e:05:ab:11" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-357" ip="10.7.217.104" load="81.8" mac="00:20:4e:3b:4f:8f" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-281" ip="10.7.217.28" load="67.0" mac="00:20:4e:11:46:bf" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-433" ip="10.7.217.180" load="65.4" mac="00:20:4e:dd:89:95" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-129" ip="10.7.216.129" load="100.0" mac="00:20:4e:73:8f:76" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-243" ip="10.7.216.243" load="46.7" mac="00:20:4e:16:f8:f9" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-15" ip="10.7.216.15" load="6.6" mac="00:20:4e:96:d5:0b" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-509" ip="10.7.218.3" load="78.5" mac="00:20:4e:a2:c7:34" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-319" ip="10.7.217.66" load="75.1" mac="00:20:4e:0f:6a:1b" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-205" ip="10.7.216.205" load="77.2" mac="00:20:4e:f7:de:20" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-395" ip="10.7.217.142" load="96.4" mac="00:20:4e:23:b6:db" mem="1024" n_cpu="1" state="KO"/>
+      </host>
+      
+      
+      <host id="granduc-4-kavlan-11.luxembourg.grid5000.fr" state="OK">
+        
+        
+        <vm cpuset="auto" hdd="10" id="vm-548" ip="10.7.218.42" load="71.1" mac="00:20:4e:d9:8f:96" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-396" ip="10.7.217.143" load="23.1" mac="00:20:4e:b5:9b:0a" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-92" ip="10.7.216.92" load="73.7" mac="00:20:4e:0f:16:34" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-16" ip="10.7.216.16" load="43.8" mac="00:20:4e:73:d5:ee" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-282" ip="10.7.217.29" load="71.9" mac="00:20:4e:19:ad:a9" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-130" ip="10.7.216.130" load="53.3" mac="00:20:4e:54:07:a0" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-434" ip="10.7.217.181" load="64.2" mac="00:20:4e:1e:dd:62" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-168" ip="10.7.216.168" load="100.0" mac="00:20:4e:61:05:6b" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-320" ip="10.7.217.67" load="94.1" mac="00:20:4e:87:97:10" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-510" ip="10.7.218.4" load="85.2" mac="00:20:4e:ab:ac:52" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-54" ip="10.7.216.54" load="4.3" mac="00:20:4e:ea:a9:df" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-358" ip="10.7.217.105" load="85.3" mac="00:20:4e:11:20:ae" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-472" ip="10.7.217.219" load="94.5" mac="00:20:4e:e4:54:a9" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-206" ip="10.7.216.206" load="87.4" mac="00:20:4e:30:e1:c2" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-244" ip="10.7.216.244" load="78.7" mac="00:20:4e:0a:a6:f7" mem="1024" n_cpu="1" state="KO"/>
+      </host>
+      
+      
+      <host id="granduc-5-kavlan-11.luxembourg.grid5000.fr" state="OK">
+        
+        
+        <vm cpuset="auto" hdd="10" id="vm-473" ip="10.7.217.220" load="100.0" mac="00:20:4e:bf:ae:52" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-359" ip="10.7.217.106" load="100.0" mac="00:20:4e:15:d5:7f" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-471" ip="10.7.217.218" load="63.8" mac="00:20:4e:c6:8a:1d" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-511" ip="10.7.218.5" load="90.9" mac="00:20:4e:37:0c:41" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-169" ip="10.7.216.169" load="100.0" mac="00:20:4e:78:3b:5e" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-435" ip="10.7.217.182" load="92.4" mac="00:20:4e:1b:fb:52" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-245" ip="10.7.216.245" load="40.4" mac="00:20:4e:04:68:b4" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-549" ip="10.7.218.43" load="46.4" mac="00:20:4e:42:f6:b4" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-398" ip="10.7.217.145" load="100.0" mac="00:20:4e:aa:ae:50" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-397" ip="10.7.217.144" load="79.3" mac="00:20:4e:95:20:a3" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-321" ip="10.7.217.68" load="85.1" mac="00:20:4e:1a:20:17" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-283" ip="10.7.217.30" load="60.8" mac="00:20:4e:a1:dc:a8" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-17" ip="10.7.216.17" load="5.7" mac="00:20:4e:73:01:96" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-93" ip="10.7.216.93" load="0.3" mac="00:20:4e:1e:65:84" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-55" ip="10.7.216.55" load="5.2" mac="00:20:4e:87:ce:dc" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-207" ip="10.7.216.207" load="13.1" mac="00:20:4e:51:fc:2f" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-131" ip="10.7.216.131" load="78.9" mac="00:20:4e:30:e3:7c" mem="1024" n_cpu="1" state="OK"/>
+      </host>
+      
+      
+      <host id="granduc-6-kavlan-11.luxembourg.grid5000.fr" state="OK">
+        
+        
+        <vm cpuset="auto" hdd="10" id="vm-132" ip="10.7.216.132" load="6.3" mac="00:20:4e:be:a8:b8" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-550" ip="10.7.218.44" load="36.4" mac="00:20:4e:a1:cc:1b" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-170" ip="10.7.216.170" load="100.0" mac="00:20:4e:24:1e:f9" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-322" ip="10.7.217.69" load="54.6" mac="00:20:4e:0d:82:8d" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-208" ip="10.7.216.208" load="85.6" mac="00:20:4e:61:19:96" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-284" ip="10.7.217.31" load="100.0" mac="00:20:4e:f4:79:87" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-56" ip="10.7.216.56" load="93.5" mac="00:20:4e:4c:f8:72" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-436" ip="10.7.217.183" load="99.7" mac="00:20:4e:20:b4:a1" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-512" ip="10.7.218.6" load="35.1" mac="00:20:4e:e7:cd:bd" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-18" ip="10.7.216.18" load="48.3" mac="00:20:4e:13:b4:8f" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-94" ip="10.7.216.94" load="8.3" mac="00:20:4e:5d:fb:a0" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-246" ip="10.7.216.246" load="87.8" mac="00:20:4e:c6:7d:f1" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-474" ip="10.7.217.221" load="37.3" mac="00:20:4e:70:78:8c" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-360" ip="10.7.217.107" load="60.1" mac="00:20:4e:22:64:3e" mem="1024" n_cpu="1" state="KO"/>
+      </host>
+      
+      
+      <host id="granduc-7-kavlan-11.luxembourg.grid5000.fr" state="OK">
+        
+        
+        <vm cpuset="auto" hdd="10" id="vm-133" ip="10.7.216.133" load="22.4" mac="00:20:4e:d3:3c:09" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-171" ip="10.7.216.171" load="0.3" mac="00:20:4e:f4:ab:38" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-475" ip="10.7.217.222" load="55.1" mac="00:20:4e:6e:a8:0a" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-209" ip="10.7.216.209" load="99.9" mac="00:20:4e:ab:e3:94" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-285" ip="10.7.217.32" load="99.7" mac="00:20:4e:6b:66:62" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-19" ip="10.7.216.19" load="100.0" mac="00:20:4e:6f:9f:7d" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-247" ip="10.7.216.247" load="49.3" mac="00:20:4e:55:45:2a" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-513" ip="10.7.218.7" load="100.0" mac="00:20:4e:55:a3:27" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-437" ip="10.7.217.184" load="73.3" mac="00:20:4e:25:34:f7" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-323" ip="10.7.217.70" load="94.6" mac="00:20:4e:f7:2d:39" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-551" ip="10.7.218.45" load="74.5" mac="00:20:4e:03:f7:96" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-399" ip="10.7.217.146" load="95.7" mac="00:20:4e:5e:14:68" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-361" ip="10.7.217.108" load="63.3" mac="00:20:4e:da:b0:ea" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-57" ip="10.7.216.57" load="92.7" mac="00:20:4e:9c:21:4c" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-95" ip="10.7.216.95" load="62.7" mac="00:20:4e:0a:70:3c" mem="1024" n_cpu="1" state="OK"/>
+      </host>
+      
+      
+      <host id="granduc-8-kavlan-11.luxembourg.grid5000.fr" state="OK">
+        
+        
+        <vm cpuset="auto" hdd="10" id="vm-248" ip="10.7.216.248" load="58.8" mac="00:20:4e:c5:d4:c8" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-362" ip="10.7.217.109" load="91.1" mac="00:20:4e:53:9f:d1" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-514" ip="10.7.218.8" load="100.0" mac="00:20:4e:62:04:f1" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-552" ip="10.7.218.46" load="72.3" mac="00:20:4e:48:4d:81" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-286" ip="10.7.217.33" load="91.7" mac="00:20:4e:3e:d1:6d" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-438" ip="10.7.217.185" load="99.3" mac="00:20:4e:65:92:62" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-20" ip="10.7.216.20" load="57.6" mac="00:20:4e:16:b1:d7" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-210" ip="10.7.216.210" load="5.3" mac="00:20:4e:e7:20:e6" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-134" ip="10.7.216.134" load="60.1" mac="00:20:4e:39:0f:5f" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-96" ip="10.7.216.96" load="69.9" mac="00:20:4e:ea:e6:60" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-476" ip="10.7.217.223" load="96.7" mac="00:20:4e:52:a5:75" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-400" ip="10.7.217.147" load="17.9" mac="00:20:4e:f0:30:3e" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-58" ip="10.7.216.58" load="82.2" mac="00:20:4e:e1:71:e9" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-324" ip="10.7.217.71" load="49.0" mac="00:20:4e:18:6e:6e" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-172" ip="10.7.216.172" load="100.0" mac="00:20:4e:70:42:5e" mem="1024" n_cpu="1" state="OK"/>
+      </host>
+      
+      
+      <host id="granduc-9-kavlan-11.luxembourg.grid5000.fr" state="OK">
+        
+        
+        <vm cpuset="auto" hdd="10" id="vm-477" ip="10.7.217.224" load="79.8" mac="00:20:4e:39:e0:c5" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-21" ip="10.7.216.21" load="60.0" mac="00:20:4e:82:2e:f0" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-249" ip="10.7.216.249" load="6.3" mac="00:20:4e:80:d0:70" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-211" ip="10.7.216.211" load="68.5" mac="00:20:4e:61:85:d6" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-59" ip="10.7.216.59" load="18.9" mac="00:20:4e:df:42:1d" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-515" ip="10.7.218.9" load="100.0" mac="00:20:4e:8b:ca:49" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-363" ip="10.7.217.110" load="87.2" mac="00:20:4e:41:de:37" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-553" ip="10.7.218.47" load="57.9" mac="00:20:4e:a6:85:25" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-173" ip="10.7.216.173" load="79.8" mac="00:20:4e:26:41:89" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-287" ip="10.7.217.34" load="99.7" mac="00:20:4e:9e:80:b6" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-401" ip="10.7.217.148" load="100.0" mac="00:20:4e:7c:ef:26" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-325" ip="10.7.217.72" load="96.4" mac="00:20:4e:09:a7:4b" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-135" ip="10.7.216.135" load="69.9" mac="00:20:4e:e1:69:16" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-439" ip="10.7.217.186" load="99.9" mac="00:20:4e:1a:2c:d7" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-97" ip="10.7.216.97" load="76.8" mac="00:20:4e:da:17:15" mem="1024" n_cpu="1" state="OK"/>
+      </host>
+      
+      
+      <host id="granduc-22-kavlan-11.luxembourg.grid5000.fr" state="OK">
+        
+        
+        <vm cpuset="auto" hdd="10" id="vm-288" ip="10.7.217.35" load="0.0" mac="00:20:4e:37:cb:2a" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-212" ip="10.7.216.212" load="100.1" mac="00:20:4e:61:5e:12" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-174" ip="10.7.216.174" load="43.9" mac="00:20:4e:88:52:1d" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-478" ip="10.7.217.225" load="32.9" mac="00:20:4e:3a:2c:37" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-364" ip="10.7.217.111" load="75.4" mac="00:20:4e:bd:61:eb" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-440" ip="10.7.217.187" load="93.1" mac="00:20:4e:af:0c:ba" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-22" ip="10.7.216.22" load="73.4" mac="00:20:4e:47:73:37" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-516" ip="10.7.218.10" load="74.0" mac="00:20:4e:84:1d:76" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-554" ip="10.7.218.48" load="100.0" mac="00:20:4e:da:f6:3d" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-326" ip="10.7.217.73" load="94.0" mac="00:20:4e:95:05:22" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-402" ip="10.7.217.149" load="75.5" mac="00:20:4e:db:22:77" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-98" ip="10.7.216.98" load="64.7" mac="00:20:4e:2f:52:b3" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-60" ip="10.7.216.60" load="85.7" mac="00:20:4e:7e:39:11" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-136" ip="10.7.216.136" load="93.3" mac="00:20:4e:25:39:de" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-250" ip="10.7.216.250" load="100.0" mac="00:20:4e:91:8c:c8" mem="1024" n_cpu="1" state="KO"/>
+      </host>
+      
+    
+    </cluster>
+    
+  
+  </site>
+  
+  
+  <site id="nancy">
+    
+    
+    <cluster id="griffon">
+      
+      
+      <host id="griffon-4-kavlan-11.nancy.grid5000.fr" state="OK">
+        
+        
+        <vm cpuset="auto" hdd="10" id="vm-403" ip="10.7.217.150" load="100.0" mac="00:20:4e:29:fc:0c" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-327" ip="10.7.217.74" load="5.9" mac="00:20:4e:d4:92:26" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-213" ip="10.7.216.213" load="36.9" mac="00:20:4e:d2:fa:9f" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-482" ip="10.7.217.229" load="100.1" mac="00:20:4e:e9:f2:83" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-555" ip="10.7.218.49" load="70.3" mac="00:20:4e:7b:39:35" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-365" ip="10.7.217.112" load="57.5" mac="00:20:4e:a2:43:59" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-479" ip="10.7.217.226" load="81.1" mac="00:20:4e:39:a6:2a" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-289" ip="10.7.217.36" load="96.8" mac="00:20:4e:fd:54:13" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-137" ip="10.7.216.137" load="88.5" mac="00:20:4e:ad:69:5b" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-23" ip="10.7.216.23" load="100.0" mac="00:20:4e:ad:a4:50" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-175" ip="10.7.216.175" load="97.4" mac="00:20:4e:9e:be:dd" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-61" ip="10.7.216.61" load="60.4" mac="00:20:4e:b2:d6:8e" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-251" ip="10.7.216.251" load="100.0" mac="00:20:4e:84:fc:ef" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-99" ip="10.7.216.99" load="95.3" mac="00:20:4e:84:fc:fd" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-441" ip="10.7.217.188" load="88.3" mac="00:20:4e:6b:5e:40" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-517" ip="10.7.218.11" load="67.5" mac="00:20:4e:ef:cf:9d" mem="1024" n_cpu="1" state="KO"/>
+      </host>
+      
+      
+      <host id="griffon-39-kavlan-11.nancy.grid5000.fr" state="OK">
+        
+        
+        <vm cpuset="auto" hdd="10" id="vm-480" ip="10.7.217.227" load="53.8" mac="00:20:4e:2f:48:65" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-176" ip="10.7.216.176" load="100.0" mac="00:20:4e:c7:71:10" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-556" ip="10.7.218.50" load="54.3" mac="00:20:4e:29:af:e0" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-138" ip="10.7.216.138" load="99.9" mac="00:20:4e:1c:60:53" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-366" ip="10.7.217.113" load="5.3" mac="00:20:4e:87:87:4a" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-404" ip="10.7.217.151" load="74.5" mac="00:20:4e:70:e9:18" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-214" ip="10.7.216.214" load="36.1" mac="00:20:4e:4c:c8:19" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-252" ip="10.7.216.252" load="75.2" mac="00:20:4e:56:45:1a" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-518" ip="10.7.218.12" load="100.1" mac="00:20:4e:ee:84:d4" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-100" ip="10.7.216.100" load="44.7" mac="00:20:4e:94:5c:e8" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-290" ip="10.7.217.37" load="100.0" mac="00:20:4e:24:8f:20" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-442" ip="10.7.217.189" load="66.7" mac="00:20:4e:9c:c9:9e" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-62" ip="10.7.216.62" load="100.0" mac="00:20:4e:b0:de:08" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-24" ip="10.7.216.24" load="50.3" mac="00:20:4e:ce:2e:f5" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-328" ip="10.7.217.75" load="82.0" mac="00:20:4e:f1:44:29" mem="1024" n_cpu="1" state="KO"/>
+      </host>
+      
+      
+      <host id="griffon-40-kavlan-11.nancy.grid5000.fr" state="OK">
+        
+        
+        <vm cpuset="auto" hdd="10" id="vm-329" ip="10.7.217.76" load="4.7" mac="00:20:4e:31:d8:2a" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-101" ip="10.7.216.101" load="69.4" mac="00:20:4e:de:69:ab" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-405" ip="10.7.217.152" load="5.4" mac="00:20:4e:95:1d:52" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-291" ip="10.7.217.38" load="85.4" mac="00:20:4e:0a:ef:48" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-139" ip="10.7.216.139" load="66.7" mac="00:20:4e:b0:93:0c" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-63" ip="10.7.216.63" load="6.3" mac="00:20:4e:52:c6:ae" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-177" ip="10.7.216.177" load="55.0" mac="00:20:4e:c7:90:08" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-25" ip="10.7.216.25" load="66.5" mac="00:20:4e:b9:14:66" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-215" ip="10.7.216.215" load="48.0" mac="00:20:4e:53:b5:fc" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-443" ip="10.7.217.190" load="100.0" mac="00:20:4e:72:2a:3a" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-367" ip="10.7.217.114" load="100.0" mac="00:20:4e:36:a6:ec" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-519" ip="10.7.218.13" load="100.0" mac="00:20:4e:bd:b9:0c" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-253" ip="10.7.216.253" load="100.0" mac="00:20:4e:83:0c:63" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-481" ip="10.7.217.228" load="75.4" mac="00:20:4e:b4:fd:82" mem="1024" n_cpu="1" state="OK"/>
+      </host>
+      
+      
+      <host id="griffon-41-kavlan-11.nancy.grid5000.fr" state="OK">
+        
+        
+        <vm cpuset="auto" hdd="10" id="vm-406" ip="10.7.217.153" load="75.5" mac="00:20:4e:01:19:e7" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-140" ip="10.7.216.140" load="66.7" mac="00:20:4e:2e:6a:32" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-216" ip="10.7.216.216" load="55.5" mac="00:20:4e:2f:a3:6f" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-102" ip="10.7.216.102" load="93.7" mac="00:20:4e:0d:c7:02" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-26" ip="10.7.216.26" load="64.2" mac="00:20:4e:b9:25:fe" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-292" ip="10.7.217.39" load="100.0" mac="00:20:4e:5d:f4:9f" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-444" ip="10.7.217.191" load="0.3" mac="00:20:4e:c2:4e:7b" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-254" ip="10.7.217.1" load="83.4" mac="00:20:4e:14:b0:2e" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-520" ip="10.7.218.14" load="65.1" mac="00:20:4e:7c:3f:ba" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-330" ip="10.7.217.77" load="32.7" mac="00:20:4e:2f:db:62" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-178" ip="10.7.216.178" load="100.0" mac="00:20:4e:b3:9b:5c" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-64" ip="10.7.216.64" load="74.7" mac="00:20:4e:3a:ce:c9" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-368" ip="10.7.217.115" load="74.9" mac="00:20:4e:86:a6:99" mem="1024" n_cpu="1" state="KO"/>
+      </host>
+      
+      
+      <host id="griffon-54-kavlan-11.nancy.grid5000.fr" state="OK">
+        
+        
+        <vm cpuset="auto" hdd="10" id="vm-483" ip="10.7.217.230" load="4.9" mac="00:20:4e:4e:66:f6" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-521" ip="10.7.218.15" load="48.9" mac="00:20:4e:ce:55:60" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-560" ip="10.7.218.54" load="69.1" mac="00:20:4e:32:90:a2" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-331" ip="10.7.217.78" load="79.7" mac="00:20:4e:d1:a2:cf" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-293" ip="10.7.217.40" load="97.6" mac="00:20:4e:a1:ab:4c" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-65" ip="10.7.216.65" load="35.6" mac="00:20:4e:3a:e3:03" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-27" ip="10.7.216.27" load="71.4" mac="00:20:4e:78:17:1d" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-103" ip="10.7.216.103" load="86.2" mac="00:20:4e:45:ae:58" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-179" ip="10.7.216.179" load="96.3" mac="00:20:4e:e5:f8:a7" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-445" ip="10.7.217.192" load="56.8" mac="00:20:4e:80:db:93" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-141" ip="10.7.216.141" load="100.0" mac="00:20:4e:57:0b:ea" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-559" ip="10.7.218.53" load="86.9" mac="00:20:4e:a1:ff:dc" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-369" ip="10.7.217.116" load="65.4" mac="00:20:4e:c4:87:ff" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-407" ip="10.7.217.154" load="96.0" mac="00:20:4e:2a:c8:6b" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-255" ip="10.7.217.2" load="77.2" mac="00:20:4e:13:71:64" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-217" ip="10.7.216.217" load="58.1" mac="00:20:4e:c2:f6:3a" mem="1024" n_cpu="1" state="KO"/>
+      </host>
+      
+      
+      <host id="griffon-72-kavlan-11.nancy.grid5000.fr" state="OK">
+        
+        
+        <vm cpuset="auto" hdd="10" id="vm-28" ip="10.7.216.28" load="99.9" mac="00:20:4e:f6:a5:8a" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-522" ip="10.7.218.16" load="0.6" mac="00:20:4e:b5:41:cc" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-370" ip="10.7.217.117" load="50.5" mac="00:20:4e:22:30:7c" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-332" ip="10.7.217.79" load="92.0" mac="00:20:4e:4f:08:ed" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-142" ip="10.7.216.142" load="71.2" mac="00:20:4e:e0:76:bc" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-446" ip="10.7.217.193" load="52.6" mac="00:20:4e:e0:14:0b" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-256" ip="10.7.217.3" load="93.4" mac="00:20:4e:b2:e0:05" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-294" ip="10.7.217.41" load="42.9" mac="00:20:4e:2f:fd:f4" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-180" ip="10.7.216.180" load="99.7" mac="00:20:4e:40:42:25" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-66" ip="10.7.216.66" load="84.1" mac="00:20:4e:67:b8:a5" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-218" ip="10.7.216.218" load="83.7" mac="00:20:4e:01:fe:cc" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-484" ip="10.7.217.231" load="63.7" mac="00:20:4e:42:e9:91" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-408" ip="10.7.217.155" load="56.5" mac="00:20:4e:bb:ff:98" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-104" ip="10.7.216.104" load="100.1" mac="00:20:4e:0a:04:01" mem="1024" n_cpu="1" state="OK"/>
+      </host>
+      
+      
+      <host id="griffon-76-kavlan-11.nancy.grid5000.fr" state="OK">
+        
+        
+        <vm cpuset="auto" hdd="10" id="vm-181" ip="10.7.216.181" load="31.4" mac="00:20:4e:e5:80:9d" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-105" ip="10.7.216.105" load="100.0" mac="00:20:4e:bb:45:84" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-485" ip="10.7.217.232" load="62.8" mac="00:20:4e:e5:e7:07" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-409" ip="10.7.217.156" load="60.7" mac="00:20:4e:68:76:88" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-561" ip="10.7.218.55" load="0.3" mac="00:20:4e:5d:c7:bb" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-67" ip="10.7.216.67" load="92.7" mac="00:20:4e:39:df:92" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-557" ip="10.7.218.51" load="72.3" mac="00:20:4e:d9:8d:31" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-257" ip="10.7.217.4" load="59.6" mac="00:20:4e:ab:00:53" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-295" ip="10.7.217.42" load="5.9" mac="00:20:4e:a7:d3:8e" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-562" ip="10.7.218.56" load="51.6" mac="00:20:4e:b6:b2:7f" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-219" ip="10.7.216.219" load="1.2" mac="00:20:4e:39:13:26" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-523" ip="10.7.218.17" load="74.2" mac="00:20:4e:50:84:89" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-143" ip="10.7.216.143" load="100.0" mac="00:20:4e:cc:ac:b0" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-447" ip="10.7.217.194" load="6.4" mac="00:20:4e:53:39:cc" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-371" ip="10.7.217.118" load="7.0" mac="00:20:4e:44:3a:56" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-29" ip="10.7.216.29" load="44.4" mac="00:20:4e:f6:9b:7f" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-558" ip="10.7.218.52" load="18.2" mac="00:20:4e:75:aa:96" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-333" ip="10.7.217.80" load="35.4" mac="00:20:4e:cc:6b:4c" mem="1024" n_cpu="1" state="KO"/>
+      </host>
+      
+      
+      <host id="griffon-77-kavlan-11.nancy.grid5000.fr" state="OK">
+        
+        
+        <vm cpuset="auto" hdd="10" id="vm-486" ip="10.7.217.233" load="66.7" mac="00:20:4e:5d:7b:34" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-144" ip="10.7.216.144" load="55.4" mac="00:20:4e:f1:2d:ed" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-372" ip="10.7.217.119" load="75.5" mac="00:20:4e:d3:b3:d5" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-296" ip="10.7.217.43" load="100.0" mac="00:20:4e:af:43:49" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-30" ip="10.7.216.30" load="65.7" mac="00:20:4e:c3:ee:34" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-448" ip="10.7.217.195" load="93.0" mac="00:20:4e:6b:47:08" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-106" ip="10.7.216.106" load="92.9" mac="00:20:4e:1b:c7:71" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-334" ip="10.7.217.81" load="66.6" mac="00:20:4e:80:72:80" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-524" ip="10.7.218.18" load="55.5" mac="00:20:4e:c9:4e:ea" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-68" ip="10.7.216.68" load="67.2" mac="00:20:4e:db:9c:5e" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-182" ip="10.7.216.182" load="64.3" mac="00:20:4e:e9:5c:09" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-220" ip="10.7.216.220" load="10.9" mac="00:20:4e:6b:95:78" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-410" ip="10.7.217.157" load="75.8" mac="00:20:4e:b2:ca:49" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-258" ip="10.7.217.5" load="55.6" mac="00:20:4e:59:d5:7c" mem="1024" n_cpu="1" state="KO"/>
+      </host>
+      
+    
+    </cluster>
+    
+  
+  </site>
+  
+  
+  <site id="rennes">
+    
+    
+    <cluster id="parapluie">
+      
+      
+      <host id="parapluie-2-kavlan-11.rennes.grid5000.fr" state="OK">
+        
+        
+        <vm cpuset="auto" hdd="10" id="vm-183" ip="10.7.216.183" load="53.3" mac="00:20:4e:82:8c:54" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-69" ip="10.7.216.69" load="100.0" mac="00:20:4e:7f:eb:13" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-107" ip="10.7.216.107" load="13.0" mac="00:20:4e:e6:37:e7" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-563" ip="10.7.218.57" load="83.4" mac="00:20:4e:31:54:26" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-259" ip="10.7.217.6" load="53.6" mac="00:20:4e:55:04:6d" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-31" ip="10.7.216.31" load="72.3" mac="00:20:4e:ad:94:46" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-411" ip="10.7.217.158" load="100.0" mac="00:20:4e:64:b6:34" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-297" ip="10.7.217.44" load="62.9" mac="00:20:4e:b5:f3:2d" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-335" ip="10.7.217.82" load="99.7" mac="00:20:4e:ab:2e:9c" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-525" ip="10.7.218.19" load="72.7" mac="00:20:4e:87:c6:90" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-221" ip="10.7.216.221" load="100.0" mac="00:20:4e:9a:85:5c" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-145" ip="10.7.216.145" load="62.3" mac="00:20:4e:a1:1c:dd" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-487" ip="10.7.217.234" load="63.3" mac="00:20:4e:a3:a0:56" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-373" ip="10.7.217.120" load="82.1" mac="00:20:4e:63:92:11" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-449" ip="10.7.217.196" load="52.1" mac="00:20:4e:ca:aa:f1" mem="1024" n_cpu="1" state="OK"/>
+      </host>
+      
+      
+      <host id="parapluie-11-kavlan-11.rennes.grid5000.fr" state="OK">
+        
+        
+        <vm cpuset="auto" hdd="10" id="vm-260" ip="10.7.217.7" load="63.0" mac="00:20:4e:82:58:e5" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-374" ip="10.7.217.121" load="93.7" mac="00:20:4e:d6:08:d7" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-412" ip="10.7.217.159" load="24.1" mac="00:20:4e:ab:2c:d8" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-564" ip="10.7.218.58" load="43.8" mac="00:20:4e:20:3c:16" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-488" ip="10.7.217.235" load="64.1" mac="00:20:4e:56:d8:9c" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-450" ip="10.7.217.197" load="63.1" mac="00:20:4e:71:92:d2" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-32" ip="10.7.216.32" load="33.3" mac="00:20:4e:76:73:ea" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-222" ip="10.7.216.222" load="22.7" mac="00:20:4e:2b:66:18" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-70" ip="10.7.216.70" load="83.0" mac="00:20:4e:f4:47:e1" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-108" ip="10.7.216.108" load="62.3" mac="00:20:4e:ce:51:73" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-184" ip="10.7.216.184" load="73.4" mac="00:20:4e:65:a4:30" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-146" ip="10.7.216.146" load="62.3" mac="00:20:4e:e4:6a:9e" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-298" ip="10.7.217.45" load="99.7" mac="00:20:4e:52:4c:c7" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-336" ip="10.7.217.83" load="100.0" mac="00:20:4e:68:77:bc" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-526" ip="10.7.218.20" load="99.7" mac="00:20:4e:22:3f:ec" mem="1024" n_cpu="1" state="KO"/>
+      </host>
+      
+      
+      <host id="parapluie-12-kavlan-11.rennes.grid5000.fr" state="OK">
+        
+        
+        <vm cpuset="auto" hdd="10" id="vm-185" ip="10.7.216.185" load="100.0" mac="00:20:4e:cf:b4:24" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-147" ip="10.7.216.147" load="73.1" mac="00:20:4e:52:ff:29" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-337" ip="10.7.217.84" load="92.3" mac="00:20:4e:6d:98:71" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-299" ip="10.7.217.46" load="31.7" mac="00:20:4e:24:e0:09" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-375" ip="10.7.217.122" load="42.2" mac="00:20:4e:9b:20:2d" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-261" ip="10.7.217.8" load="72.4" mac="00:20:4e:f3:df:26" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-451" ip="10.7.217.198" load="73.1" mac="00:20:4e:e5:eb:7a" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-413" ip="10.7.217.160" load="72.9" mac="00:20:4e:98:58:83" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-489" ip="10.7.217.236" load="62.6" mac="00:20:4e:78:46:2d" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-33" ip="10.7.216.33" load="32.0" mac="00:20:4e:cb:88:77" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-71" ip="10.7.216.71" load="30.3" mac="00:20:4e:49:02:48" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-223" ip="10.7.216.223" load="70.9" mac="00:20:4e:b9:a8:41" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-109" ip="10.7.216.109" load="51.9" mac="00:20:4e:d3:4e:d1" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-527" ip="10.7.218.21" load="100.0" mac="00:20:4e:5c:18:d9" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-565" ip="10.7.218.59" load="100.0" mac="00:20:4e:73:46:27" mem="1024" n_cpu="1" state="KO"/>
+      </host>
+      
+      
+      <host id="parapluie-13-kavlan-11.rennes.grid5000.fr" state="OK">
+        
+        
+        <vm cpuset="auto" hdd="10" id="vm-72" ip="10.7.216.72" load="100.0" mac="00:20:4e:11:2e:51" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-414" ip="10.7.217.161" load="71.2" mac="00:20:4e:65:52:74" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-300" ip="10.7.217.47" load="30.2" mac="00:20:4e:81:87:ae" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-186" ip="10.7.216.186" load="70.9" mac="00:20:4e:7a:b3:d2" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-490" ip="10.7.217.237" load="71.6" mac="00:20:4e:bc:5f:89" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-566" ip="10.7.218.60" load="1.0" mac="00:20:4e:aa:03:92" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-34" ip="10.7.216.34" load="62.9" mac="00:20:4e:47:fd:78" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-110" ip="10.7.216.110" load="100.0" mac="00:20:4e:fb:52:5d" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-148" ip="10.7.216.148" load="52.8" mac="00:20:4e:bc:6d:fc" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-338" ip="10.7.217.85" load="43.0" mac="00:20:4e:53:83:2f" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-376" ip="10.7.217.123" load="92.0" mac="00:20:4e:5c:59:fb" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-452" ip="10.7.217.199" load="100.0" mac="00:20:4e:35:4d:a2" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-224" ip="10.7.216.224" load="61.4" mac="00:20:4e:ad:99:02" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-528" ip="10.7.218.22" load="92.0" mac="00:20:4e:c5:b8:1b" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-262" ip="10.7.217.9" load="32.6" mac="00:20:4e:7c:ee:ad" mem="1024" n_cpu="1" state="KO"/>
+      </host>
+      
+      
+      <host id="parapluie-15-kavlan-11.rennes.grid5000.fr" state="OK">
+        
+        
+        <vm cpuset="auto" hdd="10" id="vm-111" ip="10.7.216.111" load="83.3" mac="00:20:4e:56:45:c4" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-263" ip="10.7.217.10" load="100.0" mac="00:20:4e:29:2e:9f" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-149" ip="10.7.216.149" load="100.0" mac="00:20:4e:15:25:16" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-35" ip="10.7.216.35" load="84.1" mac="00:20:4e:4f:f5:c8" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-225" ip="10.7.216.225" load="53.0" mac="00:20:4e:d3:36:df" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-567" ip="10.7.218.61" load="99.7" mac="00:20:4e:a0:93:59" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-301" ip="10.7.217.48" load="93.3" mac="00:20:4e:40:3f:90" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-491" ip="10.7.217.238" load="53.5" mac="00:20:4e:eb:0d:77" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-73" ip="10.7.216.73" load="73.1" mac="00:20:4e:ee:11:1a" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-529" ip="10.7.218.23" load="32.8" mac="00:20:4e:aa:8d:00" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-453" ip="10.7.217.200" load="43.0" mac="00:20:4e:f1:27:55" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-187" ip="10.7.216.187" load="22.2" mac="00:20:4e:5a:9d:3d" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-377" ip="10.7.217.124" load="83.4" mac="00:20:4e:37:b0:6d" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-415" ip="10.7.217.162" load="3.0" mac="00:20:4e:21:b4:ef" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-339" ip="10.7.217.86" load="63.0" mac="00:20:4e:6d:c4:dc" mem="1024" n_cpu="1" state="KO"/>
+      </host>
+      
+      
+      <host id="parapluie-16-kavlan-11.rennes.grid5000.fr" state="OK">
+        
+        
+        <vm cpuset="auto" hdd="10" id="vm-74" ip="10.7.216.74" load="71.3" mac="00:20:4e:bb:c0:b8" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-112" ip="10.7.216.112" load="62.7" mac="00:20:4e:af:9e:0f" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-36" ip="10.7.216.36" load="62.1" mac="00:20:4e:5d:cb:34" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-416" ip="10.7.217.163" load="100.0" mac="00:20:4e:2a:39:c0" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-530" ip="10.7.218.24" load="62.4" mac="00:20:4e:5e:b0:3a" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-378" ip="10.7.217.125" load="81.3" mac="00:20:4e:0c:93:ec" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-454" ip="10.7.217.201" load="61.7" mac="00:20:4e:b9:74:c0" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-492" ip="10.7.217.239" load="61.2" mac="00:20:4e:e2:7b:3f" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-568" ip="10.7.218.62" load="91.0" mac="00:20:4e:4a:cd:5d" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-188" ip="10.7.216.188" load="82.3" mac="00:20:4e:27:ad:cd" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-150" ip="10.7.216.150" load="53.1" mac="00:20:4e:3f:38:94" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-226" ip="10.7.216.226" load="100.0" mac="00:20:4e:7a:f4:6e" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-264" ip="10.7.217.11" load="61.8" mac="00:20:4e:00:f5:46" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-302" ip="10.7.217.49" load="50.0" mac="00:20:4e:c6:a1:49" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-340" ip="10.7.217.87" load="39.5" mac="00:20:4e:36:0e:ee" mem="1024" n_cpu="1" state="KO"/>
+      </host>
+      
+      
+      <host id="parapluie-19-kavlan-11.rennes.grid5000.fr" state="OK">
+        
+        
+        <vm cpuset="auto" hdd="10" id="vm-113" ip="10.7.216.113" load="42.0" mac="00:20:4e:89:53:db" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-227" ip="10.7.216.227" load="80.8" mac="00:20:4e:f6:83:9e" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-37" ip="10.7.216.37" load="71.6" mac="00:20:4e:b8:17:b2" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-455" ip="10.7.217.202" load="61.1" mac="00:20:4e:9d:01:a0" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-151" ip="10.7.216.151" load="62.0" mac="00:20:4e:52:86:de" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-569" ip="10.7.218.63" load="41.0" mac="00:20:4e:78:df:30" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-531" ip="10.7.218.25" load="100.0" mac="00:20:4e:24:55:d6" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-379" ip="10.7.217.126" load="72.5" mac="00:20:4e:c8:a6:8e" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-75" ip="10.7.216.75" load="72.9" mac="00:20:4e:60:8d:03" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-417" ip="10.7.217.164" load="93.3" mac="00:20:4e:64:5f:65" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-189" ip="10.7.216.189" load="63.0" mac="00:20:4e:c8:0a:d3" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-265" ip="10.7.217.12" load="100.0" mac="00:20:4e:36:35:33" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-341" ip="10.7.217.88" load="22.3" mac="00:20:4e:7f:4b:49" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-493" ip="10.7.217.240" load="43.7" mac="00:20:4e:4d:4a:53" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-303" ip="10.7.217.50" load="63.5" mac="00:20:4e:46:21:49" mem="1024" n_cpu="1" state="KO"/>
+      </host>
+      
+      
+      <host id="parapluie-20-kavlan-11.rennes.grid5000.fr" state="OK">
+        
+        
+        <vm cpuset="auto" hdd="10" id="vm-38" ip="10.7.216.38" load="100.0" mac="00:20:4e:97:74:83" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-228" ip="10.7.216.228" load="72.5" mac="00:20:4e:7c:78:03" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-76" ip="10.7.216.76" load="52.5" mac="00:20:4e:f9:bf:97" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-494" ip="10.7.217.241" load="42.6" mac="00:20:4e:d5:25:e5" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-342" ip="10.7.217.89" load="43.5" mac="00:20:4e:ed:a4:12" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-570" ip="10.7.218.64" load="81.7" mac="00:20:4e:a1:36:d2" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-532" ip="10.7.218.26" load="54.5" mac="00:20:4e:06:71:56" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-114" ip="10.7.216.114" load="54.0" mac="00:20:4e:00:61:2f" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-152" ip="10.7.216.152" load="73.9" mac="00:20:4e:72:e9:42" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-456" ip="10.7.217.203" load="100.0" mac="00:20:4e:6f:9a:13" mem="1024" n_cpu="1" state="OK"/>
+        <vm cpuset="auto" hdd="10" id="vm-190" ip="10.7.216.190" load="100.0" mac="00:20:4e:12:06:3d" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-418" ip="10.7.217.165" load="100.0" mac="00:20:4e:83:0c:d5" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-380" ip="10.7.217.127" load="73.4" mac="00:20:4e:7e:2a:77" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-304" ip="10.7.217.51" load="23.0" mac="00:20:4e:f0:43:f1" mem="1024" n_cpu="1" state="KO"/>
+        <vm cpuset="auto" hdd="10" id="vm-266" ip="10.7.217.13" load="83.7" mac="00:20:4e:62:6c:f2" mem="1024" n_cpu="1" state="KO"/>
+      </host>
+      
+    
+    </cluster>
+    
+  
+  </site>
+  
+
+</vm5k>
