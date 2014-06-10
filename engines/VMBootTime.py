@@ -5,6 +5,7 @@ import sys
 import time
 import datetime
 import string
+import random
 from execo import logger as ex_log
 
 
@@ -44,7 +45,7 @@ class VMBootMeasurement(vm5k_engine_para):
     def comb_nvm(self, comb):
         """Calculate the number of virtual machines in the combination,
 required to attribute a number of IP/MAC for a parameter combination """
-        n_vm = comb['n_vm'] * comb['number_of_collocated_vms']
+        n_vm = comb['n_vm'] + comb['n_vm'] * comb['number_of_collocated_vms']
         return n_vm
 
     def workflow(self, comb, hosts, ip_mac):
@@ -144,7 +145,12 @@ required to attribute a number of IP/MAC for a parameter combination """
                 elif comb['load_injector'] ==  'mem':
                     injector = self.cache_bench(collocated_vms).start()
                 else:
-                    injector = []
+                    mem = []
+                    cpu = []
+                    for v in collocated_vms:
+                        random.choice((mem, cpu)).append(v)
+                    injector = self.kflops(cpu).start()
+                    injector.extend(self.cache_bench(mem).start())
 
 
             # Define the virtual machines for the combination
@@ -210,13 +216,13 @@ required to attribute a number of IP/MAC for a parameter combination """
                             ' |grep 0.0.0.0|awk \'{print $1" "$2" "$3}\' | tail -n 1',
                             [vm['ip'] for vm in vms]).run()
                 
-                boot_duration = []
+                boot_duration = {}
                 for p in get_ssh_up.processes:
                     ssh_up = time.mktime(datetime.datetime.strptime('2014 ' + \
                             p.stdout.strip(), "%Y %b %d %H:%M:%S").timetuple())
-                    boot_duration.append(str(ssh_up - boot_time[p.host.address]))
+                    boot_duration[p.host.address].append(str(ssh_up - boot_time[p.host.address]))
     
-                uptime = string.join(boot_duration, ",")
+                #uptime = string.join(boot_duration, ",")
             else:
                 first_vm = [vms[0]] 
                 
@@ -245,11 +251,11 @@ required to attribute a number of IP/MAC for a parameter combination """
                             ' |grep 0.0.0.0|awk \'{print $1" "$2" "$3}\' | tail -n 1',
                             [vm['ip'] for vm in first_vm]).run()
                 
-                boot_duration = []
+                boot_duration = {}
                 for p in get_ssh_up.processes:
                     ssh_up = time.mktime(datetime.datetime.strptime('2014 ' + \
                             p.stdout.strip(), "%Y %b %d %H:%M:%S").timetuple())
-                    boot_duration.append(str(ssh_up - boot_time[p.host.address]))
+                    boot_duration[p.host.address].append(str(ssh_up - boot_time[p.host.address]))
     
     
                 if len(others_vms) != 0:
@@ -281,10 +287,8 @@ required to attribute a number of IP/MAC for a parameter combination """
                     for p in get_ssh_up.processes:
                         ssh_up = time.mktime(datetime.datetime.strptime('2014 ' + \
                                 p.stdout.strip(), "%Y %b %d %H:%M:%S").timetuple())
-                        boot_duration.append(str(ssh_up - boot_time[p.host.address]))
+                        boot_duration[p.host.address].append(str(ssh_up - boot_time[p.host.address]))
         
-    
-                uptime = string.join(boot_duration, ",")
             
             mpstat.kill()
             
@@ -311,7 +315,8 @@ required to attribute a number of IP/MAC for a parameter combination """
             logger.info(thread_name + 'Writing boot time in result files')
 
             text_file = open(comb_dir+"boot_time.txt", "w")
-            text_file.write(uptime+'\n')
+            for vm in vms:
+                text_file.write(boot_duration[vm['ip']]+','+vm['cpuset']+'\n')
             text_file.write(load_data+'\n')
             text_file.close()
 
@@ -348,20 +353,26 @@ required to attribute a number of IP/MAC for a parameter combination """
         memsize = [str(27 + int(vm['n_cpu'])) for vm in vms]
         vms_ip = [vm['ip'] for vm in vms]
         vms_out = [vm['ip'] + '_' + vm['cpuset'] for vm in vms]
-        return TaktukRemote('while true ; do ./benchs/llcbench/cachebench/cachebench ' +
+        stress = TaktukRemote('while true ; do ./benchs/llcbench/cachebench/cachebench ' +
                     '-m {{memsize}} -e 1 -x 2 -d 1 -b > /root/cachebench_{{vms_out}}_rmw.out ; done', vms_ip)
+        for p in stress.processes:
+            p.ignore_exit_code = p.nolog_exit_code = True
+            
+        if len(stress) == 1:
+            return stress[0]
+        else:
+            return ParallelActions(stress)
 
     def kflops(self, vms):
         """Prepare a benchmark command with kflops"""
         vms_ip = [vm['ip'] for vm in vms]
         vms_out = [vm['ip'] + '_' + vm['cpuset'] for vm in vms] 
 
-        no_multi_stress = TaktukRemote('./benchs/kflops/kflops > /root/kflops_{{vms_out}}.out',
-                    [vm['ip'] for vm in vms)
-        for p in no_multi_stress.processes:
+        stress = TaktukRemote('./benchs/kflops/kflops > /root/kflops_{{vms_out}}.out',
+                    vms_ip)
+        
+        for p in stress.processes:
             p.ignore_exit_code = p.nolog_exit_code = True
-            
-        stress = [no_multi_stress]
         
         if len(stress) == 1:
             return stress[0]
