@@ -44,7 +44,7 @@ def show_vms(vms):
 
 
 def define_vms(vms_id, template=None, ip_mac=None, state=None, host=None,
-        n_cpu=None, cpusets=None, mem=None, hdd=None, backing_file=None, 
+        n_cpu=None, cpusets=None, mem=None, hdd=None, backing_file=None,
         real_file=None):
     """Create a list of virtual machines, where VM parameter is a dict
     similar to
@@ -64,7 +64,7 @@ def define_vms(vms_id, template=None, ip_mac=None, state=None, host=None,
 
     :param state: the state of the VM
 
-    :param host: the host of the VM
+    :param host: the host of the VM (string)
 
     :param n_cpu: the number of virtual CPU of the VMs
 
@@ -88,7 +88,8 @@ def define_vms(vms_id, template=None, ip_mac=None, state=None, host=None,
         state = [default_vm['state']] * n_vm if state is None \
             else [state] * n_vm if isinstance(state, str) else state
         host = [default_vm['host']] * n_vm if host is None \
-            else [host] * n_vm if isinstance(host, Host) else host
+            else [host] * n_vm if isinstance(host, str) else host
+
     else:
         n_cpu = [default_vm['n_cpu']] * n_vm if 'n_cpu' not in template.attrib \
             else [int(template.get('n_cpu'))] * n_vm
