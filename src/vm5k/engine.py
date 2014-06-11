@@ -22,7 +22,8 @@ from xml.etree.ElementTree import fromstring, parse, ElementTree
 from time import time
 from datetime import timedelta
 from execo import Host, SshProcess, sleep, Remote, TaktukRemote, Get, Put, ChainPut, \
-    SequentialActions, ParallelActions, format_date, format_duration
+    SequentialActions, ParallelActions, format_date, format_duration, \
+    default_connection_params
 from execo.time_utils import timedelta_to_seconds
 from execo.config import SSH, SCP, TAKTUK, CHAINPUT
 from execo.log import style
@@ -36,6 +37,8 @@ from vm5k import config, define_vms, create_disks, install_vms, start_vms, wait_
 from execo_engine import Engine, ParamSweeper, sweep, slugify, logger
 from threading import Thread, Lock
 
+
+default_connection_params['user'] = 'root'
 
 class vm5k_engine(Engine):
     """ The base vm5k engine class, that is build from execo_engine.Engine
