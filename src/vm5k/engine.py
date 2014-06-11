@@ -19,8 +19,8 @@
 from os import path, mkdir, listdir, remove
 from pprint import pformat
 from xml.etree.ElementTree import fromstring, parse, ElementTree
-from time import time
-from datetime import timedelta
+import time
+import datetime
 from execo import Host, SshProcess, sleep, Remote, TaktukRemote, Get, Put, ChainPut, \
     SequentialActions, ParallelActions, format_date, format_duration, \
     default_connection_params
@@ -34,11 +34,13 @@ from execo_g5k import default_frontend_connection_params, get_oar_job_info, \
 from execo_g5k.planning import get_planning, compute_slots, get_jobs_specs
 from vm5k import config, define_vms, create_disks, install_vms, start_vms, wait_vms_have_started,\
     destroy_vms, rm_qcow2_disks, vm5k_deployment, get_oar_job_vm5k_resources, print_step
+from vm5k.config import default_vm
 from execo_engine import Engine, ParamSweeper, sweep, slugify, logger
 from threading import Thread, Lock
 
 
 default_connection_params['user'] = 'root'
+
 
 class vm5k_engine(Engine):
     """ The base vm5k engine class, that is build from execo_engine.Engine
@@ -67,8 +69,12 @@ class vm5k_engine(Engine):
                     help="path to the environment file",
                     type="string",
                     default=None)
+        self.options_parser.add_option("-b", dest="backing_files",
+                    help="path to the vm backing files separated by ,",
+                    type="string",
+                    default=default_vm['backing_file'])
         self.options_parser.add_option("-w", dest="walltime",
-                    help = "walltime for the reservation",
+                    help="walltime for the reservation",
                     type="string",
                     default="3:00:00")
         self.options_parser.add_option("-k", dest="keep_alive",
@@ -125,8 +131,8 @@ class vm5k_engine(Engine):
         """Perform a reservation of the required number of nodes, with 4000 IP.
         """
         logger.info('Performing reservation')
-        starttime = int(time() + timedelta_to_seconds(timedelta(minutes=1)))
-        endtime = int(starttime + timedelta_to_seconds(timedelta(days=3,
+        starttime = int(time.time() + timedelta_to_seconds(datetime.timedelta(minutes=1)))
+        endtime = int(starttime + timedelta_to_seconds(datetime.timedelta(days=3,
                                                                  minutes=1)))
         startdate, n_nodes = self._get_nodes(starttime, endtime)
         while not n_nodes:
@@ -134,11 +140,11 @@ class vm5k_engine(Engine):
                         'increasing time window',
                         format_date(starttime), format_date(endtime))
             starttime = endtime
-            endtime = int(starttime + timedelta_to_seconds(timedelta(days=3,
+            endtime = int(starttime + timedelta_to_seconds(datetime.timedelta(days=3,
                                                                 minutes=1)))
             startdate, n_nodes = self._get_nodes(starttime, endtime)
-            if starttime > int(time() + timedelta_to_seconds(
-                                                timedelta(weeks=6))):
+            if starttime > int(time.time() + timedelta_to_seconds(
+                                                datetime.timedelta(weeks=6))):
                 logger.error('There are not enough nodes on %s for your ' + \
                              'experiments, abort ...', self.cluster)
                 exit()
@@ -179,7 +185,8 @@ class vm5k_engine(Engine):
         logger.info('Configure libvirt')
         setup.configure_libvirt()
         logger.info('Create backing file')
-        setup._create_backing_file()
+        backing_files = self.options.backing_files.split(',')
+        setup._create_backing_file(disks=backing_files)
 
 
 class vm5k_engine_para(vm5k_engine):
@@ -378,7 +385,7 @@ def boot_vms_by_core(vms):
             if len(sub_vms[i_core]) == 0:
                 del sub_vms[i_core]
 
-        logger.info(style.Thread(host)+': Starting VMS '+', '.join( [vm['id'] for vm in sorted(vms_to_boot)]))
+        logger.info(style.Thread(host) + ': Starting VMS '+', '.join( [vm['id'] for vm in sorted(vms_to_boot)]))
         start_vms(vms_to_boot).run()
         booted = wait_vms_have_started(vms_to_boot)
         if not booted:
