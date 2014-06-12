@@ -34,7 +34,7 @@ class VMBootMeasurement(vm5k_engine_para):
             'vm_policy': ['one_vm_per_core', 'vm_one_core'],
             'image_policy': ['one', 'one_per_vm'],
             'vm_boot_policy': ['all_at_once','one_then_others'],
-            'number_of_collocated_vms' : range(0,4),
+            'number_of_collocated_vms' : range(0,3),
             'load_injector': ['cpu','memory','mixed'],
             'iteration': range(1,6)}
 
@@ -63,7 +63,8 @@ required to attribute a number of IP/MAC for a parameter combination """
 
             logger.detail(thread_name + 'Destroying all vms on hosts')
             destroy_vms(hosts)
-
+            sleep(30)
+            
             cpusets = []
             collocated_cpusets = []
             
@@ -78,18 +79,62 @@ required to attribute a number of IP/MAC for a parameter combination """
             backing_file = '/home/lpouilloux/synced/images/benchs_vms.qcow2'
             real_file = True if comb['image_policy'] == 'one_per_vm' else False
             
-            umount = Remote('sync; echo 3 > /proc/sys/vm/drop_caches; umount /tmp; sleep 5; mount /tmp', [hosts[0]]).run()
+            umount = TaktukRemote('sync; echo 3 > /proc/sys/vm/drop_caches; umount /tmp; sleep 5; mount /tmp', [hosts[0]]).run()
+            for p in umount.processes:
+                p.shell = True
+                
+            retry = 10
+            
+            while ( not umount.finished_ok ) and ( retry > 0 ):
+                
+                #logger.debug(host + ': Failed to unmount /tmp for  %s, retrying... (%s)',
+                #             slugify(comb),str(retry))
+                #for p in umount.processes:
+                #    logger.error(host + ' : mount/umount error : %s %s', p.stdout.strip(),p.stderr.strip())
+                
+                lsof = Remote('lsof /tmp; virsh list', [hosts[0]])
+                for p in lsof.processes:
+                    p.ignore_exit_code = p.nolog_exit_code = True
+                
+                lsof.run()
+                
+                for p in lsof.processes:
+                    logger.error(host + ' : lsof /tmp : %s', p.stdout.strip())
+                
+                 
+                sleep(5)
+                
+                umount = TaktukRemote('sync; echo 3 > /proc/sys/vm/drop_caches; umount /tmp; sleep 5; mount /tmp', [hosts[0]]).run()
+                
+                for p in umount.processes:
+                    p.shell = True
+                
+                retry -= 1
+                    
+            
             if not umount.finished_ok:
-                logger.error(host + ': Failed to unmount /tmp for  %s',
-                             slugify(comb))
+                logger.error(host + ': Failed to unmount /tmp for  %s (%s)',
+                             slugify(comb), str(retry))
+                for p in umount.processes:
+                    logger.error(host + ' : mount/umount error : %s %s', p.stdout.strip(),p.stderr.strip())
+                
+                lsof = Remote('lsof /tmp; virsh list', [hosts[0]])
+                for p in lsof.processes:
+                    p.ignore_exit_code = p.nolog_exit_code = True
+                
+                lsof.run()
+                
+                for p in lsof.processes:
+                    logger.error(host + ' : lsof /tmp : %s', p.stdout.strip())
+                
                 exit()
             
             if comb['number_of_collocated_vms'] > 0:
                 
                 if comb['vm_policy'] == 'one_vm_per_core':
                     vms_ids = ['collocated-vm-' + str(i) for i in range(comb['n_vm']*comb['number_of_collocated_vms'])]
-                    collocated_ip_mac = ip_mac[1:comb['n_vm']*comb['number_of_collocated_vms']]
-                    ipmac = ipmac[comb['n_vm']*comb['number_of_collocated_vms']:]
+                    collocated_ip_mac = ip_mac[0:comb['n_vm']*comb['number_of_collocated_vms']]
+                    ip_mac = ip_mac[comb['n_vm']*comb['number_of_collocated_vms']:]
                     for i in range(comb['n_vm']):
                         for k in range(comb['number_of_collocated_vms']):
                             collocated_cpusets.append(','.join(str(i)
@@ -97,8 +142,8 @@ required to attribute a number of IP/MAC for a parameter combination """
                 else:
                     vms_ids = ['collocated-vm-' + str(i) for i in range(comb['number_of_collocated_vms'])]
                     
-                    collocated_ip_mac = ip_mac[1:comb['number_of_collocated_vms']]
-                    ipmac = ipmac[comb['number_of_collocated_vms']:]
+                    collocated_ip_mac = ip_mac[0:comb['number_of_collocated_vms']]
+                    ip_mac = ip_mac[comb['number_of_collocated_vms']:]
                     
                     for k in range(comb['number_of_collocated_vms']):
                         collocated_cpusets.append(str(0))
@@ -131,7 +176,7 @@ required to attribute a number of IP/MAC for a parameter combination """
                                  slugify(comb))
                     exit()
                     
-                logger.info(style.Thread(host)+': Starting collocated VMS '+', '.join( [vm['id'] for vm in sorted(vms)]))
+                logger.info(style.Thread(host)+': Starting collocated VMS '+', '.join( [vm['id'] for vm in sorted(collocated_vms)]))
                 
                 start_vms(collocated_vms).run()
                 booted = wait_vms_have_started(collocated_vms)
@@ -139,7 +184,9 @@ required to attribute a number of IP/MAC for a parameter combination """
                     logger.error(host + ': Unable to boot all the collocated VMS for %s',
                                  slugify(comb))
                     exit()
-                    
+                
+                sleep(30)
+                
                 if comb['load_injector'] == 'cpu':
                     injector = self.kflops(collocated_vms).start()
                 elif comb['load_injector'] ==  'mem':
@@ -149,8 +196,9 @@ required to attribute a number of IP/MAC for a parameter combination """
                     cpu = []
                     for v in collocated_vms:
                         random.choice((mem, cpu)).append(v)
-                    injector = self.kflops(cpu).start()
-                    injector.extend(self.cache_bench(mem).start())
+                    injector = []
+                    injector.append(self.kflops(cpu).start())
+                    injector.append(self.cache_bench(mem).start())
 
 
             # Define the virtual machines for the combination
@@ -199,15 +247,16 @@ required to attribute a number of IP/MAC for a parameter combination """
                     logger.error(host + ': Unable to boot all the VMS for %s',
                                  slugify(comb))
                     exit()
-                    
+                
+                sleep(30)
                 get_uptime = TaktukRemote('cat /proc/uptime', [vm['ip']
                                     for vm in vms]).run()
                 boot_time = {}
                 for p in get_uptime.processes:
                     boot_time[p.host.address] = now - float(p.stdout.strip().split(' ')[0])
                 
-                get_sda_stat = TaktukRemote('cat /sys/block/sda/stat',
-                                [vm['ip'] for vm in others_vms]).run()
+                get_sda_stat = TaktukRemote('cat /sys/block/vda/stat',
+                                [vm['ip'] for vm in vms]).run()
                     
                 for p in get_sda_stat.processes:
                     vms_sda_stat.append(p.stdout.strip())
@@ -220,7 +269,7 @@ required to attribute a number of IP/MAC for a parameter combination """
                 for p in get_ssh_up.processes:
                     ssh_up = time.mktime(datetime.datetime.strptime('2014 ' + \
                             p.stdout.strip(), "%Y %b %d %H:%M:%S").timetuple())
-                    boot_duration[p.host.address].append(str(ssh_up - boot_time[p.host.address]))
+                    boot_duration[p.host.address] = str(ssh_up - boot_time[p.host.address])
     
                 #uptime = string.join(boot_duration, ",")
             else:
@@ -234,15 +283,17 @@ required to attribute a number of IP/MAC for a parameter combination """
                     logger.error(host + ': Unable to boot all the first VMS for %s',
                                  slugify(comb))
                     exit()
-                    
+                
+                sleep(30)
+                
                 get_uptime = TaktukRemote('cat /proc/uptime', [vm['ip']
                                     for vm in first_vm]).run()
                 boot_time = {}
                 for p in get_uptime.processes:
                     boot_time[p.host.address] = now - float(p.stdout.strip().split(' ')[0])
                 
-                get_sda_stat = TaktukRemote('cat /sys/block/sda/stat',
-                                [vm['ip'] for vm in others_vms]).run()
+                get_sda_stat = TaktukRemote('cat /sys/block/vda/stat',
+                                [vm['ip'] for vm in first_vm]).run()
                     
                 for p in get_sda_stat.processes:
                     vms_sda_stat.append(p.stdout.strip())
@@ -255,7 +306,7 @@ required to attribute a number of IP/MAC for a parameter combination """
                 for p in get_ssh_up.processes:
                     ssh_up = time.mktime(datetime.datetime.strptime('2014 ' + \
                             p.stdout.strip(), "%Y %b %d %H:%M:%S").timetuple())
-                    boot_duration[p.host.address].append(str(ssh_up - boot_time[p.host.address]))
+                    boot_duration[p.host.address] = str(ssh_up - boot_time[p.host.address])
     
     
                 if len(others_vms) != 0:
@@ -268,13 +319,14 @@ required to attribute a number of IP/MAC for a parameter combination """
                                      slugify(comb))
                         exit()
                         
+                    sleep(30)
                     get_uptime = TaktukRemote('cat /proc/uptime', [vm['ip']
                                         for vm in others_vms]).run()
                     boot_time = {}
                     for p in get_uptime.processes:
                         boot_time[p.host.address] = now - float(p.stdout.strip().split(' ')[0])
                     
-                    get_sda_stat = TaktukRemote('cat /sys/block/sda/stat',
+                    get_sda_stat = TaktukRemote('cat /sys/block/vda/stat',
                                 [vm['ip'] for vm in others_vms]).run()
                     
                     for p in get_sda_stat.processes:
@@ -287,7 +339,7 @@ required to attribute a number of IP/MAC for a parameter combination """
                     for p in get_ssh_up.processes:
                         ssh_up = time.mktime(datetime.datetime.strptime('2014 ' + \
                                 p.stdout.strip(), "%Y %b %d %H:%M:%S").timetuple())
-                        boot_duration[p.host.address].append(str(ssh_up - boot_time[p.host.address]))
+                        boot_duration[p.host.address] = str(ssh_up - boot_time[p.host.address])
         
             
             mpstat.kill()
@@ -337,6 +389,9 @@ required to attribute a number of IP/MAC for a parameter combination """
             comb_ok = True
 
         finally:
+            if not mpstat.ended:
+                mpstat.kill()
+            
             if comb_ok:
                 self.sweeper.done(comb)
                 logger.info(thread_name + ': ' + slugify(comb) + \
@@ -358,10 +413,7 @@ required to attribute a number of IP/MAC for a parameter combination """
         for p in stress.processes:
             p.ignore_exit_code = p.nolog_exit_code = True
             
-        if len(stress) == 1:
-            return stress[0]
-        else:
-            return ParallelActions(stress)
+        return stress
 
     def kflops(self, vms):
         """Prepare a benchmark command with kflops"""
@@ -374,10 +426,7 @@ required to attribute a number of IP/MAC for a parameter combination """
         for p in stress.processes:
             p.ignore_exit_code = p.nolog_exit_code = True
         
-        if len(stress) == 1:
-            return stress[0]
-        else:
-            return ParallelActions(stress)
+        return stress
 
     def setup_hosts(self):
         """ """
