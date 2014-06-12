@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import json
 from pprint import pformat
 from xml.etree.ElementTree import Element, dump, SubElement, parse
 from execo import logger, default_connection_params, sleep, TaktukPut, TaktukRemote
@@ -6,13 +7,20 @@ from execo_g5k import get_host_site, get_host_cluster, get_cluster_site
 from vm5k import default_vm
 from vm5k.utils import prettify
 
-logger.setLevel('INFO')
+logger.setLevel('DETAIL')
 
 default_connection_params['user'] = 'root'
 
 def _default_xml_value(key):
     return default_vm[key] if key not in vm.attrib else vm.get(key)
 
+def get_load_color(load):
+    """ """
+    n = load // 10
+    R = 255 * n / 10
+    G = (255 * (10-n))/10; 
+    B=0
+    return '#%02x%02x%02x' % (int(R), int(G), int(B))
 
 logger.info('Reading initial topo')
 tree = parse('final_topo.xml')
@@ -52,7 +60,10 @@ while True:
             logger.detail(p.host.address)
             tmp_load = line.split(' ')
             logger.detail(tmp_load)
-            vms_loads[tmp_load[0]] = float(tmp_load[1]) + float(tmp_load[2]) + float(tmp_load[-1])
+            try:
+                vms_loads[tmp_load[0]] = float(tmp_load[1]) + float(tmp_load[2]) + float(tmp_load[-1])
+            except:
+                vms_loads[tmp_load[0]] = 0
             hosts_vms[p.host.address].append(tmp_load[0])
     logger.detail(hosts_vms)
 
@@ -67,7 +78,34 @@ while True:
             logger.detail('Adding %s to %s', vm, host)
             SubElement(el_host, 'vm', attrib=attrib)
 
-    f = open('state.xml', 'w')
-    f.write(prettify(state))
-    f.close()
+    vm5k = {"name": 'vm5k', "children": [], "color": "#FFA08D", "size": 20}
+    
+    for el_site in state.findall('./site'):
+        site = {"name": el_site.get('id'), 
+                "children": [], 
+                "color": "#FFFDBB",
+                "size": 10}
+        for el_cluster in el_site.findall('./cluster'):
+            cluster = {"name": el_cluster.get('id'), 
+                       "children": [],
+                       "color": "#BBBDFF", 
+                       "size": 5}
+            for el_host in el_cluster.findall('./host'):
+                host = {"name": el_host.get('id').split('-', 2)[1], 
+                        "children": [],
+                        "color": "pink",
+                        "size": 4}
+                cluster['children'].append(host)
+                for el_vm in el_host.findall('./vm'):
+                    load = el_vm.get('load')
+                    host['children'].append({"name": "", 
+                                "color": get_load_color(float(load)), 
+                                "size": 2.5})
+            site['children'].append(cluster)
+            
+        vm5k['children'].append(site)
+        
+    with open('html/vm5k.json', 'w') as outfile:
+        json.dump(vm5k, outfile)
+
          
