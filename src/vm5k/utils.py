@@ -219,19 +219,21 @@ def get_vms_slot(vms, elements, slots, excluded_elements=None):
             excluded_elements += [cluster for cluster
                                   in get_site_clusters(element)
                                   if cluster not in excluded_elements]
+
     if 'grid5000' in elements:
         clusters = [cluster for cluster in get_g5k_clusters()
                          if cluster not in excluded_elements
                           and get_cluster_site not in excluded_elements]
     else:
         clusters = [element for element in elements
-                    if element in get_g5k_clusters()]
+                    if element in get_g5k_clusters()
+                    and element not in excluded_elements]
         for element in elements:
             if element in get_g5k_sites():
                 clusters += [cluster
                     for cluster in get_site_clusters(element)
-                        if cluster not in clusters]
-    clusters.sort()
+                        if cluster not in clusters
+                        and cluster not in excluded_elements]
 
     for slot in slots:
         hosts = []

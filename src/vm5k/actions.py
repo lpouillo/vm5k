@@ -336,7 +336,7 @@ def wait_vms_have_started(vms, restart=True):
     old_started = started_vms[:]
     while (not all_up) and nmap_tries < 10:
         sleep(15)
-        logger.debug('nmap_tries %s', nmap_tries)
+        logger.detail('nmap_tries %s', nmap_tries)
         nmap.run()
         for p in nmap.processes:
             for line in p.stdout.split('\n'):
@@ -358,7 +358,7 @@ def wait_vms_have_started(vms, restart=True):
                 restart_vms([vm for vm in vms if vm['state'] == 'KO'])
             nmap_tries += 1
         if not all_up:
-            logger.detail(str(nmap_tries) + ': ' + str(len(started_vms)) + '/' +\
+            logger.info(str(nmap_tries) + ': ' + str(len(started_vms)) + '/' +\
                         str(len(vms)))
         nmap.reset()
 
