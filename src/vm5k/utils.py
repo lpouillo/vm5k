@@ -271,6 +271,9 @@ def get_vms_slot(vms, elements, slots, excluded_elements=None):
                 resources_needed[cluster] = 0
             resources_needed[cluster] += 1
 
+    if 'kavlan' in elements:
+        resources_needed['kavlan'] = 1
+
     logger.debug('resources needed' + pformat(resources_needed))
     return chosen_slot[0], distribute_hosts(chosen_slot[2], resources_needed,
                                             excluded_elements)
