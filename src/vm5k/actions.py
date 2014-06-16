@@ -266,7 +266,7 @@ def create_disks_all_hosts(vms, hosts):
         cmds[i_cmd] += vm_cmd
 
     for cmd in cmds:
-        hosts_actions.append(Remote(cmd, hosts))
+        hosts_actions.append(TaktukRemote(cmd, hosts))
 
     return ParallelActions(hosts_actions)
 
