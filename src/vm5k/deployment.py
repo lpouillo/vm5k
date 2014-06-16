@@ -31,7 +31,7 @@ from execo_g5k.api_utils import get_host_cluster, \
 from execo_g5k.utils import get_kavlan_host_name
 from vm5k.config import default_vm
 from vm5k.actions import create_disks, install_vms, start_vms, \
-    wait_vms_have_started, destroy_vms, create_disks_on_hosts, distribute_vms
+    wait_vms_have_started, destroy_vms, create_disks_all_hosts, distribute_vms
 from vm5k.utils import prettify, print_step, get_fastest_host, \
     hosts_list, get_CPU_RAM_FLOPS
 from vm5k.services import dnsmasq_server
@@ -195,7 +195,7 @@ class vm5k_deployment():
         if disk_location == 'one':
             create_disks(self.vms).run()
         elif disk_location == 'all':
-            create_disks_on_hosts(self.vms, self.hosts).run()
+            create_disks_all_hosts(self.vms, self.hosts).run()
         logger.info('Installing the virtual machines')
         install_vms(self.vms).run()
         logger.info('Starting the virtual machines')

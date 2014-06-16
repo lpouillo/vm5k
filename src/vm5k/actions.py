@@ -20,7 +20,7 @@
 from os import fdopen
 from pprint import pformat
 from execo import SshProcess, TaktukPut, logger, TaktukRemote, Process, \
-    ParallelActions, Host
+    ParallelActions, Host, Remote, SequentialActions
 from execo.log import style
 from execo.time_utils import sleep
 import tempfile
@@ -218,20 +218,29 @@ def destroy_vms(hosts):
         TaktukRemote('{{cmds}}', hosts_with_vms).run()
 
 
+def cmd_disk_real(vm):
+    """Return a command to create a new disk from the backing_file"""
+    return 'qemu-img convert /tmp/' + vm['backing_file'].split('/')[-1] + \
+         ' -O qcow2 /tmp/' + vm['id'] + '.qcow2 ;'
+
+
+def cmd_disk_qcow2(vm):
+    """Return a command to create a qcow2 file using the backing_file"""
+    return 'qemu-img create -f qcow2 -o backing_file=/tmp/' + \
+        vm['backing_file'].split('/')[-1] + ',backing_fmt=qcow2 /tmp/' + \
+        vm['id'] + '.qcow2 ' + str(vm['hdd']) + 'G ; '
+
+
 def create_disks(vms):
     """ Return an action to create the disks for the VMs on the hosts"""
     logger.detail(', '.join([vm['id'] for vm in sorted(vms)]))
     hosts_cmds = {}
 
     for vm in vms:
-        backing_file = vm['backing_file'].split('/')[-1]
         if vm['real_file']:
-            cmd = 'qemu-img convert /tmp/' + backing_file + ' -O qcow2 /tmp/' + \
-                vm['id'] + '.qcow2 ;'
+            cmd = cmd_disk_real(vm)
         else:
-            cmd = 'qemu-img create -f qcow2 -o backing_file=/tmp/' + \
-                backing_file + ',backing_fmt=qcow2 /tmp/' + \
-                vm['id'] + '.qcow2 ' + str(vm['hdd']) + 'G ; '
+            cmd = cmd_disk_qcow2(vm)
         logger.detail(vm['id'] + ': ' + cmd)
         hosts_cmds[vm['host']] = cmd if not vm['host'] in hosts_cmds \
             else hosts_cmds[vm['host']] + cmd
@@ -241,15 +250,25 @@ def create_disks(vms):
     return TaktukRemote('{{hosts_cmds.values()}}', list(hosts_cmds.keys()))
 
 
-def create_disks_on_hosts(vms, hosts):
+def create_disks_all_hosts(vms, hosts):
     """ Return a Parallel action to create the qcow2 disks on all hosts"""
-    host_actions = []
-    for host in hosts:
-        tmp_vms = deepcopy(vms)
-        for vm in tmp_vms:
-            vm['host'] = host
-        host_actions.append(create_disks(tmp_vms))
-    return ParallelActions(host_actions)
+    hosts_actions = []
+    cmds = ['']
+    i_cmd = 0
+    for vm in vms:
+        if vm['real_file']:
+            vm_cmd = cmd_disk_real(vm)
+        else:
+            vm_cmd = cmd_disk_qcow2(vm)
+        if len(cmds[i_cmd]) > 10000:
+            cmds.append('')
+            i_cmd += 1
+        cmds[i_cmd] += vm_cmd
+
+    for cmd in cmds:
+        hosts_actions.append(Remote(cmd, hosts))
+
+    return ParallelActions(hosts_actions)
 
 
 def install_vms(vms):
