@@ -253,7 +253,7 @@ def get_vms_slot(vms, elements, slots, excluded_elements=None):
 
     resources_needed = {}
     resources_available = chosen_slot[2]
-
+    logger.debug('resources available' + pformat(resources_available))
     iter_clusters = cycle(clusters)
     while req_ram > 0 or req_cpu > 0:
         cluster = iter_clusters.next()
@@ -267,11 +267,10 @@ def get_vms_slot(vms, elements, slots, excluded_elements=None):
             req_ram -= float(attr[host]['RAM'] / mem) * mem
             req_cpu -= float(attr[host]['CPU'] / cpu) * cpu
 
-            if cluster in resources_needed:
-                resources_needed[cluster] += 1
-            else:
-                resources_needed[cluster] = 1
+            if cluster not in resources_needed:
+                resources_needed[cluster] = 0
+            resources_needed[cluster] += 1
 
-    logger.debug(pformat(resources_needed))
+    logger.debug('resources needed' + pformat(resources_needed))
     return chosen_slot[0], distribute_hosts(chosen_slot[2], resources_needed,
                                             excluded_elements)
