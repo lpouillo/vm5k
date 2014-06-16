@@ -282,7 +282,6 @@ if args.job_id is None:
                           excluded_elements=blacklisted)
 
     # Test if we need a free slot or a vms slot
-    print elements
     if len([element for element, n_nodes in elements.iteritems()
             if n_nodes > 0 and element != 'kavlan']) > 0:
         slot = find_free_slot(slots, elements)
