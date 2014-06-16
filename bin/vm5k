@@ -298,14 +298,13 @@ if args.job_id is None:
 
     show_resources(resources)
 
-    jobs_specs = get_jobs_specs(resources, name='VM5K')
+    jobs_specs = get_jobs_specs(resources, name='VM5K',  excluded_elements=blacklisted)
 
     if not kavlan:
         for OarSubmission, _ in jobs_specs:
             OarSubmission.resources = subnets + '+' + OarSubmission.resources
 
     logger.debug('Jobs specifications %s', pformat(jobs_specs))
-
     job_id, _ = oargridsub(jobs_specs, walltime=args.walltime,
          additional_options="-t deploy", reservation_date=startdate)
 
