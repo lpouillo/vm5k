@@ -20,12 +20,11 @@
 from os import fdopen
 from pprint import pformat
 from execo import SshProcess, TaktukPut, logger, TaktukRemote, Process, \
-    ParallelActions, Host, Remote, SequentialActions
+    SequentialActions, ChainPut, Local
 from execo.log import style
 from execo.time_utils import sleep
 import tempfile
 from math import ceil
-from copy import deepcopy
 from execo.exception import ActionsFailed
 from config import default_vm
 from utils import get_CPU_RAM_FLOPS, get_max_vms
@@ -251,24 +250,22 @@ def create_disks(vms):
 
 
 def create_disks_all_hosts(vms, hosts):
-    """ Return a Parallel action to create the qcow2 disks on all hosts"""
-    hosts_actions = []
-    cmds = ['']
-    i_cmd = 0
+    """Create a temporary file containing the vms disks creation commands
+    upload it and run it on the hosts"""
+
+    fd, vms_disks = tempfile.mkstemp(dir='/tmp/', prefix='vms_disks_')
+    f = fdopen(fd, 'w')
     for vm in vms:
         if vm['real_file']:
             vm_cmd = cmd_disk_real(vm)
         else:
             vm_cmd = cmd_disk_qcow2(vm)
-        if len(cmds[i_cmd]) > 30000:
-            cmds.append('')
-            i_cmd += 1
-        cmds[i_cmd] += vm_cmd
+        f.write('\n' + vm_cmd)
+    f.close()
 
-    for cmd in cmds:
-        hosts_actions.append(TaktukRemote(cmd, hosts))
-
-    return SequentialActions(hosts_actions)
+    return SequentialActions([ChainPut(hosts, [vms_disks]),
+                TaktukRemote('sh ' + vms_disks.split('/')[-1], hosts),
+                Local('rm ' + vms_disks)])
 
 
 def install_vms(vms):
