@@ -35,8 +35,7 @@ from vm5k.actions import create_disks, install_vms, start_vms, \
 from vm5k.utils import prettify, print_step, get_fastest_host, \
     hosts_list, get_CPU_RAM_FLOPS
 from vm5k.services import dnsmasq_server
-from vm5k.plots import topology_plot
-import matplotlib.pyplot as plt
+from vm5k.plots import topology_plot 
 
 
 class vm5k_deployment():
