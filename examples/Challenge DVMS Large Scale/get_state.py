@@ -70,13 +70,16 @@ while True:
     for host, vms_list in hosts_vms.iteritems():
         el_host = state.find(".//host/[@id='" + host + "']")
         for vm in vms_list: 
-            attrib = filter(lambda x: x['id'] == vm, vms)[0]
-            attrib = dict(attrib.items() + {'load': str(vms_loads[vm])}.items())
-            attrib = {k: str(v) for k, v in attrib.items()}
-            del attrib['backing_file']
-            del attrib['host']
-            logger.detail('Adding %s to %s', vm, host)
-            SubElement(el_host, 'vm', attrib=attrib)
+            try:
+                attrib = filter(lambda x: x['id'] == vm, vms)[0]
+                attrib = dict(attrib.items() + {'load': str(vms_loads[vm])}.items())
+                attrib = {k: str(v) for k, v in attrib.items()}
+                del attrib['backing_file']
+                del attrib['host']
+                logger.detail('Adding %s to %s', vm, host)
+                SubElement(el_host, 'vm', attrib=attrib)
+            except:
+                print vm + 'not found ?'
 
     vm5k = {"name": 'vm5k', "children": [], "color": "#FFA08D", "size": 20}
     
