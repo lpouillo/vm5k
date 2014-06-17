@@ -260,7 +260,7 @@ def create_disks_all_hosts(vms, hosts):
             vm_cmd = cmd_disk_real(vm)
         else:
             vm_cmd = cmd_disk_qcow2(vm)
-        if len(cmds[i_cmd]) > 10000:
+        if len(cmds[i_cmd]) > 30000:
             cmds.append('')
             i_cmd += 1
         cmds[i_cmd] += vm_cmd
@@ -268,7 +268,7 @@ def create_disks_all_hosts(vms, hosts):
     for cmd in cmds:
         hosts_actions.append(TaktukRemote(cmd, hosts))
 
-    return ParallelActions(hosts_actions)
+    return SequentialActions(hosts_actions)
 
 
 def install_vms(vms):

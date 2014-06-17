@@ -193,8 +193,10 @@ class vm5k_deployment():
         logger.info('Creating the virtual disks ')
         self._create_backing_file()
         if disk_location == 'one':
+            logger.info('Create disk on each nodes')
             create_disks(self.vms).run()
         elif disk_location == 'all':
+            logger.info('Create all disks on all nodes')
             create_disks_all_hosts(self.vms, self.hosts).run()
         logger.info('Installing the virtual machines')
         install_vms(self.vms).run()
