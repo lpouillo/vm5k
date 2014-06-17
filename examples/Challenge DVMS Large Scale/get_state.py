@@ -15,7 +15,7 @@ def _default_xml_value(key):
     return default_vm[key] if key not in vm.attrib else vm.get(key)
 
 def get_load_color(load):
-    """ """
+    """Create 10 steps of colors based on the load"""
     n = load // 10
     R = 255 * n / 10
     G = (255 * (10-n))/10; 
