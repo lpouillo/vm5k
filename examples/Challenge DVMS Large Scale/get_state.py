@@ -101,7 +101,7 @@ while True:
                 cluster['children'].append(host)
                 for el_vm in el_host.findall('./vm'):
                     load = el_vm.get('load')
-                    host['children'].append({"name": "", 
+                    host['children'].append({"name": el_vm.get('id').split('-', 2)[1]", 
                                 "color": get_load_color(float(load)), 
                                 "size": 2.5})
             site['children'].append(cluster)
