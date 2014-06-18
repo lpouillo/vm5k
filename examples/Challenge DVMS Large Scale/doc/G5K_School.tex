@@ -176,11 +176,23 @@ All VMs are ready to be stressed.
 \end{frame}
 
 \begin{frame}{Vivaldi}
-
+\begin{minipage}{0.40\linewidth}
+Based on "Spring systems" [Dabek2004]
+\begin{itemize}
+    \item Contacts are exchanged randomly between nodes
+    \item Latency is measured $\Rightarrow$ spring tension
+\end{itemize}
+\end{minipage}
+\hfill
+\begin{minipage}{0.55\linewidth}
+\includegraphics[width=0.9\linewidth]{vivaldi.png}
+\end{minipage}
 \end{frame}
 
 \begin{frame}{DVMS}
-
+\begin{center}
+\includegraphics[width=0.9\linewidth]{dvms2.png}
+\end{center}
 \end{frame}
 
 \begin{frame}{Live visualization}
@@ -188,7 +200,6 @@ All VMs are ready to be stressed.
     \url{http://localhost:9000}
 \end{center}
 \begin{itemize}
-    \item migration count
     \item infrastructure state (VM position and load) 
     \item distance map from Vivaldi (used by DVMS to determine where to migrate the VMs)
     \item bonus: node live power usage
