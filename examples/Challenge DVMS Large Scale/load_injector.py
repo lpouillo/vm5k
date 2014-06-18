@@ -1,11 +1,30 @@
 #!/usr/bin/env python
 import threading
 from pprint import pprint
+from argparse import ArgumentParser
 import xml.etree.ElementTree as ET
-from execo import Process, SshProcess, TaktukPut, TaktukRemote, logger, Remote, default_connection_params
+from execo import Process, SshProcess, TaktukPut, TaktukRemote,\
+    logger, Remote, default_connection_params
 from execo.time_utils import sleep, Timer
 
-
+# parser = ArgumentParser(prog='Load injector',
+#                         description='',
+#                         epilog='')
+# 
+# optmodes = parser.add_mutually_exclusive_group()
+# optmodes.add_argument('--prepare',
+#                 dest="prepare",
+#                 action="store_true",
+#                 default=False,
+#                 help="prepare the VMs for injection")
+# optmodes.add_argument('--run',
+#                 dest="run",
+#                 action="store_true",
+#                 default=False,
+#                 help="Run the injector after generating events")
+# optmodes.add_argument('--prepare-and-run',
+#                       T)
+ 
 logger.setLevel('INFO')
 
 default_connection_params['user'] = 'root'
