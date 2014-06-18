@@ -1,11 +1,11 @@
 \documentclass{beamer}
 \mode<presentation>
 {
-\usetheme{Rochester}
-\setbeamercovered{transparent}
-\useoutertheme{smoothbars}
+\usetheme{Boadilla}
+%\setbeamercovered{transparent}
+%\useoutertheme{smoothbars}
 }
-\addtobeamertemplate{footline}{\insertframenumber/\inserttotalframenumber}
+%\addtobeamertemplate{footline}{\insertframenumber/\inserttotalframenumber}
 
 \usepackage[utf8]{inputenc} \usepackage[english]{babel}
 \usepackage{graphicx} \usepackage{geometry}
@@ -19,10 +19,13 @@
 %\newminted{python}{fontsize=\scriptsize,linenos}
 %\newminted{python3}{fontsize=\tiny,linenos}
 
-
+ 
 \newcommand{\E}[1]{{\textbf{#1}}}
 \newcommand{\C}[1]{{\color{red}\texttt{#1}}}
 \definecolor{mygreen}{cmyk}{0.888,0,0.888,0.298}
+\definecolor{mblue}{RGB}{0,34,102}
+\definecolor{mred}{RGB}{205,0,0}
+\definecolor{mcc}{RGB}{65,105,225}
 \newcommand{\G}[1]{{\color{mygreen}{#1}}}
 \newcommand{\B}[1]{{\color{blue}{#1}}}
 \newcommand{\ar}{\ding{220} }
@@ -35,7 +38,7 @@
 % - Use the \inst{?} command only if the authors have different
 %   affiliation.
 %\author{F.~Author\inst{1} \and S.~Another\inst{2}}
-\author{Javier Pastor\inst{1} \and Laurent Pouilloux\inst{2}}
+\author{Jonathan Pastor\inst{1} \and Laurent Pouilloux\inst{2}}
 
 % - Use the \inst command only if there are several affiliations.
 % - Keep it simple, no one is interested in your street address.
@@ -48,7 +51,7 @@ ASCOLA - Mines Nantes / Inria
 \inst{2}%
 Hemera Engineer\\
 Inria / ENS Lyon}
-
+ 
 \date[G5K School 2014]{18-06-2014 / Grid'5000 School}
 
 
@@ -74,26 +77,29 @@ Inria / ENS Lyon}
 
 
 \begin{frame}{Context}
-Cloud computing has become very popular.
+Cloud computing usage is becoming very popular.
 \begin{itemize}
-\item Ever-increasing demand $\Rightarrow$ ever-increasing
+    \item Ever-increasing demand $\Rightarrow$ ever-increasing
 infrastructure size.
-\item PB: scalability, reliability, energy but also security,
-juridiction and network overhead.
-\item Decentralise the production of computing ressources
-(Discovery project, http://beyondtheclouds.github.io/)
+    \item Problems: scalability, reliability, network overhead, energy but also security,
+and juridiction
+    \item Decentralise the computing ressources
 \end{itemize}
+\begin{block}{}
+concept of micro/nano
+datacenters [Greenberg2009] geographically spread.
+$\Rightarrow$ nodes can be far from each other.
+\end{block}
 \end{frame}
 
 
-\begin{frame}{Scientific question}
-Discovery: leverage the concept of micro/nano
-datacenters [Greenberg2009] geographically spread.
-$\Rightarrow$ nodes can be far from each other.
+\begin{frame}{Discovery project}
+\framesubtitle{http://beyondtheclouds.github.io/}
+ 
 \begin{itemize}
-\item And we want to maximise cooperation between close
+    \item And we want to maximise cooperation between close
 nodes/micro DCs.
-\item Example: The DVMS case.
+    \item Example: The DVMS case.
 \end{itemize}
 \end{frame}
 
@@ -105,54 +111,139 @@ nodes/micro DCs.
 }
 \begin{frame}{Grid'5000 as a testbed}
 \begin{itemize}
-\item renater interconnected network
-\item various hardware
-\item KaVLAN
-\item experimentfull stack control 
+    \item 10Gb interconnected network
+    \item various hardware (cpu, memory size, disks, network bandwidth)
+    \item KaVLAN: allow to have a single network over the sites
+    \item full experiment stack control (hardware, OS, hypervisor)
 \end{itemize}
 \end{frame}
 }
 
 
-
-
 \begin{frame}{Experimental Workflow}
 \begin{enumerate}
-\item reserve many nodes on different sites, with a global-KaVLAN
-\item deploy thousants of Virtual Machines
-\item initiate stress process on them
-\item install DVMS
-\item use vivaldi to compute hosts distances
-\item generate random stress on the virtual machiens
-\item collect results
+    \item reserve many nodes on different sites, with a global-KaVLAN
+    \item deploy thousants of Virtual Machines
+    \item initiate stress process on them
+    \item install DVMS
+    \item use vivaldi to compute hosts distances
+    \item generate random stress on the virtual machines
+    \item live experiment visualization
+    \item collect results
 \end{enumerate}
 \end{frame}
 
-\begin{frame}{Automatic time slot selection}
+\begin{frame}[fragile]{(F)ind yo(U)r (N)ode on g5(K)}
+\framesubtitle{A advanced resources discovery tool for multisite reservation}
+\small
+\begin{verbatim}
+funk -m free -r grid5000:200 -o "-t deploy" -w 12:00:00 
+  -b helios,sagittaire,nantes,reims,graphite -k -c
+\end{verbatim}
+\begin{center}
+\includegraphics[height=0.7\paperheight,width=0.7\paperwidth,keepaspectratio]{funk_slots.png}
+\end{center}
 \end{frame}
 
-\begin{frame}{Virtual Machines deployment}
+ 
+\begin{frame}{Automatic Virtual Machines deployment}
+\framesubtitle{Moving FLauncher (D. Balouek and F. Quesnel) to vm5k}
+\begin{center}
+\includegraphics[height=0.6\paperheight,keepaspectratio]{vm5k_workflow.png}
+\end{center}
+\begin{alertblock}{}
+Tested successfully up to 5 000 VMs on 300 nodes.
+\end{alertblock}
 \end{frame}
 
-\begin{frame}{Stress initialization}
+\begin{frame}[fragile]{Stress initialization}
+On all running Virtual Machines and using \href{http://execo.gforge.inria.fr/doc/latest-stable/userguide.html}{execo}
+\begin{itemize}
+    \item upload the \verb=memtouch=
+    \item start the process
+    \item set it's cpu usage to 1\% using \verb=cpulimit=
+\end{itemize}
+\begin{alertblock}{}
+All VMs are ready to be stressed.
+\end{alertblock}
+
 \end{frame}
 
 \begin{frame}{Vivaldi}
+
 \end{frame}
 
 \begin{frame}{DVMS}
+
 \end{frame}
 
 \begin{frame}{Live visualization}
+\begin{itemize}
+    \item infrastructure state (VM position and load) 
+    \item distance map from Vivaldi (used by DVMS to determine where to migrate the VMs)
+    \item bonus: node live power usage
+\end{itemize}
+\begin{center}
+\url{http://localhost:9000}
+\end{center}
+\end{frame}
+    
+\begin{frame}[fragile]{Load events generation}
+We can tune:
+\begin{itemize}
+    \item Gaussian stress distribution for the load
+    \item events frequency
+\end{itemize}
+\tiny
+\begin{verbatim}
+<?xml version="1.0" encoding="UTF-8"?>
+<events>
+  <event type="update_cpu_load" time="0.6322858606354911" target="vm-103" location="10.27.216.103" value="30"/>
+  <event type="update_cpu_load" time="0.6501133097844356" target="vm-24" location="10.27.216.24" value="50"/>
+  <event type="update_cpu_load" time="0.77156495657007" target="vm-59" location="10.27.216.59" value="100"/>
+  <event type="update_cpu_load" time="1.001639188886804" target="vm-123" location="10.27.216.123" value="80"/>
+  <event type="update_cpu_load" time="1.7390251934205876" target="vm-19" location="10.27.216.19" value="100"/>
+  <event type="update_cpu_load" time="2.161792297887189" target="vm-44" location="10.27.216.44" value="80"/>
+  <event type="update_cpu_load" time="3.1211590695284515" target="vm-41" location="10.27.216.41" value="100"/>
+  <event type="update_cpu_load" time="3.525741904535117" target="vm-61" location="10.27.216.61" value="40"/>
+ ...
+</events>
+\end{verbatim}
+\begin{block}{}
+\normalsize
+Use an execo script to set the value of the load using \verb=cpulimit=
+\end{block}
 \end{frame}
 
+
 \begin{frame}{Results Analysis}
+\begin{itemize}
+    \item Vivaldi map
+    \item Migration statistics
+    \item Bonus: fine-grained power consumption for some nodes
+\end{itemize}
 \end{frame}
 
 \begin{frame}{Conclusion}
-* publi Europar
-* github repository
+Large scale validation of DVMS taking into account node distance
+\begin{itemize}
+    \item -almost- fully automatized experiment
+    \item wide usage of Grid'5000 features (API, Kadeploy, KaVLAN, Kwapi)
+    \item real execution up to 5000 Virtual Machines
+    \item demo available on \href{https://www.grid5000.fr/mediawiki/index.php/Challenge_DVMS_Live_-_School_2014}
+    {Challenge\_DVMS\_Live\_-\_School\_2014}
+\end{itemize}
+
+\begin{block}{}
+\small
+Jonathan Pastor, Marin Bertier, Frédéric Desprez, Adrien Lèbre, Flavien Quesnel, 
+and Cédric Tedeschi. \textit{Locality-aware Cooperation for VM Scheduling in 
+Distributed Clouds}. In Euro-Par 2014, Porto, Portugal, August 2014.
+\end{block}
 \end{frame}
 
+\begin{frame}
+Thank your for your attention. Questions ?
+\end{frame}
 
 \end{document}
