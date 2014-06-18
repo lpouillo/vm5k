@@ -38,7 +38,7 @@
 % - Use the \inst{?} command only if the authors have different
 %   affiliation.
 %\author{F.~Author\inst{1} \and S.~Another\inst{2}}
-\author{Jonathan Pastor\inst{1} \and Laurent Pouilloux\inst{2}}
+\author[J. Pastor and L. Pouilloux]{Jonathan Pastor\inst{1} \and Laurent Pouilloux\inst{2}}
 
 % - Use the \inst command only if there are several affiliations.
 % - Keep it simple, no one is interested in your street address.
@@ -159,8 +159,8 @@ Tested successfully up to 5 000 VMs on 300 nodes.
 \begin{frame}[fragile]{Stress initialization}
 On all running Virtual Machines and using \href{http://execo.gforge.inria.fr/doc/latest-stable/userguide.html}{execo}
 \begin{itemize}
-    \item upload the \verb=memtouch=
-    \item start the process
+    \item upload the \verb=memtouch= binary
+    \item start a memtouch process
     \item set it's cpu usage to 1\% using \verb=cpulimit=
 \end{itemize}
 \begin{alertblock}{}
@@ -178,20 +178,21 @@ All VMs are ready to be stressed.
 \end{frame}
 
 \begin{frame}{Live visualization}
+\begin{center}
+    \url{http://localhost:9000}
+\end{center}
 \begin{itemize}
+    \item migration count
     \item infrastructure state (VM position and load) 
     \item distance map from Vivaldi (used by DVMS to determine where to migrate the VMs)
     \item bonus: node live power usage
 \end{itemize}
-\begin{center}
-\url{http://localhost:9000}
-\end{center}
 \end{frame}
     
 \begin{frame}[fragile]{Load events generation}
 We can tune:
 \begin{itemize}
-    \item Gaussian stress distribution for the load
+    \item distribution of event load value
     \item events frequency
 \end{itemize}
 \tiny
