@@ -36,7 +36,8 @@ class VMBootMeasurement(vm5k_engine_para):
             'vm_boot_policy': ['all_at_once','one_then_others'],
             'number_of_collocated_vms' : range(0,3),
             'load_injector': ['cpu','memory','mixed'],
-            'iteration': range(1,6)}
+            'iteration': range(1,6),
+            'nosharing': [0,1]}
 
         logger.debug(parameters)
 
@@ -57,6 +58,9 @@ required to attribute a number of IP/MAC for a parameter combination """
 
         thread_name = style.Thread(host.split('.')[0]) + ': '
         comb_ok = False
+        
+        mpstat = None
+        
         try:
             logger.info(thread_name)
             logger.info(style.step('Performing combination ' + slugify(comb)))
@@ -130,23 +134,29 @@ required to attribute a number of IP/MAC for a parameter combination """
                 exit()
             
             if comb['number_of_collocated_vms'] > 0:
-                
-                if comb['vm_policy'] == 'one_vm_per_core':
-                    vms_ids = ['collocated-vm-' + str(i) for i in range(comb['n_vm']*comb['number_of_collocated_vms'])]
-                    collocated_ip_mac = ip_mac[0:comb['n_vm']*comb['number_of_collocated_vms']]
-                    ip_mac = ip_mac[comb['n_vm']*comb['number_of_collocated_vms']:]
-                    for i in range(comb['n_vm']):
-                        for k in range(comb['number_of_collocated_vms']):
-                            collocated_cpusets.append(','.join(str(i)
-                                for j in range(comb['n_cpu'])))
-                else:
+                if comb['nosharing'] == 1:
                     vms_ids = ['collocated-vm-' + str(i) for i in range(comb['number_of_collocated_vms'])]
-                    
                     collocated_ip_mac = ip_mac[0:comb['number_of_collocated_vms']]
                     ip_mac = ip_mac[comb['number_of_collocated_vms']:]
-                    
                     for k in range(comb['number_of_collocated_vms']):
-                        collocated_cpusets.append(str(0))
+                        collocated_cpusets.append(str(comb['n_vm']-1+k))
+                else:
+                    if comb['vm_policy'] == 'one_vm_per_core':
+                        vms_ids = ['collocated-vm-' + str(i) for i in range(comb['n_vm']*comb['number_of_collocated_vms'])]
+                        collocated_ip_mac = ip_mac[0:comb['n_vm']*comb['number_of_collocated_vms']]
+                        ip_mac = ip_mac[comb['n_vm']*comb['number_of_collocated_vms']:]
+                        for i in range(comb['n_vm']):
+                            for k in range(comb['number_of_collocated_vms']):
+                                collocated_cpusets.append(','.join(str(i)
+                                    for j in range(comb['n_cpu'])))
+                    else:
+                        vms_ids = ['collocated-vm-' + str(i) for i in range(comb['number_of_collocated_vms'])]
+                        
+                        collocated_ip_mac = ip_mac[0:comb['number_of_collocated_vms']]
+                        ip_mac = ip_mac[comb['number_of_collocated_vms']:]
+                        
+                        for k in range(comb['number_of_collocated_vms']):
+                            collocated_cpusets.append(str(0))
                         
                 # Define and start collocated VMS
                 collocated_vms = define_vms(vms_ids,
@@ -155,13 +165,15 @@ required to attribute a number of IP/MAC for a parameter combination """
                               n_cpu=comb['n_cpu'],
                               cpusets=collocated_cpusets,
                               mem=comb['n_mem'] * 1024,
-                              backing_file=backing_file)
+                              backing_file=backing_file,
+                              real_file=real_file)
                 
                 for vm in collocated_vms:
                     vm['host'] = hosts[0]
     
                 # Create disks, install vms and boot by core
-                logger.info(thread_name + ': Creating disks for collocated VMs')
+                logger.info(thread_name + ': Creating disks for collocated VMs ( '+
+			    str(len(collocated_ip_mac))+' / '+str(len(collocated_vms))+' )')
                     
                 create = create_disks(collocated_vms).run()
                 if not create.ok:
@@ -389,8 +401,9 @@ required to attribute a number of IP/MAC for a parameter combination """
             comb_ok = True
 
         finally:
-            if not mpstat.ended:
-                mpstat.kill()
+            if mpstat is not None:
+                if not mpstat.ended:
+                    mpstat.kill()
             
             if comb_ok:
                 self.sweeper.done(comb)

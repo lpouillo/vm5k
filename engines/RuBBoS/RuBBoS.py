@@ -266,6 +266,25 @@ class RuBBoS(vm5k_engine_para):
                 conf = services[service]
                 launch = Remote(conf['launch_cmd'], map(lambda y: y['ip'],
                            filter(lambda x: service in x['id'], vms))).run()
+                           
+            mpstat = TaktukRemote('mpstat 5 -P ALL > /tmp/mpstats_{{vms_hosts}}.out', vms_hosts).start()
+            vmstat = TaktukRemote('vmstat 1 > /tmp/vmstats_{{vms_hosts}}.out', vms_hosts).start()
+            iostat = TaktukRemote('iostat 1 > /tmp/iostats_{{vms_hosts}}.out', vms_hosts).start()
+            
+            # Launching NEW client
+            client_ip = [ map(lambda y: y['ip'], filter(lambda x: 'client' in x['id'], vms))[0] ]
+                                                                                        
+            http_ip = [ filter(lambda x: 'lb-http' in x['id'], vms)[0]['ip'] ]                                        
+            
+            logger.info('Uploading stress for %s and %s', str(client_ip), str(http_ip))
+            
+            Put(client_ip, ["client_simple_bench.py"]).run()
+            
+            cmd_line = "python client_simple_bench.py -i "+str(http_ip[0])+" -o /root/RUBBoS/Client/bench/new_bench.out"
+            
+            rubbos_stress = Remote(cmd_line, client_ip)            
+            logger.info('Starting stress %s', cmd_line)
+            rubbos_stress.run()
 
             # Launching client
             rubbos_stress = SshProcess(services['client']['launch_cmd'],
@@ -277,6 +296,11 @@ class RuBBoS(vm5k_engine_para):
 
             sleep(self.options.stress_time)
             rubbos_stress.kill()
+            
+            mpstat.kill()
+            vmstat.kill()
+            iostat.kill()
+            
             # Gathering results
             comb_dir = self.result_dir + '/' + slugify(comb) + '/'
             try:
@@ -299,6 +323,15 @@ class RuBBoS(vm5k_engine_para):
                                'removing existing files', vm_result_dir)
                     for f in listdir(vm_result_dir):
                         remove(vm_result_dir + f)
+
+            get_vms_output = Get(vms_hosts, ['/tmp/*.out'],
+                                     local_location=comb_dir).run()
+            for p in get_vms_output.processes:
+                if not p.ok:
+                    logger.error(thread_name +
+                        ': Unable to retrieve the files for combination %s',
+                        slugify(comb))
+                    exit()
 
             for service, conf in services.iteritems():
                 if conf['log_files']:
@@ -343,7 +376,7 @@ class RuBBoS(vm5k_engine_para):
                                 fileput_tool=CHAINPUT,
                                 fileget_tool=SCP)
         setup.hosts_deployment()
-        setup.packages_management()
+        setup.packages_management(other_packages='sysstat procps')
         setup.configure_libvirt()
 
         disks = ['vm-app-lb.qcow2', 'vm-client.qcow2', 'vm-db.qcow2',
