@@ -32,6 +32,7 @@ from vm5k import vm5k_deployment, define_vms, get_oar_job_vm5k_resources, \
 ##############################################################################
 # INITIALIZATION
 ##############################################################################
+version = '0.5.1'
 execution_time = {}
 timer = Timer()
 
@@ -72,6 +73,10 @@ run = parser.add_argument_group(style.host('Execution'),
 run.add_argument("-h", "--help",
                 action="help",
                 help="show this help message and exit")
+run.add_argument('--version',
+                action='version',
+                version='%(prog)s ' + version)
+
 optio = run.add_mutually_exclusive_group()
 optio.add_argument("-v", "--verbose",
                 action="store_true",
@@ -91,10 +96,10 @@ run.add_argument("--plot",
                 dest='plot',
                 action="store_true",
                 help='draw a topological graph of the deployment')
-run.add_argument("--live-plot",
-                dest="live_plot",
-                action="store_true",
-                help='Open a figure to track the deployment process')
+#run.add_argument("--live-plot",
+#                dest="live_plot",
+#                action="store_true",
+#                help='Open a figure to track the deployment process')
 
 ## Reservation
 mode = parser.add_argument_group(style.host("Mode"),
@@ -208,8 +213,9 @@ else:
 
 ## Start message
 print_step('VM5K: deployment of VMs on Grid\'5000 *')
+logger.info('Version ' + version)
 
-# Fix demo values for n_vm and walltime
+# Set demo values for n_vm and walltime
 if args.n_vm is None and args.infile is None:
     logger.warning('No options: -n %s or -i %s, setting %s to %s',
                  style.emph('n_vm'), style.emph('infile'),
@@ -353,8 +359,7 @@ vm5k = vm5k_deployment(
             distribution=args.vm_distribution,
             env_name=args.env_name,
             env_file=args.env_file,
-            outdir=args.outdir,
-            live_plot=args.live_plot)
+            outdir=args.outdir)
 
 print_step('Deploying the hosts')
 if args.nodeploy:
