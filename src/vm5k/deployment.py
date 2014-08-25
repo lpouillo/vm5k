@@ -180,7 +180,7 @@ class vm5k_deployment():
         self._libvirt_uniquify()
         self._libvirt_bridged_network(bridge)
         logger.info('Restarting %s', style.emph('libvirt'))
-        self.fact.get_remote('service libvirt-bin restart', self.hosts).run()
+        self.fact.get_remote('service libvirtd restart', self.hosts).run()
 
     def deploy_vms(self, clean_disks=False, disk_location='one'):
         """Destroy the existing VMS, create the virtual disks, install the vms
@@ -329,7 +329,7 @@ class vm5k_deployment():
         cmd = 'uuid=`uuidgen` ' + \
         '&& sed -i "s/.*host_uuid.*/host_uuid=\\"${uuid}\\"/g" ' + \
         '/etc/libvirt/libvirtd.conf ' + \
-        '&& service libvirt-bin restart'
+        '&& service libvirtd restart'
         logger.debug(cmd)
         self.fact.get_remote(cmd, self.hosts).run()
 
@@ -440,12 +440,14 @@ class vm5k_deployment():
         fd, tmpsource = mkstemp(dir='/tmp/', prefix='sources.list_')
         f = fdopen(fd, 'w')
         f.write('deb http://ftp.debian.org/debian stable main contrib non-free\n' + \
+                'deb http://ftp.debian.org/debian wheezy-backports main contrib non-free\n' + \
                 'deb http://ftp.debian.org/debian testing main contrib non-free\n')
         f.close()
         # Create preferences file
         fd, tmppref = mkstemp(dir='/tmp/', prefix='preferences_')
         f = fdopen(fd, 'w')
         f.write('Package: * \nPin: release a=stable \nPin-Priority: 900\n\n' + \
+                'Package: * \nPin: release a=stable \nPin-Priority: 875\n\n' + \
                 'Package: * \nPin: release a=testing \nPin-Priority: 850\n\n')
         f.close()
         # Create apt.conf file
