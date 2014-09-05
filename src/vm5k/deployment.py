@@ -90,8 +90,8 @@ class vm5k_deployment():
             if env_file is not None:
                 self.env_file = env_file
             else:
-                self.env_file = '/home/lpouilloux/synced/environments/vm5k/' +\
-                'vm5k.env'
+                self.env_name = 'vm5k'
+                self.env_user = 'lpouilloux'
 
         if outdir:
             self.outdir = outdir
@@ -441,7 +441,8 @@ class vm5k_deployment():
         fd, tmpsource = mkstemp(dir='/tmp/', prefix='sources.list_')
         f = fdopen(fd, 'w')
         f.write('deb http://ftp.debian.org/debian stable main contrib non-free\n' + \
-                'deb http://ftp.debian.org/debian wheezy-backports main contrib non-free\n')
+                'deb http://ftp.debian.org/debian wheezy-backports main contrib non-free\n' + \
+                'deb http://security.debian.org/ wheezy/updates main contrib non-free\n')
         f.close()
         # Create preferences file
         fd, tmppref = mkstemp(dir='/tmp/', prefix='preferences_')
