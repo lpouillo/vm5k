@@ -7,7 +7,7 @@ from math import ceil, log
 from execo import logger, SshProcess, Put, Remote, Host, TaktukRemote, \
     Process, TaktukPut
 from execo.log import style
-from execo_g5k import get_g5k_sites
+from execo_g5k import get_g5k_sites, get_host_site
 
 
 def vms_lists(vms, server):
@@ -46,13 +46,13 @@ def get_server_iface(server):
     return get_if.stdout.strip()
 
 
-def resolv_conf(server, clients):
+def resolv_conf(server, clients, sites):
     """Generate the resolv.conf with dhcp parameters and put it on the server
     """
     fd, resolv = mkstemp(dir='/tmp/', prefix='resolv_')
     f = fdopen(fd, 'w')
     f.write('domain grid5000.fr\nsearch grid5000.fr ' + \
-            ' '.join([site + '.grid5000.fr' for site in get_g5k_sites()]) + \
+            ' '.join([site + '.grid5000.fr' for site in sites]) + \
             '\nnameserver ' + get_server_ip(server))
     f.close()
     TaktukPut(clients, [resolv], remote_location='/etc/').run()
@@ -61,7 +61,7 @@ def resolv_conf(server, clients):
     Process('rm ' + resolv).run()
 
 
-def dhcp_conf(server, vms):
+def dhcp_conf(server, vms, sites):
     """Generate the dnsmasq.conf with dhcp parameters and put it on the server"""
     logger.debug('Creating dnsmasq.conf')
     ip_mac = [ (vm['ip'], vm['mac']) for vm in vms ]
@@ -71,7 +71,7 @@ def dhcp_conf(server, vms):
     dhcp_hosts = ''+'\n'.join( [ 'dhcp-host='+':'+ip_mac[i][1]+','+vms[i]['id']+','+ip_mac[i][0]
                                 for i in range(len(vms)) ])
     dhcp_option = 'dhcp-option=option:domain-search,grid5000.fr,'+\
-            ','.join( [site+'.grid5000.fr' for site in get_g5k_sites()])+'\n'
+            ','.join( [site + '.grid5000.fr' for site in sites])+'\n'
     fd, dnsmasq = mkstemp(dir = '/tmp/', prefix='dnsmasq_')
     f = fdopen(fd, 'w')
     f.write(dhcp_lease+dhcp_range+dhcp_router+dhcp_hosts+'\n'+dhcp_option)
@@ -118,13 +118,15 @@ def dnsmasq_server(server, clients=None, vms=None, dhcp=True):
              'apt-get install -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confnew" '+\
              '-y dnsmasq; echo 1 > /proc/sys/net/ipv4/ip_forward '
         SshProcess(cmd, server).run()
-
+    sites = list(set([get_host_site(client) for client in clients
+                      if get_host_site(client)]))
     vms_lists(vms, server)
     if clients:
-        resolv_conf(server, clients)
+        resolv_conf(server, clients, sites)
+
     if dhcp:
         sysctl_conf(server, vms)
-        dhcp_conf(server, vms)
+        dhcp_conf(server, vms, sites)
 
     logger.debug('Restarting service ...')
     cmd = 'service dnsmasq stop ; rm /var/lib/misc/dnsmasq.leases ; service dnsmasq start',
