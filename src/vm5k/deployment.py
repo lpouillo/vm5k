@@ -85,13 +85,15 @@ class vm5k_deployment():
             else:
                 self.env_user, self.env_name = env_name.split(':')
         else:
-            self.env_name = None
-            self.env_user = None
+            
             if env_file is not None:
+                self.env_name = None
+                self.env_user = None
                 self.env_file = env_file
             else:
                 self.env_name = 'vm5k'
                 self.env_user = 'lpouilloux'
+                self.env_file = None
 
         if outdir:
             self.outdir = outdir
