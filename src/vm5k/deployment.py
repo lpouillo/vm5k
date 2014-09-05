@@ -479,7 +479,7 @@ class vm5k_deployment():
 
     def _install_packages(self, other_packages=None):
         """Installation of required packages on the hosts"""
-        base_packages = 'uuid-runtime bash-completion taktuk locate htop init-system-helpers'
+        base_packages = 'uuid-runtime bash-completion taktuk locate htop init-system-helpers netcat-traditional'
         logger.info('Installing base packages \n%s', style.emph(base_packages))
         cmd = 'export DEBIAN_MASTER=noninteractive ; apt-get update && apt-get ' + \
             'install -y --force-yes ' + base_packages
