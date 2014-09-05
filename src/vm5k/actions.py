@@ -298,6 +298,22 @@ def start_vms(vms):
     return TaktukRemote('{{hosts_cmds.values()}}', list(hosts_cmds.keys()))
 
 
+def activate_vms(hosts, dest='lyon.grid5000.fr'):
+    """Connect locally on every host and on all VMS to ping a host
+    and update ARP tables"""
+    logger.info('Executing ping from virtual machines on hosts')
+    cmd= "VMS=`virsh list | grep vm | awk '{print $2}'`; " + \
+        "for VM in $VMS; do " + \
+        " 0</dev/null ssh $VM \"ping -c 3 " + dest + "\"; " + \
+        "done"
+    activate = TaktukRemote(cmd, hosts)
+    for p in activate.processes:
+        p.ignore_exit_code = p.nolog_exit_code = True
+    activate.run()
+    
+    return activate.ok
+
+
 def wait_vms_have_started(vms, restart=True):
     """Scan port 22 on all vms, distributed on hosts"""
     # Creating file with list of VMs ip
@@ -354,6 +370,8 @@ def wait_vms_have_started(vms, restart=True):
             if restart:
                 restart_vms([vm for vm in vms if vm['state'] == 'KO'])
             nmap_tries += 1
+        if nmap_tries == 1:
+            activate_vms(hosts)
         if not all_up:
             logger.info(str(nmap_tries) + ': ' + str(len(started_vms)) + '/' +\
                         str(len(vms)))
