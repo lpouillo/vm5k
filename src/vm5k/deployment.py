@@ -31,7 +31,8 @@ from execo_g5k.api_utils import get_host_cluster, \
 from execo_g5k.utils import get_kavlan_host_name
 from vm5k.config import default_vm
 from vm5k.actions import create_disks, install_vms, start_vms, \
-    wait_vms_have_started, destroy_vms, create_disks_all_hosts, distribute_vms
+    wait_vms_have_started, destroy_vms, create_disks_all_hosts, distribute_vms, \
+    activate_vms
 from vm5k.utils import prettify, print_step, get_fastest_host, \
     hosts_list, get_CPU_RAM_FLOPS
 from vm5k.services import dnsmasq_server
@@ -180,7 +181,7 @@ class vm5k_deployment():
         self._libvirt_uniquify()
         self._libvirt_bridged_network(bridge)
         logger.info('Restarting %s', style.emph('libvirt'))
-        self.fact.get_remote('service libvirtd restart', self.hosts).run()
+        self.fact.get_remote('service libvirt-bin restart', self.hosts).run()
 
     def deploy_vms(self, clean_disks=False, disk_location='one'):
         """Destroy the existing VMS, create the virtual disks, install the vms
@@ -202,7 +203,7 @@ class vm5k_deployment():
         logger.info('Starting the virtual machines')
         self.boot_time = Timer()
         start_vms(self.vms).run()
-        logger.info('Waiting for VM to boot ...')
+        logger.info('Waiting for VM to boot ...')        
         wait_vms_have_started(self.vms, self.hosts[0])
         self._update_vms_xml()
 #        logger.info('Done in %s seconds',
@@ -329,7 +330,7 @@ class vm5k_deployment():
         cmd = 'uuid=`uuidgen` ' + \
         '&& sed -i "s/.*host_uuid.*/host_uuid=\\"${uuid}\\"/g" ' + \
         '/etc/libvirt/libvirtd.conf ' + \
-        '&& service libvirtd restart'
+        '&& service libvirt-bin restart'
         logger.debug(cmd)
         self.fact.get_remote(cmd, self.hosts).run()
 
@@ -440,15 +441,13 @@ class vm5k_deployment():
         fd, tmpsource = mkstemp(dir='/tmp/', prefix='sources.list_')
         f = fdopen(fd, 'w')
         f.write('deb http://ftp.debian.org/debian stable main contrib non-free\n' + \
-                'deb http://ftp.debian.org/debian wheezy-backports main contrib non-free\n' + \
-                'deb http://ftp.debian.org/debian testing main contrib non-free\n')
+                'deb http://ftp.debian.org/debian wheezy-backports main contrib non-free\n')
         f.close()
         # Create preferences file
         fd, tmppref = mkstemp(dir='/tmp/', prefix='preferences_')
         f = fdopen(fd, 'w')
         f.write('Package: * \nPin: release a=stable \nPin-Priority: 900\n\n' + \
-                'Package: * \nPin: release a=stable \nPin-Priority: 875\n\n' + \
-                'Package: * \nPin: release a=testing \nPin-Priority: 850\n\n')
+                'Package: * \nPin: release a=wheezy-backports \nPin-Priority: 875\n\n')
         f.close()
         # Create apt.conf file
         fd, tmpaptconf = mkstemp(dir='/tmp/', prefix='apt.conf_')
@@ -490,7 +489,7 @@ class vm5k_deployment():
         logger.info('Installing libvirt packages \n%s',
                     style.emph(libvirt_packages))
         cmd = 'export DEBIAN_MASTER=noninteractive ; apt-get update && apt-get install -y --force-yes '+\
-            '-o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" -t testing '+\
+            '-o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" -t wheezy-backports '+\
             libvirt_packages
         install_libvirt = self.fact.get_remote(cmd, self.hosts).run()
         self._actions_hosts(install_libvirt)
