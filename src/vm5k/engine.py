@@ -102,7 +102,7 @@ class vm5k_engine(Engine):
         """Generate an iterator over combination parameters"""
         if self.parameters is None:
             parameters = self.define_parameters()
-        logger.debug(pformat(parameters))
+        logger.detail(pformat(parameters))
         sweeps = sweep(parameters)
         logger.info('% s combinations', len(sweeps))
         self.sweeper = ParamSweeper(path.join(self.result_dir, "sweeps"),
@@ -223,7 +223,6 @@ class vm5k_engine_para(vm5k_engine):
         """
         self.force_options()
 
-        print_step('Defining parameters')
         # The argument is a cluster
         self.cluster = self.args[0]
         self.frontend = get_cluster_site(self.cluster)
@@ -265,8 +264,7 @@ class vm5k_engine_para(vm5k_engine):
                         for t in tmp_threads:
                             if not t.is_alive():
                                 available_hosts.extend(tmp_threads[t]['hosts'])
-                                available_ip_mac.extend(
-                                                tmp_threads[t]['ip_mac'])
+                                available_ip_mac.extend(tmp_threads[t]['ip_mac'])
                                 del threads[t]
                         sleep(5)
                         if get_oar_job_info(self.oar_job_id, self.frontend)['state'] == 'Error':
@@ -297,6 +295,7 @@ class vm5k_engine_para(vm5k_engine):
                     t = Thread(target=self.workflow,
                                args=(comb, used_hosts, used_ip_mac))
                     threads[t] = {'hosts': used_hosts, 'ip_mac': used_ip_mac}
+                    logger.debug('Threads: %s', len(threads))
                     t.daemon = True
                     t.start()
 
