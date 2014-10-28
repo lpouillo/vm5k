@@ -37,14 +37,15 @@ def show_vms(vms):
 
     :params vms: a list containing a dict by virtual machine """
     logger.info(style.log_header('Virtual machines \n') + '%s',
-        ', '.join([style.VM(vm['id']) + ' (' + str(vm['mem']) + 'Mb, ' + \
-        str(vm['n_cpu']) + ' cpu ' + vm['cpuset'] + ', ' + str(vm['hdd']) + \
-        'Gb)' for vm in vms]))
+                ', '.join([style.VM(vm['id']) + ' (' + str(vm['mem']) +
+                           'Mb, ' + str(vm['n_cpu']) + ' cpu ' +
+                           vm['cpuset'] + ', ' + str(vm['hdd']) + 'Gb)'
+                           for vm in vms]))
 
 
 def define_vms(vms_id, template=None, ip_mac=None, state=None, host=None,
-        n_cpu=None, cpusets=None, mem=None, hdd=None, backing_file=None,
-        real_file=None):
+               n_cpu=None, cpusets=None, mem=None, hdd=None, backing_file=None,
+               real_file=None):
     """Create a list of virtual machines, where VM parameter is a dict
     similar to
     {'id': None, 'host': None, 'ip': None, 'mac': None,
@@ -111,9 +112,9 @@ def define_vms(vms_id, template=None, ip_mac=None, state=None, host=None,
 
     vms = [{'id': vms_id[i], 'mem': mem[i], 'n_cpu': n_cpu[i],
             'cpuset': cpusets[i], 'hdd': hdd[i], 'host': host[i],
-             'backing_file': backing_file[i], 'real_file': real_file[i],
-             'state': state[i],
-             'ip': ip_mac[i][0], 'mac': ip_mac[i][1]} for i in range(n_vm)]
+            'backing_file': backing_file[i], 'real_file': real_file[i],
+            'state': state[i],
+            'ip': ip_mac[i][0], 'mac': ip_mac[i][1]} for i in range(n_vm)]
 
     logger.debug('VM parameters have been defined:\n%s',
                  ' '.join([style.emph(param['id']) for param in vms]))
@@ -127,13 +128,14 @@ def distribute_vms(vms, hosts, distribution='round-robin'):
 
     :param hosts: a list of hosts
 
-    :param distribution: a string defining the distribution type: 'round-robin','concentrated','n_by_hosts'
+    :param distribution: a string defining the distribution type:
+    'round-robin', 'concentrated', 'n_by_hosts', 'random
 
     """
     logger.debug('Initial virtual machines distribution \n%s',
-        "\n".join([vm['id'] + ": " + str(vm['host']) for vm in vms]))
+                 "\n".join([vm['id'] + ": " + str(vm['host']) for vm in vms]))
 
-    if distribution in ['round-robin', 'concentrated']:
+    if distribution in ['round-robin', 'concentrated', 'random']:
         attr = get_CPU_RAM_FLOPS(hosts)
         dist_hosts = hosts[:]
         iter_hosts = cycle(dist_hosts)
@@ -141,18 +143,19 @@ def distribute_vms(vms, hosts, distribution='round-robin'):
         for vm in vms:
             remaining = attr[host].copy()
             while remaining['RAM'] - vm['mem'] <= 0 \
-                or remaining['CPU'] - vm['n_cpu'] / 3 <= 0:
+                    or remaining['CPU'] - vm['n_cpu'] / 3 <= 0:
                 dist_hosts.remove(host)
                 if len(dist_hosts) == 0:
                     req_mem = sum([vm['mem'] for vm in vms])
                     req_cpu = sum([vm['n_cpu'] for vm in vms]) / 3
-                    logger.error(
-        'Not enough ressources ! \n' + 'RAM'.rjust(20) + 'CPU'.rjust(10) + \
-        '\n' + 'Needed'.ljust(15) + '%s Mb'.ljust(15) + '%s \n' + \
-        'Available'.ljust(15) + '%s Mb'.ljust(15) + '%s \n' + \
-        'Maximum number of VM is %s', req_mem, req_cpu,
-        attr['TOTAL']['RAM'], attr['TOTAL']['CPU'],
-        style.emph(str(get_max_vms(hosts, vm['mem']))))
+                    logger.error('Not enough ressources ! \n' + 'RAM'.rjust(20)
+                                 + 'CPU'.rjust(10) + '\n' + 'Needed'.ljust(15)
+                                 + '%s Mb'.ljust(15) + '%s \n' +
+                                 'Available'.ljust(15) + '%s Mb'.ljust(15)
+                                 + '%s \n' + 'Maximum number of VM is %s',
+                                 req_mem, req_cpu, attr['TOTAL']['RAM'],
+                                 attr['TOTAL']['CPU'],
+                                 style.emph(str(get_max_vms(hosts, vm['mem']))))
                     exit()
 
                 iter_hosts = cycle(dist_hosts)
@@ -169,6 +172,7 @@ def distribute_vms(vms, hosts, distribution='round-robin'):
             if distribution == 'random':
                 for i in range(randint(0, len(dist_hosts))):
                     host = iter_hosts.next()
+                    remaining = attr[host].copy()
 
     elif distribution == 'n_by_hosts':
         n_by_host = int(len(vms)/len(hosts))
@@ -180,7 +184,7 @@ def distribute_vms(vms, hosts, distribution='round-robin'):
     else:
         logger.debug('No valid distribution given')
     logger.debug('Final virtual machines distribution \n%s',
-        "\n".join([vm['id'] + ": " + str(vm['host']) for vm in vms]))
+                 "\n".join([vm['id'] + ": " + str(vm['host']) for vm in vms]))
 
 
 def list_vm(hosts, not_running=False):

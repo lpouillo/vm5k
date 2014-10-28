@@ -169,8 +169,8 @@ vms.add_argument('-l', '--vm_disk_location',
                  help='Where to create the qcow2: one (default) or all)')
 vms.add_argument('-d', '--vm_distribution',
                  dest='vm_distribution',
-                 help='how to distribute the VMs distributed (default) ' +
-                 'or concentrated')
+                 help='how to distribute the VMs round-robin (default) ' +
+                 'n_by_hosts, random or concentrated')
 vms.add_argument('--vm-clean-disks',
                  dest='vm_clean_disks',
                  action="store_true",
@@ -362,7 +362,8 @@ if args.nodeploy:
     logger.info('Skipping packages management and libvirt configuration')
 else:
     vm5k.hosts_deployment(max_tries=deployment_tries,
-                          check_deploy=not args.forcedeploy)
+                          check_deploy=not args.forcedeploy,
+                          launch_disk_copy=True)
     print_step('Managing packages')
     vm5k.packages_management(upgrade=True,
                              other_packages=args.host_packages)
