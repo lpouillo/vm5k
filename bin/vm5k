@@ -176,6 +176,13 @@ vms.add_argument('--vm-clean-disks',
                  action="store_true",
                  help='force to use a fresh copy of the vms backing_file')
 
+# Services
+service = parser.add_argument_group(style.host('Services'),
+                                    "Deploy some services and hosts and vms")
+service.add_argument('--aptcacher',
+                     dest='aptcacher',
+                     action="store_true",
+                     help='configure aptcacher on hosts (servers) and vms (clients)')
 
 args = parser.parse_args()
 
@@ -363,7 +370,8 @@ if args.nodeploy:
 else:
     vm5k.hosts_deployment(max_tries=deployment_tries,
                           check_deploy=not args.forcedeploy,
-                          launch_disk_copy=True)
+                          launch_disk_copy=True,
+                          apt_cacher=args.aptcacher)
     print_step('Managing packages')
     vm5k.packages_management(upgrade=True,
                              other_packages=args.host_packages)
@@ -397,7 +405,8 @@ for vm in vm5k.vms:
 f.close()
 vm5k.get_state(name='initial_topo')
 vm5k.deploy_vms(clean_disks=args.vm_clean_disks,
-                disk_location=args.vm_disk_location)
+                disk_location=args.vm_disk_location,
+                apt_cacher=args.aptcacher)
 vm5k.get_state(name='final_topo', plot=args.plot)
 
 execution_time['5-VMS'] = timer.elapsed()
