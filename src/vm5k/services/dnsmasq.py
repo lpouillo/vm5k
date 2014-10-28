@@ -10,7 +10,7 @@ from execo.log import style
 from execo_g5k import get_g5k_sites, get_host_site
 
 
-def vms_lists(vms, server):
+def add_vms(vms, server):
     """Generate the list of virtual machines """
     logger.debug('Adding the VM in /etc/hosts ...')
     fd, vms_list = mkstemp(dir='/tmp/', prefix='vms_')
@@ -120,7 +120,7 @@ def dnsmasq_server(server, clients=None, vms=None, dhcp=True):
         SshProcess(cmd, server).run()
     sites = list(set([get_host_site(client) for client in clients
                       if get_host_site(client)]))
-    vms_lists(vms, server)
+    add_vms(vms, server)
     if clients:
         resolv_conf(server, clients, sites)
 
