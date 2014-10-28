@@ -22,7 +22,7 @@ from time import localtime, strftime
 from tempfile import mkstemp
 from execo import logger, Process, SshProcess, SequentialActions, Host, \
     Local, sleep, TaktukPut, Timer
-from execo.action import ActionFactory
+from execo.action import ActionFactory, ParallelActions
 from execo.log import style
 from execo.config import TAKTUK, CHAINPUT
 from execo_g5k import deploy, Deployment
@@ -99,10 +99,11 @@ class vm5k_deployment():
         else:
             self.outdir = 'vm5k_' + strftime("%Y%m%d_%H%M%S_%z")
 
+        self.copy_actions = None
+
         self.state = Element('vm5k')
         self._define_elements(infile, resources, vms, distribution)
-        if live_plot:
-            self.init_live_plot()
+
         network = 'IP range from KaVLAN' if self.kavlan \
             else 'IP range from g5k-subnet'
         logger.info('%s\n%s %s \n%s %s \n%s %s \n%s %s',
@@ -290,22 +291,16 @@ class vm5k_deployment():
                                         connection_params={'taktuk_options': taktuk_conf}).run()
         self._actions_hosts(conf_ssh)
 
-    def _start_disk_copy(self, disks):
+    def _start_disk_copy(self, disks=None):
         """ """
+        disks_copy = []
         if not disks:
-            disks = list(set([vm['backing_file'] for vm in self.vms]))
-
-    def _create_backing_file(self, disks=None):
-        """ """
-        if not disks:
-            disks = list(set([vm['backing_file'] for vm in self.vms]))
-
-        for from_disk in disks:
-            logger.info('Treating ' + style.emph(from_disk))
-            raw_disk = '/root/' + from_disk.split('/')[-1]
-
+            disks = self.backing_files
+        for bf in disks:
+            logger.info('Treating ' + style.emph(bf))
             logger.debug("Checking frontend disk vs host disk")
-            f_disk = Process('md5sum -t ' + from_disk).run()
+            raw_disk = '/root/' + bf.split('/')[-1]
+            f_disk = Process('md5sum -t ' + bf).run()
             disk_hash = f_disk.stdout.split(' ')[0]
             cmd = 'if [ -f ' + raw_disk + ' ]; ' + \
                 'then md5sum  -t ' + raw_disk + '; fi'
@@ -315,26 +310,37 @@ class vm5k_deployment():
                 if p.stdout.split(' ')[0] != disk_hash:
                     disk_ok = False
                     break
-
             if disk_ok:
-                logger.info("Disk is already present, skipping copy")
+                logger.info("Disk " + br + " is already present, skipping copy")
             else:
-                logger.debug("Copying backing file from frontends")
-                copy_file = self.fact.get_fileput(self.hosts, [from_disk],
-                                                  remote_location='/root/').run()
-                self._actions_hosts(copy_file)
+                disks_copy.append(self.fact.get_fileput(self.hosts, [bf]))
+        if len(disks_copy) > 0:
+            self.copy_actions = ParallelActions(disks_copy).start()
+        else:
+            self.copy_actions = Local('ls').run()
 
-            to_disk = '/tmp/' + from_disk.split('/')[-1]
+    def _create_backing_file(self, disks=None):
+        """ """
+        if not self.copy_actions:
+            self._start_disk_copy(disks)
+        if not self.copy_actions.ended:
+            logger.info("Waiting for the end of the disks copy")
+            self.copy_actions.wait()
+        if not disks:
+            disks = self.backing_files
+        for bf in disks:
+            raw_disk = '/root/' + bf.split('/')[-1]
+            to_disk = '/tmp/' + bf.split('/')[-1]
             self.fact.get_remote('cp ' + raw_disk + ' ' + to_disk, self.hosts).run()
-            logger.detail('Copying ssh key on ' + to_disk + ' ...')
+            logger.info('Copying ssh key on ' + to_disk + ' ...')
             cmd = 'modprobe nbd max_part=16; ' + \
-            'qemu-nbd --connect=/dev/nbd0 ' + to_disk + \
-            ' ; sleep 3 ; partprobe /dev/nbd0 ; ' + \
-            'part=`fdisk -l /dev/nbd0 |grep dev|grep Linux| grep -v swap|cut -f 1 -d " "` ; ' + \
-            'mount $part /mnt ; mkdir -p /mnt/root/.ssh ; ' + \
-            'cat /root/.ssh/authorized_keys >> /mnt/root/.ssh/authorized_keys ; ' + \
-            'cp -r /root/.ssh/id_rsa* /mnt/root/.ssh/ ;' + \
-            'umount /mnt; qemu-nbd -d /dev/nbd0'
+                'qemu-nbd --connect=/dev/nbd0 ' + to_disk + \
+                ' ; sleep 3 ; partprobe /dev/nbd0 ; ' + \
+                'part=`fdisk -l /dev/nbd0 |grep dev|grep Linux| grep -v swap|cut -f 1 -d " "` ; ' + \
+                'mount $part /mnt ; mkdir -p /mnt/root/.ssh ; ' + \
+                'cat /root/.ssh/authorized_keys >> /mnt/root/.ssh/authorized_keys ; ' + \
+                'cp -r /root/.ssh/id_rsa* /mnt/root/.ssh/ ;' + \
+                'umount /mnt; qemu-nbd -d /dev/nbd0'
             logger.detail(cmd)
             copy_on_vm_base = self.fact.get_remote(cmd, self.hosts).run()
             self._actions_hosts(copy_on_vm_base)
@@ -555,6 +561,8 @@ class vm5k_deployment():
             self._add_xml_vms()
         else:
             self.vms = []
+
+        self.backing_files = list(set([vm['backing_file'] for vm in self.vms]))
 
     def _get_ip_mac(self, resources):
         """ """
@@ -793,10 +801,3 @@ class vm5k_deployment():
                 hosts_ko.append(p.host)
         hosts_ok, hosts_ko = list(set(hosts_ok)), list(set(hosts_ko))
         self._update_hosts_state(hosts_ok, hosts_ko)
-
-    def init_live_plot(self):
-        """Open an image of the deployment"""
-        logger.info('Initializing Live plot')
-        plt.figure(figsize=(15, 15))
-        plt.ion()
-        plt.show()
