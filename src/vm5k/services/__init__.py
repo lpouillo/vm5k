@@ -18,4 +18,4 @@
 
 from dnsmasq import dnsmasq_server
 from munin import setup_munin
-#from aptcacher import apt_cacher_server
+from aptcacher import setup_aptcacher_server, configure_apt_proxy

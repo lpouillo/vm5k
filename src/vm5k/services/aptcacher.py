@@ -15,30 +15,64 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Execo.  If not, see <http://www.gnu.org/licenses/>
-from execo import logger, SshProcess, Process, Put
+from execo import logger, TaktukRemote, Host, ParallelActions
 from execo.log import style
 
 
-def apt_cacher_server(server, clients, ):
-    """Install and configure apt-cacher on one server and configure APT proxy on clients"""
-    logger.info('Apt-cacher installation on %s to be used on \n %s',
-                [host.address for host in clients])
-    logger.debug('Installing apt-cacher on '+style.host(server.address))
-    base_dir  = '/tmp/apt-cacher-ng'
-    log_dir   = base_dir+'/log'
-    cache_dir = base_dir+'/cache'
+def setup_aptcacher_server(hosts, base_dir = '/tmp/apt-cacher-ng'):
+    """Install and configure apt-cacher on one server"""
+    hosts = map(Host, hosts)
+    logger.info('Installing apt-cacher on %s', 
+        ','.join([style.host(host.address) for host in hosts]))
+    logger.detail('Package')
+    package = TaktukRemote('export DEBIAN_MASTER=noninteractive ; apt-get update ; ' + \
+              'apt-get install -o Dpkg::Options::="--force-confdef" -o ' + \
+              'Dpkg::Options::="--force-confnew" -y apt-cacher-ng', 
+               hosts).run()
+    if not package.ok:
+        logger.error('Unable to install apt-cacher-ng on %s')
+        return
     
-    logger.debug('Service installation')
-    SshProcess('export DEBIAN_MASTER=noninteractive ; apt-get update ; '+\
-              'apt-get install -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confnew" -y apt-cacher-ng', 
-              server).run()
-    logger.debug('Directory creation')
-    SshProcess('mkdir -p '+log_dir+'; mkdir -p '+cache_dir+'; chown -R apt-cacher-ng:apt-cacher-ng '+base_dir,
-              server).run()
-    logger.debug('Service configuration and start')
-    SshProcess('sed -i "s/\/var\/cache\/apt-cacher-ng/'+cache_dir+'/g" /etc/apt-cacher-ng/acng.conf ;'+\
-              'sed -i "s/\/var\/log\/apt-cacher-ng/'+log_dir+'/g" /etc/apt-cacher-ng/acng.conf ;'+\
-              'sed -i "s/3142/9999/g" /etc/apt-cacher-ng/acng.conf ; service apt-cacher-ng restart',
-              server).run()     
-    logger.info('apt-cacher-ng up and running on '+style.host(server.address))
+    logger.detail('Directory creation')    
+    log_dir   = base_dir + '/log'
+    cache_dir = base_dir + '/cache'
+    mkdirs = TaktukRemote('mkdir -p ' + log_dir + '; mkdir -p ' + cache_dir + 
+                     '; chown -R apt-cacher-ng:apt-cacher-ng '+ base_dir,
+              hosts).run()
+    if not mkdirs.ok:
+        logger.error('Unable to create the directories')
+        return
+    
+    configure = TaktukRemote('sed -i "s#/var/cache/apt-cacher-ng#' + cache_dir + 
+               '#g" /etc/apt-cacher-ng/acng.conf ;' + 
+               'sed -i "s#/var/log/apt-cacher-ng#' + log_dir + '#g" ' + 
+               '/etc/apt-cacher-ng/acng.conf ;' + 
+               'sed -i "s/3142/9999/g" /etc/apt-cacher-ng/acng.conf ; ' + 
+               'sed -i "s?#Proxy: http://www-proxy.example.net:80?Proxy: http://proxy:3128?g" ' +
+               '/etc/apt-cacher-ng/acng.conf ; ' + 
+               'service apt-cacher-ng restart',
+              hosts).run()
+    if not configure.ok:
+        logger.error('Unable to configure and restart the service')
+        return
+    
+    logger.info('apt-cacher-ng up and running on %s',
+        ','.join([style.host(host.address) for host in hosts]))
+
+def configure_apt_proxy(vms):
+    """Override apt proxy-guess with server as proxy"""
+    hosts_vms = {}
+    for vm in vms:
+        if not vm['host'] in hosts_vms:
+            hosts_vms[vm['host']] = []
+        hosts_vms[vm['host']].append(vm['ip'])
+    conf = []
+    for server, clients in hosts_vms.iteritems():
+        server = Host(server)
+        logger.detail('Configuring %s as APT proxy for %s',
+                  style.host(server.address), ','.join(clients))
+        conf.append(TaktukRemote(' echo \'Acquire::http::Proxy \"http://' + server.address + \
+            ':9999" ; \' > /etc/apt/apt.conf.d/proxy-guess', clients))
+    ParallelActions(conf).run()
+    
     
