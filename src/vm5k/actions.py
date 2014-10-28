@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Vm5k.  If not, see <http://www.gnu.org/licenses/>
 """A set of functions to manipulate virtual machines on Grid'5000"""
-
+import sys
 from os import fdopen
 from pprint import pformat
 from execo import SshProcess, TaktukPut, logger, TaktukRemote, Process, \
@@ -298,7 +298,7 @@ def start_vms(vms):
     return TaktukRemote('{{hosts_cmds.values()}}', list(hosts_cmds.keys()))
 
 
-def activate_vms(hosts, dest='lyon.grid5000.fr'):
+def activate_vms(vms, dest='lyon.grid5000.fr'):
     """Connect locally on every host and on all VMS to ping a host
     and update ARP tables"""
     logger.info('Executing ping from virtual machines on hosts')
@@ -306,9 +306,11 @@ def activate_vms(hosts, dest='lyon.grid5000.fr'):
         "for VM in $VMS; do " + \
         " 0</dev/null ssh $VM \"ping -c 3 " + dest + "\"; " + \
         "done"
-    activate = TaktukRemote(cmd, hosts)
+    activate = TaktukRemote(cmd, list(set([vm['host'] for vm in vms])))
     for p in activate.processes:
         p.ignore_exit_code = p.nolog_exit_code = True
+        if logger.getEffectiveLevel() <= 10:
+            p.stdout_handlers.append(sys.stdout)
     activate.run()
     
     return activate.ok
@@ -371,7 +373,7 @@ def wait_vms_have_started(vms, restart=True):
                 restart_vms([vm for vm in vms if vm['state'] == 'KO'])
             nmap_tries += 1
         if nmap_tries == 1:
-            activate_vms(hosts)
+            activate_vms([vm for vm in vms if vm['state'] == 'KO'])
         if not all_up:
             logger.info(str(nmap_tries) + ': ' + str(len(started_vms)) + '/' +\
                         str(len(vms)))
