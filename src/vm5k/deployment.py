@@ -15,7 +15,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Vm5k.  If not, see <http://www.gnu.org/licenses/>
-
+import sys
 from os import fdopen
 from xml.etree.ElementTree import Element, SubElement, parse
 from time import localtime, strftime
@@ -31,11 +31,10 @@ from execo_g5k.api_utils import get_host_cluster, \
 from execo_g5k.utils import get_kavlan_host_name
 from vm5k.config import default_vm
 from vm5k.actions import create_disks, install_vms, start_vms, \
-    wait_vms_have_started, destroy_vms, create_disks_all_hosts, distribute_vms, \
-    activate_vms
+    wait_vms_have_started, destroy_vms, create_disks_all_hosts, distribute_vms
 from vm5k.utils import prettify, print_step, get_fastest_host, \
     hosts_list, get_CPU_RAM_FLOPS
-from vm5k.services import dnsmasq_server
+from vm5k.services import dnsmasq_server, setup_aptcacher_server, configure_apt_proxy
 from vm5k.plots import topology_plot
 
 
@@ -74,18 +73,18 @@ class vm5k_deployment():
         print_step('Initializing vm5k_deployment')
         # set a factory for the deployment that use taktuk and chainput
         self.fact = ActionFactory(remote_tool=TAKTUK,
-                                fileput_tool=CHAINPUT,
-                                fileget_tool=TAKTUK)
+                                  fileput_tool=CHAINPUT,
+                                  fileget_tool=TAKTUK)
         self.kavlan = None
         self.kavlan_site = None
         if env_name is not None:
             self.env_file = None
-            if not ':' in env_name:
+            if ':' not in env_name:
                 self.env_name, self.env_user = env_name, None
             else:
                 self.env_user, self.env_name = env_name.split(':')
         else:
-            
+
             if env_file is not None:
                 self.env_name = None
                 self.env_user = None
@@ -104,7 +103,8 @@ class vm5k_deployment():
         self._define_elements(infile, resources, vms, distribution)
         if live_plot:
             self.init_live_plot()
-        network = 'IP range from KaVLAN' if self.kavlan else 'IP range from g5k-subnet'
+        network = 'IP range from KaVLAN' if self.kavlan \
+            else 'IP range from g5k-subnet'
         logger.info('%s\n%s %s \n%s %s \n%s %s \n%s %s',
                     network,
                     len(self.sites), style.emph('sites'),
@@ -112,10 +112,10 @@ class vm5k_deployment():
                     len(self.hosts), style.host('hosts'),
                     len(self.vms), style.vm('vms'))
 
-    ## PUBLIC METHODS
+    # PUBLIC METHODS
     def run(self):
         """Launch the deployment and configuration of hosts and virtual
-        machines: host_deployment, packages_mamangement, configure_service_node
+        machines: hosts_deployment, packages_mamangement, configure_service_node
         configure_libvirt, deploy_vms"""
         try:
             print_step('HOSTS DEPLOYMENT')
@@ -136,7 +136,8 @@ class vm5k_deployment():
             self.get_state()
 
     def hosts_deployment(self, max_tries=1, check_deploy=True,
-                         conf_ssh=True, launch_disk_copy=False):
+                         conf_ssh=True, launch_disk_copy=False,
+                         apt_cacher=False):
         """Deploy the hosts using kadeploy, configure ssh for taktuk execution
         and launch backing file disk copy"""
         self._launch_kadeploy(max_tries, check_deploy)
@@ -144,6 +145,8 @@ class vm5k_deployment():
             self._configure_ssh()
         if launch_disk_copy:
             self._start_disk_copy()
+        if apt_cacher:
+            setup_aptcacher_server(self.hosts)
 
     def packages_management(self, upgrade=True, other_packages=None):
         """Configure APT to use testing repository,
@@ -185,7 +188,8 @@ class vm5k_deployment():
         logger.info('Restarting %s', style.emph('libvirt'))
         self.fact.get_remote('service libvirt-bin restart', self.hosts).run()
 
-    def deploy_vms(self, clean_disks=False, disk_location='one'):
+    def deploy_vms(self, clean_disks=False, disk_location='one', 
+                   apt_cacher=False):
         """Destroy the existing VMS, create the virtual disks, install the vms
         start them and wait until they have rebooted"""
         logger.info('Destroying existing virtual machines')
@@ -205,11 +209,11 @@ class vm5k_deployment():
         logger.info('Starting the virtual machines')
         self.boot_time = Timer()
         start_vms(self.vms).run()
-        logger.info('Waiting for VM to boot ...')        
+        logger.info('Waiting for VM to boot ...')
         wait_vms_have_started(self.vms, self.hosts[0])
         self._update_vms_xml()
-#        logger.info('Done in %s seconds',
-#                    style.emph(self.boot_time.elapsed()))
+        if apt_cacher:
+            configure_apt_proxy(self.vms)
 
     def get_state(self, name=None, output=True, mode='compact', plot=False):
         """ """
@@ -229,7 +233,7 @@ class vm5k_deployment():
         if plot:
             topology_plot(self.state, outdir=self.outdir)
 
-    ## PRIVATE METHODS
+    # PRIVATE METHODS
     def _launch_kadeploy(self, max_tries=1, check_deploy=True):
         """Create a execo_g5k.Deployment object, launch the deployment and
         return a tuple (deployed_hosts, undeployed_hosts)
@@ -237,14 +241,24 @@ class vm5k_deployment():
         logger.info('Deploying %s hosts \n%s', len(self.hosts),
                     hosts_list(self.hosts))
         deployment = Deployment(hosts=[Host(canonical_host_name(host))
-                                          for host in self.hosts],
-                        env_file=self.env_file, env_name=self.env_name,
-                        user=self.env_user, vlan=self.kavlan)
+                                       for host in self.hosts],
+                                env_file=self.env_file,
+                                env_name=self.env_name,
+                                user=self.env_user,
+                                vlan=self.kavlan)
         # Activate kadeploy output log if log level is debug
-        out = True if logger.getEffectiveLevel() <= 10 else False
-        deployed_hosts, undeployed_hosts = deploy(deployment, out=out,
-                                num_tries=max_tries,
-                                check_deployed_command=check_deploy)
+        if logger.getEffectiveLevel() <= 10:
+            stdout = sys.stdout
+            stderr = sys.stderr
+        else:
+            stdout = None
+            stderr = None
+
+        deployed_hosts, undeployed_hosts = deploy(deployment,
+                                                  stdout_handlers=stdout,
+                                                  stderr_handlers=stderr,
+                                                  num_tries=max_tries,
+                                                  check_deployed_command=check_deploy)
         deployed_hosts = list(deployed_hosts)
         undeployed_hosts = list(undeployed_hosts)
         # Renaming hosts if a kavlan is used
@@ -266,30 +280,35 @@ class vm5k_deployment():
             # Configuring SSH with precopy of id_rsa and id_rsa.pub keys on all
             # host to allow TakTuk connection
             taktuk_conf = ('-s', '-S',
-                    '$HOME/.ssh/id_rsa:$HOME/.ssh/id_rsa,' + \
-                    '$HOME/.ssh/id_rsa.pub:$HOME/.ssh')
+                           '$HOME/.ssh/id_rsa:$HOME/.ssh/id_rsa,' +
+                           '$HOME/.ssh/id_rsa.pub:$HOME/.ssh')
         else:
             taktuk_conf = ('-s', )
-        conf_ssh = self.fact.get_remote(
-                'echo "Host *" >> /root/.ssh/config ;' + \
-                'echo " StrictHostKeyChecking no" >> /root/.ssh/config; ',
-                self.hosts,
-                connection_params={'taktuk_options': taktuk_conf}).run()
+        conf_ssh = self.fact.get_remote('echo "Host *" >> /root/.ssh/config ;' +
+                                        'echo " StrictHostKeyChecking no" >> /root/.ssh/config; ',
+                                        self.hosts,
+                                        connection_params={'taktuk_options': taktuk_conf}).run()
         self._actions_hosts(conf_ssh)
+
+    def _start_disk_copy(self, disks):
+        """ """
+        if not disks:
+            disks = list(set([vm['backing_file'] for vm in self.vms]))
 
     def _create_backing_file(self, disks=None):
         """ """
         if not disks:
             disks = list(set([vm['backing_file'] for vm in self.vms]))
+
         for from_disk in disks:
             logger.info('Treating ' + style.emph(from_disk))
-            to_disk = '/tmp/' + from_disk.split('/')[-1]
+            raw_disk = '/root/' + from_disk.split('/')[-1]
 
             logger.debug("Checking frontend disk vs host disk")
             f_disk = Process('md5sum -t ' + from_disk).run()
             disk_hash = f_disk.stdout.split(' ')[0]
-            cmd = 'if [ -f ' + to_disk + ' ]; ' + \
-                'then md5sum  -t ' + to_disk + '; fi'
+            cmd = 'if [ -f ' + raw_disk + ' ]; ' + \
+                'then md5sum  -t ' + raw_disk + '; fi'
             h_disk = self.fact.get_remote(cmd, self.hosts).run()
             disk_ok = True
             for p in h_disk.processes:
@@ -302,9 +321,11 @@ class vm5k_deployment():
             else:
                 logger.debug("Copying backing file from frontends")
                 copy_file = self.fact.get_fileput(self.hosts, [from_disk],
-                                                remote_location='/tmp/').run()
+                                                  remote_location='/root/').run()
                 self._actions_hosts(copy_file)
 
+            to_disk = '/tmp/' + from_disk.split('/')[-1]
+            self.fact.get_remote('cp ' + raw_disk + ' ' + to_disk, self.hosts).run()
             logger.detail('Copying ssh key on ' + to_disk + ' ...')
             cmd = 'modprobe nbd max_part=16; ' + \
             'qemu-nbd --connect=/dev/nbd0 ' + to_disk + \
@@ -349,8 +370,9 @@ class vm5k_deployment():
         f.write(prettify(root))
         f.close()
         logger.debug('Destroying existing network')
-        destroy = self.fact.get_remote('virsh net-destroy default; ' + \
-                            'virsh net-undefine default', self.hosts)
+        destroy = self.fact.get_remote('virsh net-destroy default; ' +
+                                       'virsh net-undefine default',
+                                       self.hosts)
         put = TaktukPut(self.hosts, [network_xml],
                         remote_location='/root/')
         start = self.fact.get_remote(
