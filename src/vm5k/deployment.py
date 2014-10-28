@@ -311,7 +311,7 @@ class vm5k_deployment():
                     disk_ok = False
                     break
             if disk_ok:
-                logger.info("Disk " + br + " is already present, skipping copy")
+                logger.info("Disk " + bf + " is already present, skipping copy")
             else:
                 disks_copy.append(self.fact.get_fileput(self.hosts, [bf]))
         if len(disks_copy) > 0:
