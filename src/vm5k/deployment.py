@@ -300,19 +300,18 @@ class vm5k_deployment():
             raw_disk = '/root/' + bf.split('/')[-1]
             f_disk = Process('md5sum -t ' + bf).run()
             disk_hash = f_disk.stdout.split(' ')[0]
-            print disk_hash
             cmd = 'if [ -f ' + raw_disk + ' ]; ' + \
                 'then md5sum  -t ' + raw_disk + '; fi'
             h_disk = self.fact.get_remote(cmd, self.hosts).run()
             disk_ok = True
             for p in h_disk.processes:
-                print p.host
-                print p.stdout
+
                 if p.stdout.split(' ')[0] != disk_hash:
                     disk_ok = False
                     break
             if disk_ok:
-                logger.info("Disk " + bf + " is already present, skipping copy")
+                logger.info("Disk " + style.emph(bf) +
+                            " is already present, skipping copy")
             else:
                 disks_copy.append(self.fact.get_fileput(self.hosts, [bf]))
         if len(disks_copy) > 0:
