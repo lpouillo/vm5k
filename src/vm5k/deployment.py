@@ -735,8 +735,8 @@ class vm5k_deployment():
         dist = {}
         max_len_host = 0
         for host in self.hosts:
-            if len(host) > max_len_host:
-                max_len_host = len(host)
+            if len(host.split('.')[0]) > max_len_host:
+                max_len_host = len(host.split('.')[0])
 
         for vm in self.vms:
             host = vm['host'].split('.')[0]
