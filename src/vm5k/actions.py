@@ -306,7 +306,7 @@ def activate_vms(vms, dest='lyon.grid5000.fr'):
     """Connect locally on every host and on all VMS to ping a host
     and update ARP tables"""
     logger.info('Executing ping from virtual machines on hosts')
-    cmd= "VMS=`virsh list | grep vm | awk '{print $2}'`; " + \
+    cmd = "VMS=`virsh list | grep vm | awk '{print $2}'`; " + \
         "for VM in $VMS; do " + \
         " 0</dev/null ssh $VM \"ping -c 3 " + dest + "\"; " + \
         "done"
@@ -316,7 +316,7 @@ def activate_vms(vms, dest='lyon.grid5000.fr'):
         if logger.getEffectiveLevel() <= 10:
             p.stdout_handlers.append(sys.stdout)
     activate.run()
-    
+
     return activate.ok
 
 
@@ -343,10 +343,9 @@ def wait_vms_have_started(vms, restart=True):
     for i in range(len(hosts)):
         start = str(int(i * n_vm_scan))
         end = str(int((i + 1) * n_vm_scan))
-        cmds.append("awk 'NR>=" + start + \
-                    " && NR<" + end + \
-              "' " + tmpfile.split('/')[-1] + " > nmap_file ; " + \
-            "nmap -v -oG - -i nmap_file -p 22")
+        cmds.append("awk 'NR>=" + start + " && NR<" + end +
+                    "' " + tmpfile.split('/')[-1] + " > nmap_file ; " 
+                    + "nmap -v -oG - -i nmap_file -p 22")
     logger.debug('%s', pformat(cmds))
     nmap = TaktukRemote('{{cmds}}', hosts)
     nmap_tries = 0

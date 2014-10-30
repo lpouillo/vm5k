@@ -406,7 +406,7 @@ f.close()
 vm5k.get_state(name='initial_topo')
 vm5k.deploy_vms(clean_disks=args.vm_clean_disks,
                 disk_location=args.vm_disk_location,
-                apt_cacher=args.aptcacher)
+                apt_cacher=args.aptcacherl)
 vm5k.get_state(name='final_topo', plot=args.plot)
 
 execution_time['5-VMS'] = timer.elapsed()

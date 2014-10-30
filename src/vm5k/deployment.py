@@ -137,26 +137,25 @@ class vm5k_deployment():
             self.get_state()
 
     def hosts_deployment(self, max_tries=1, check_deploy=True,
-                         conf_ssh=True, launch_disk_copy=False,
-                         apt_cacher=False):
+                         conf_ssh=True, apt_cacher=False):
         """Deploy the hosts using kadeploy, configure ssh for taktuk execution
         and launch backing file disk copy"""
         self._launch_kadeploy(max_tries, check_deploy)
         if conf_ssh:
             self._configure_ssh()
-        if launch_disk_copy:
-            self._start_disk_copy()
         if apt_cacher:
             setup_aptcacher_server(self.hosts)
 
-    def packages_management(self, upgrade=True, other_packages=None):
+    def packages_management(self, upgrade=True, other_packages=None,
+                            launch_disk_copy=True):
         """Configure APT to use testing repository,
         perform upgrade and install required packages. Finally start
         kvm module"""
         self._configure_apt()
         if upgrade:
             self._upgrade_hosts()
-        self._install_packages(other_packages=other_packages)
+        self._install_packages(other_packages=other_packages,
+                               launch_disk_copy=launch_disk_copy)
         # Post configuration to load KVM
         self.fact.get_remote(
             'modprobe kvm; modprobe kvm-intel; modprobe kvm-amd ; ' + \
@@ -302,11 +301,14 @@ class vm5k_deployment():
             raw_disk = '/root/' + bf.split('/')[-1]
             f_disk = Process('md5sum -t ' + bf).run()
             disk_hash = f_disk.stdout.split(' ')[0]
+            print disk_hash
             cmd = 'if [ -f ' + raw_disk + ' ]; ' + \
                 'then md5sum  -t ' + raw_disk + '; fi'
             h_disk = self.fact.get_remote(cmd, self.hosts).run()
             disk_ok = True
             for p in h_disk.processes:
+                print p.host
+                print p.stdout
                 if p.stdout.split(' ')[0] != disk_hash:
                     disk_ok = False
                     break
@@ -507,7 +509,7 @@ class vm5k_deployment():
         upgrade = self.fact.get_remote(cmd, self.hosts).run()
         self._actions_hosts(upgrade)
 
-    def _install_packages(self, other_packages=None):
+    def _install_packages(self, other_packages=None, launch_disk_copy=True):
         """Installation of required packages on the hosts"""
         base_packages = 'uuid-runtime bash-completion taktuk locate htop init-system-helpers netcat-traditional'
         logger.info('Installing base packages \n%s', style.emph(base_packages))
@@ -515,7 +517,8 @@ class vm5k_deployment():
             'install -y --force-yes ' + base_packages
         install_base = self.fact.get_remote(cmd, self.hosts).run()
         self._actions_hosts(install_base)
-
+        if launch_disk_copy:
+            self._start_disk_copy()
         libvirt_packages = 'libvirt-bin virtinst python2.7 python-pycurl python-libxml2 qemu-kvm nmap libgmp10'
         logger.info('Installing libvirt packages \n%s',
                     style.emph(libvirt_packages))
