@@ -84,7 +84,6 @@ class vm5k_deployment():
             else:
                 self.env_user, self.env_name = env_name.split(':')
         else:
-
             if env_file is not None:
                 self.env_name = None
                 self.env_user = None
@@ -137,17 +136,15 @@ class vm5k_deployment():
             self.get_state()
 
     def hosts_deployment(self, max_tries=1, check_deploy=True,
-                         conf_ssh=True, apt_cacher=False):
+                         conf_ssh=True):
         """Deploy the hosts using kadeploy, configure ssh for taktuk execution
         and launch backing file disk copy"""
         self._launch_kadeploy(max_tries, check_deploy)
         if conf_ssh:
             self._configure_ssh()
-        if apt_cacher:
-            setup_aptcacher_server(self.hosts)
 
     def packages_management(self, upgrade=True, other_packages=None,
-                            launch_disk_copy=True):
+                            launch_disk_copy=True, apt_cacher=False):
         """Configure APT to use testing repository,
         perform upgrade and install required packages. Finally start
         kvm module"""
@@ -156,6 +153,8 @@ class vm5k_deployment():
             self._upgrade_hosts()
         self._install_packages(other_packages=other_packages,
                                launch_disk_copy=launch_disk_copy)
+        if apt_cacher:
+            setup_aptcacher_server(self.hosts)
         # Post configuration to load KVM
         self.fact.get_remote(
             'modprobe kvm; modprobe kvm-intel; modprobe kvm-amd ; ' + \

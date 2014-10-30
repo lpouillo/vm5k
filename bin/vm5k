@@ -182,7 +182,8 @@ service = parser.add_argument_group(style.host('Services'),
 service.add_argument('--aptcacher',
                      dest='aptcacher',
                      action="store_true",
-                     help='configure aptcacher on hosts (servers) and vms (clients)')
+                     help='configure aptcacher on hosts (servers) and ' +
+                     'vms (clients)')
 
 args = parser.parse_args()
 
@@ -369,12 +370,12 @@ if args.nodeploy:
     logger.info('Skipping packages management and libvirt configuration')
 else:
     vm5k.hosts_deployment(max_tries=deployment_tries,
-                          check_deploy=not args.forcedeploy,
-                          launch_disk_copy=True,
-                          apt_cacher=args.aptcacher)
+                          check_deploy=not args.forcedeploy)
     print_step('Managing packages')
     vm5k.packages_management(upgrade=True,
-                             other_packages=args.host_packages)
+                             other_packages=args.host_packages,
+                             launch_disk_copy=True,
+                             apt_cacher=args.aptcacher)
     print_step('Configuring libvirt')
     vm5k.configure_libvirt()
 # Saving the list of hosts in outdir
