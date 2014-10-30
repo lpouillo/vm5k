@@ -318,10 +318,10 @@ if args.job_id is None:
         sub.walltime = args.walltime
         sub.additional_options = "-t deploy"
         sub.reservation_date = startdate
-        job_specs = (sub, frontend)
-        job_id, _ = oarsub(job_specs)
-        if job_id is None:
-            cmd = get_oarsub_commandline(job_specs)
+        jobs = oarsub([(sub, frontend)])
+        if len(jobs) == 0:
+            cmd = get_oarsub_commandline((sub, frontend))
+            exit()
 
     logger.info('Job %s will start at %s', style.emph(job_id),
                 style.log_header(format_date(startdate)))
