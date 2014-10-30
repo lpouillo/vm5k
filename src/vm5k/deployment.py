@@ -710,9 +710,9 @@ class vm5k_deployment():
         for host in self.hosts:
             el_cluster = _state.find(".//cluster/[@id='" + get_host_cluster(host) + "']")
             SubElement(el_cluster, 'host', attrib={'id': host,
-                               'state': 'Undeployed',
-                               'cpu': str(hosts_attr[host]['CPU'] * 100),
-                               'mem': str(hosts_attr[host]['RAM'])})
+                                                   'state': 'Undeployed',
+                                                   'cpu': str(hosts_attr[host]['CPU'] * 100),
+                                                   'mem': str(hosts_attr[host]['RAM'])})
         logger.debug('Hosts added \n %s', prettify(_state))
 
     def _add_xml_vms(self):
@@ -720,20 +720,24 @@ class vm5k_deployment():
         for vm in self.vms:
             host = self.state.find(".//host/[@id='" + vm['host'] + "']")
             SubElement(host, 'vm', attrib={'id': vm['id'],
-                                         'ip': vm['ip'],
-                                         'mac': vm['mac'],
-                                         'mem': str(vm['mem']),
-                                         'n_cpu': str(vm['n_cpu']),
-                                         'cpuset': vm['cpuset'],
-                                         'hdd': str(vm['hdd']),
-                                         'backing_file': vm['backing_file'],
-                                         'real_file': str(vm['real_file']),
-                                         'state': vm['state']})
+                                           'ip': vm['ip'],
+                                           'mac': vm['mac'],
+                                           'mem': str(vm['mem']),
+                                           'n_cpu': str(vm['n_cpu']),
+                                           'cpuset': vm['cpuset'],
+                                           'hdd': str(vm['hdd']),
+                                           'backing_file': vm['backing_file'],
+                                           'real_file': str(vm['real_file']),
+                                           'state': vm['state']})
 
     def _print_state_compact(self):
         """Display in a compact form the distribution of vms on hosts."""
         dist = {}
         max_len_host = 0
+        for host in self.hosts:
+            if len(host) > max_len_host:
+                max_len_host = len(host)
+
         for vm in self.vms:
             host = vm['host'].split('.')[0]
             if len(host) > max_len_host:
@@ -743,13 +747,17 @@ class vm5k_deployment():
             else:
                 dist[host][vm['id']] = vm['state']
         log = ''
-        for host in sorted(dist.keys(), key=lambda x: (x.split('.')[0].split('-')[0],
-                                                int(x.split('.')[0].split('-')[1]))):
-            log += '\n' + style.host(host) +' '.ljust(max_len_host + 2 - len(host)) + \
-                    str(len(dist[host].keys())) + ' ' 
+        for host in sorted(self.hosts, key=lambda x: (x.split('.')[0].split('-')[0],
+                                                      int(x.split('.')[0].split('-')[1]))):
+            host = host.split('.')[0]
+            if host not in dist:
+                dist[host] = {}
+
+            log += '\n' + style.host(host) + ' '.ljust(max_len_host + 2 - len(host)) + \
+                   str(len(dist[host].keys())) + ' '
             try:
                 vms = sorted(dist[host].keys(), key=lambda x: (x.split('.')[0].split('-')[0],
-                                                int(x.split('.')[0].split('-')[1])))
+                                                               int(x.split('.')[0].split('-')[1])))
             except:
                 vms = sorted(dist[host].keys())
                 pass
