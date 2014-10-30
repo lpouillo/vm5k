@@ -31,6 +31,7 @@ from execo_g5k.api_utils import get_host_cluster, get_g5k_clusters, \
     get_g5k_sites, get_site_clusters
 
 from xml.etree.ElementTree import tostring
+from __builtin__ import isinstance
 
 
 def hosts_list(hosts, separator=' '):
@@ -100,8 +101,8 @@ def get_kavlan_network(kavlan, site):
             all_vlans = equip['vlans']
             break
     for info in all_vlans.itervalues():
-        if type(info) == type({}) and 'name' in info \
-            and info['name'] == 'kavlan-' + str(kavlan):
+        if isinstance(info, dict) and 'name' in info \
+                and info['name'] == 'kavlan-' + str(kavlan):
             network, _, mask_size = info['addresses'][0].partition('/',)
     logger.debug('network=%s, mask_size=%s', network, mask_size)
     return network, mask_size
@@ -111,23 +112,23 @@ def get_kavlan_ip_mac(kavlan, site):
     """Retrieve the network parameters for a given kavlan from the API"""
     network, mask_size = get_kavlan_network(kavlan, site)
     min_2 = (kavlan - 4) * 64 + 2 if kavlan < 8 \
-            else (kavlan - 8) * 64 + 2 if kavlan < 10 \
-            else 216
+        else (kavlan - 8) * 64 + 2 if kavlan < 10 \
+        else 216
     ips = [".".join([str(part) for part in ip]) for ip in
            [ip for ip in get_ipv4_range(tuple([int(part)
-                for part in network.split('.')]), int(mask_size))
+            for part in network.split('.')]), int(mask_size))
            if ip[3] not in [0, 254, 255] and ip[2] >= min_2]]
     macs = []
     for i in range(len(ips)):
         mac = ':'.join(map(lambda x: "%02x" % x, [0x00, 0x020, 0x4e,
-            randint(0x00, 0xff),
-            randint(0x00, 0xff),
-            randint(0x00, 0xff)]))
+                                                  randint(0x00, 0xff),
+                                                  randint(0x00, 0xff),
+                                                  randint(0x00, 0xff)]))
         while mac in macs:
             mac = ':'.join(map(lambda x: "%02x" % x, [0x00, 0x020, 0x4e,
-                randint(0x00, 0xff),
-                randint(0x00, 0xff),
-                randint(0x00, 0xff)]))
+                                                      randint(0x00, 0xff),
+                                                      randint(0x00, 0xff),
+                                                      randint(0x00, 0xff)]))
         macs.append(mac)
     return zip(ips, macs)
 
@@ -135,17 +136,17 @@ def get_kavlan_ip_mac(kavlan, site):
 def get_ipv4_range(network, mask_size):
     """Get the ipv4 range from a network and a mask_size"""
     net = (network[0] << 24
-            | network[1] << 16
-            | network[2] << 8
-            | network[3])
+           | network[1] << 16
+           | network[2] << 8
+           | network[3])
     mask = ~(2 ** (32 - mask_size) - 1)
     ip_start = net & mask
     ip_end = net | ~mask
     return [((ip & 0xff000000) >> 24,
-              (ip & 0xff0000) >> 16,
-              (ip & 0xff00) >> 8,
-              ip & 0xff)
-             for ip in xrange(ip_start, ip_end + 1)]
+            (ip & 0xff0000) >> 16,
+            (ip & 0xff00) >> 8,
+            ip & 0xff)
+            for ip in xrange(ip_start, ip_end + 1)]
 
 
 def print_step(step_desc=None):
@@ -169,7 +170,7 @@ def get_CPU_RAM_FLOPS(hosts):
         if isinstance(host, Host):
             host = host.address
         cluster = get_host_cluster(host)
-        if not cluster in cluster_attr:
+        if cluster not in cluster_attr:
             attr = get_host_attributes(host)
             cluster_attr[cluster] = {
                  'CPU': attr['architecture']['smt_size'],
@@ -192,7 +193,7 @@ def get_fastest_host(hosts):
             if isinstance(host, Host):
                 host = host.address
             flops = attr[host]['flops']
-            if  flops > max_flops:
+            if flops > max_flops:
                 max_flops = flops
                 fastest_host = host
         return fastest_host
@@ -201,8 +202,13 @@ def get_fastest_host(hosts):
 def get_max_vms(hosts, mem=512):
     """Return the maximum number of virtual machines that can be
     created on the hosts"""
-    total = get_CPU_RAM_FLOPS(hosts)['TOTAL']
-    return int(total['RAM'] / mem - 1)
+    total_vm = 0
+    attr = get_CPU_RAM_FLOPS(hosts)
+    for host in hosts:
+        if isinstance(host, Host):
+            host = host.address
+        total_vm += floor(attr[host]['RAM'] / mem)
+    return int(total_vm)
 
 
 def get_vms_slot(vms, elements, slots, excluded_elements=None):
