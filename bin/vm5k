@@ -319,6 +319,7 @@ if args.job_id is None:
         sub.additional_options = "-t deploy"
         sub.reservation_date = startdate
         jobs = oarsub([(sub, frontend)])
+        job_id = jobs[0][0]
         if len(jobs) == 0:
             cmd = get_oarsub_commandline((sub, frontend))
             exit()
