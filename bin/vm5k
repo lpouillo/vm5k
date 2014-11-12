@@ -31,7 +31,7 @@ from vm5k import vm5k_deployment, define_vms, get_oar_job_vm5k_resources, \
 ##############################################################################
 # INITIALIZATION
 ##############################################################################
-version = '0.5.2-dev'
+version = '0.6'
 execution_time = {}
 timer = Timer()
 
