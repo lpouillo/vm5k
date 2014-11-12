@@ -42,16 +42,15 @@ def setup_aptcacher_server(hosts, base_dir='/tmp/apt-cacher-ng'):
     if not mkdirs.ok:
         logger.error('Unable to create the directories')
         return
-
-    configure = TaktukRemote('sed -i "s#/var/cache/apt-cacher-ng#' + cache_dir + 
-               '#g" /etc/apt-cacher-ng/acng.conf ;' + 
-               'sed -i "s#/var/log/apt-cacher-ng#' + log_dir + '#g" ' + 
-               '/etc/apt-cacher-ng/acng.conf ;' + 
-               'sed -i "s/3142/9999/g" /etc/apt-cacher-ng/acng.conf ; ' + 
-               'sed -i "s?#Proxy: http://www-proxy.example.net:80?Proxy: http://proxy:3128?g" ' +
-               '/etc/apt-cacher-ng/acng.conf ; ' + 
-               'service apt-cacher-ng restart',
-              hosts).run()
+    cmd = 'sed -i "s#/var/cache/apt-cacher-ng#' + cache_dir + \
+          '#g" /etc/apt-cacher-ng/acng.conf ;' + \
+          'sed -i "s#/var/log/apt-cacher-ng#' + log_dir + '#g" ' + \
+          '/etc/apt-cacher-ng/acng.conf ;' + \
+          'sed -i "s/3142/9999/g" /etc/apt-cacher-ng/acng.conf ; ' + \
+          'sed -i "s?#Proxy: http://www-proxy.example.net:80?Proxy: ' + \
+          'http://proxy:3128?g" /etc/apt-cacher-ng/acng.conf ; ' + \
+          'service apt-cacher-ng restart'
+    configure = TaktukRemote(cmd, hosts).run()
     if not configure.ok:
         logger.error('Unable to configure and restart the service')
         return
