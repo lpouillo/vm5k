@@ -48,10 +48,9 @@ class vm5k_deployment():
     virtual machines, using the value of the object.
     """
 
-    def __init__(self, infile=None, resources=None,
-                 env_name=None, env_file=None,
-                 vms=None, distribution=None,
-                 outdir=None, live_plot=False):
+    def __init__(self, infile=None, resources=None, env_name=None,
+                 env_file=None, vms=None, distribution=None,
+                 outdir=None):
         """:param infile: an XML file that describe the topology of the
         deployment
 
@@ -185,9 +184,9 @@ class vm5k_deployment():
         self._libvirt_uniquify()
         self._libvirt_bridged_network(bridge)
         logger.info('Restarting %s', style.emph('libvirt'))
-        self.fact.get_remote('service libvirt-bin restart', self.hosts).run()
+        self.fact.get_remote('service libvirtd restart', self.hosts).run()
 
-    def deploy_vms(self, clean_disks=False, disk_location='one', 
+    def deploy_vms(self, clean_disks=False, disk_location='one',
                    apt_cacher=False):
         """Destroy the existing VMS, create the virtual disks, install the vms
         start them and wait until they have rebooted"""
@@ -357,9 +356,9 @@ class vm5k_deployment():
     def _libvirt_uniquify(self):
         logger.info('Making libvirt host unique')
         cmd = 'uuid=`uuidgen` ' + \
-        '&& sed -i "s/.*host_uuid.*/host_uuid=\\"${uuid}\\"/g" ' + \
-        '/etc/libvirt/libvirtd.conf ' + \
-        '&& service libvirt-bin restart'
+            '&& sed -i "s/.*host_uuid.*/host_uuid=\\"${uuid}\\"/g" ' + \
+            '/etc/libvirt/libvirtd.conf ' + \
+            '&& service libvirtd restart'
         logger.debug(cmd)
         self.fact.get_remote(cmd, self.hosts).run()
 
