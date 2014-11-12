@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name='vm5k',
-    version='0.5.2-dev',
+    version='0.5.6',
     author='Laurent Pouilloux',
     author_email='laurent.pouilloux@inria.fr',
     package_dir={'': 'src'},
@@ -14,4 +14,3 @@ setup(
         'of virtual Machines on the Grid\'5000 platform.',
     long_description=open('README.txt').read(),
 )
-
