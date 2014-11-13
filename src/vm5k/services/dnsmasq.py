@@ -129,7 +129,10 @@ def dnsmasq_server(server, clients=None, vms=None, dhcp=True):
                       if get_host_site(client)]))
     add_vms(vms, server)
     if clients:
-        TaktukRemote('killall dnsmasq', clients).run()
+        kill_dnsmasq = TaktukRemote('killall dnsmasq', clients)
+        for p in kill_dnsmasq.processes:
+            p.ignore_exit_code = p.nolog_exit_code = True
+        kill_dnsmasq.run()
         resolv_conf(server, clients, sites)
 
     if dhcp:
