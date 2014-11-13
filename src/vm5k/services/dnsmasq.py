@@ -81,7 +81,7 @@ def dhcp_conf(server, vms, sites):
     Put([server], [dnsmasq], remote_location='/etc/').run()
     SshProcess('cd /etc && cp '+dnsmasq.split('/')[-1]+' dnsmasq.conf',
                server).run()
-    Process('rm '+dnsmasq).run()
+    Process('rm ' + dnsmasq).run()
 
 
 def sysctl_conf(server, vms):
