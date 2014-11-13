@@ -385,7 +385,8 @@ else:
                                  apt_cacher=args.aptcacher)
     else:
         logger.info('Not managing packages for libvirt')
-        other_packages = args.other_packages + 'netcat-traditional' \
+        other_packages = ' '.join(args.other_packages.split(',')) \
+            + 'netcat-traditional' \
             if args.other_packages else 'netcat-traditional'
         vm5k._other_packages(other_packages)
         vm5k._start_disk_copy()
