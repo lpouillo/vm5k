@@ -18,8 +18,7 @@ Requirements
 ============
 The module requires:
 
-* execo 2.2, <http://execo.gforge.inria.fr/>
-* optionnally matplotlib 1.2 <http://matplotlib.org/> and networkx 1.7 for plotting
+* execo 2.4, <http://execo.gforge.inria.fr/>
 
 
 Installation
