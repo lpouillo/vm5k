@@ -10,8 +10,6 @@ import os
 import sys
 import argparse
 from pprint import pformat
-import matplotlib
-matplotlib.use('Agg')
 from time import strftime
 from logging import INFO, DEBUG, WARN
 from math import ceil
@@ -24,6 +22,7 @@ from execo_g5k.oar import get_oarsub_commandline
 from execo_g5k.oargrid import get_oargridsub_commandline
 from execo_g5k.planning import get_planning, compute_slots, show_resources, \
     find_free_slot, get_jobs_specs, distribute_hosts
+from execo_g5k.topology import g5k_graph, treemap
 from execo_engine import copy_outputs
 from vm5k import vm5k_deployment, define_vms, get_oar_job_vm5k_resources, \
     get_max_vms, get_oargrid_job_vm5k_resources, get_vms_slot, print_step
@@ -147,10 +146,15 @@ optdeploy.add_argument('--nodeploy',
                        action="store_true",
                        help='consider that hosts are already deployed and ' +
                        'configured')
-hosts.add_argument('--host-packages',
-                   dest='host_packages',
+hosts.add_argument('--no-packages-management',
+                   dest='packages_management',
+                   action='store_false',
+                   help='disable package management')
+hosts.add_argument('--other-packages',
+                   dest='other_packages',
                    help='comma separated list of packages to be installed ' +
                    'on the hosts')
+
 
 # VMs configuration
 vms = parser.add_argument_group(style.host('Virtual machines'),
@@ -222,7 +226,8 @@ if args.walltime is None and args.job_id is None:
 
 logger.info('Options\n' + '\n'.join([style.emph(option.ljust(20)) +
             '= ' + str(vars(args)[option]).ljust(10)
-            for option in sorted(vars(args).keys()) if vars(args)[option]]))
+            for option in sorted(vars(args).keys()) if vars(args)[option] 
+            or option == 'packages_management']))
 
 # DEFINING VMS AND ELEMENTS
 if args.infile:
@@ -372,13 +377,21 @@ if args.nodeploy:
 else:
     vm5k.hosts_deployment(max_tries=deployment_tries,
                           check_deploy=not args.forcedeploy)
-    print_step('Managing packages')
-    vm5k.packages_management(upgrade=True,
-                             other_packages=args.host_packages,
-                             launch_disk_copy=True,
-                             apt_cacher=args.aptcacher)
+    if args.packages_management:
+        print_step('Managing packages')
+        vm5k.packages_management(upgrade=True,
+                                 other_packages=args.other_packages,
+                                 launch_disk_copy=True,
+                                 apt_cacher=args.aptcacher)
+    else:
+        other_packages = args.other_packages + 'netcat-traditional' \
+            if args.other_packages else 'netcat-traditional'
+        vm5k._other_packages(other_packages)
+        vm5k._start_disk_copy()
+
     print_step('Configuring libvirt')
     vm5k.configure_libvirt()
+
 # Saving the list of hosts in outdir
 f = open(args.outdir + '/hosts.list', 'w')
 for host in vm5k.hosts:
@@ -400,6 +413,15 @@ if args.infile is None:
     logger.info('Maximum number of VMs %s',
                 get_max_vms(vm5k.hosts,
                             int(fromstring(args.vm_template).get('mem'))))
+
+# gr = g5k_graph()
+# for host in vm5k.hosts:
+#     gr.add_host(host)
+# for vm in vm5k.vms:
+#     gr.add_node(vm['id'], {'kind': 'vm'})
+#     gr.add_edge(vm['id'], vm['host'])
+# plot = treemap(gr)
+# plot.savefig('test.png')
 
 f = open(args.outdir + '/vms.list', 'w')
 for vm in vm5k.vms:

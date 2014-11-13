@@ -28,6 +28,7 @@ from execo.config import TAKTUK, CHAINPUT
 from execo_g5k import deploy, Deployment
 from execo_g5k.api_utils import get_host_cluster, \
     get_cluster_site, get_host_site, canonical_host_name
+from execo_g5k.topology import g5k_graph, treemap
 from execo_g5k.utils import get_kavlan_host_name
 from vm5k.config import default_vm
 from vm5k.actions import create_disks, install_vms, start_vms, \
@@ -35,7 +36,6 @@ from vm5k.actions import create_disks, install_vms, start_vms, \
 from vm5k.utils import prettify, print_step, get_fastest_host, \
     hosts_list, get_CPU_RAM_FLOPS
 from vm5k.services import dnsmasq_server, setup_aptcacher_server, configure_apt_proxy
-from vm5k.plots import topology_plot
 
 
 class vm5k_deployment():
@@ -181,6 +181,7 @@ class vm5k_deployment():
         with a bridged network for the virtual machines, and restart service.
         """
         self._enable_bridge()
+        self._libvirt_check_service()
         self._libvirt_uniquify()
         self._libvirt_bridged_network(bridge)
         logger.info('Restarting %s', style.emph('libvirt'))
@@ -227,9 +228,6 @@ class vm5k_deployment():
             log = self._print_state_compact()
 
         logger.info('State %s', log)
-
-        if plot:
-            topology_plot(self.state, outdir=self.outdir)
 
     # PRIVATE METHODS
     def _launch_kadeploy(self, max_tries=1, check_deploy=True):
@@ -352,6 +350,18 @@ class vm5k_deployment():
         remove = self.fact.get_remote('rm -f /tmp/*.img; rm -f /tmp/*.qcow2',
                                       self.hosts).run()
         self._actions_hosts(remove)
+
+    def _libvirt_check_service(self):
+        """ """
+        logger.info('Checking libvirt service name')
+        cmd = """if [ ! -e /etc/init.d/libvirtd ];
+                then if [ -e /etc/init.d/libvirt-bin ];
+                    then ln -s /etc/init.d/libvirt-bin /etc/init.d/libvirtd;
+                    else exit 1;
+                    fi
+                fi"""
+        check_libvirt = self.fact.get_remote(cmd, self.hosts).run()
+        self._actions_hosts(check_libvirt)
 
     def _libvirt_uniquify(self):
         logger.info('Making libvirt host unique')
@@ -486,12 +496,12 @@ class vm5k_deployment():
         f.close()
 
         TaktukPut(self.hosts, [tmpsource, tmppref, tmpaptconf],
-                remote_location='/etc/apt/').run()
-        apt_conf = self.fact.get_remote('cd /etc/apt && ' + \
-                'mv ' + tmpsource.split('/')[-1] + ' sources.list &&' + \
-                'mv ' + tmppref.split('/')[-1] + ' preferences &&' + \
-                'mv ' + tmpaptconf.split('/')[-1] + ' apt.conf',
-                self.hosts).run()
+                  remote_location='/etc/apt/').run()
+        cmd = 'cd /etc/apt && ' + \
+            'mv ' + tmpsource.split('/')[-1] + ' sources.list &&' + \
+            'mv ' + tmppref.split('/')[-1] + ' preferences &&' + \
+            'mv ' + tmpaptconf.split('/')[-1] + ' apt.conf'
+        apt_conf = self.fact.get_remote(cmd, self.hosts).run()
         self._actions_hosts(apt_conf)
         Local('rm ' + tmpsource + ' ' + tmppref + ' ' + tmpaptconf).run()
 
@@ -524,17 +534,20 @@ class vm5k_deployment():
             libvirt_packages
         install_libvirt = self.fact.get_remote(cmd, self.hosts).run()
         self._actions_hosts(install_libvirt)
-
         if other_packages:
-            other_packages = other_packages.replace(',', ' ')
-            logger.info('Installing extra packages \n%s',
-                        style.emph(other_packages))
+            self._other_packages(other_packages)
 
-            cmd = 'export DEBIAN_MASTER=noninteractive ; ' + \
-                'apt-get update && apt-get install -y --force-yes ' + \
-                other_packages
-            install_extra = self.fact.get_remote(cmd, self.hosts).run()
-            self._actions_hosts(install_extra)
+    def _other_packages(self, other_packages=None):
+        """Installation of packages"""
+        other_packages = other_packages.replace(',', ' ')
+        logger.info('Installing extra packages \n%s',
+                    style.emph(other_packages))
+
+        cmd = 'export DEBIAN_MASTER=noninteractive ; ' + \
+            'apt-get update && apt-get install -y --force-yes ' + \
+            other_packages
+        install_extra = self.fact.get_remote(cmd, self.hosts).run()
+        self._actions_hosts(install_extra)
 
     # State related methods
     def _define_elements(self, infile=None, resources=None, vms=None,
