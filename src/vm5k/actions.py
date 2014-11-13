@@ -181,6 +181,10 @@ def distribute_vms(vms, hosts, distribution='round-robin'):
             for i in range(n_by_host):
                 vms[i_vm]['host'] = host
                 i_vm += 1
+        if len(vms) % len(hosts) != 0:
+            logger.warning('Reducing number of VMs to have %s by host',
+                           style.emph(n_by_host))
+            vms[:] = vms[0:n_by_host * len(hosts)]
     else:
         logger.debug('No valid distribution given')
     logger.debug('Final virtual machines distribution \n%s',
