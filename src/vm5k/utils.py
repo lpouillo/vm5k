@@ -64,7 +64,7 @@ def get_oar_job_vm5k_resources(jobs):
             if kavlan:
                 ip_mac = get_kavlan_ip_mac(kavlan, site)
         resources[site] = {'hosts': hosts,
-                           'ip_mac': ip_mac,
+                           'ip_mac': ip_mac[300:],
                            'kavlan': kavlan}
     return resources
 
@@ -77,7 +77,8 @@ def get_oargrid_job_vm5k_resources(oargrid_job_id):
     logger.info('Waiting job start')
     wait_oargrid_job_start(oargrid_job_id)
     resources = get_oar_job_vm5k_resources([(oar_job_id, site)
-            for oar_job_id, site in get_oargrid_job_oar_jobs(oargrid_job_id)])
+                                            for oar_job_id, site in
+                                            get_oargrid_job_oar_jobs(oargrid_job_id)])
     kavlan_global = None
     for site, res in resources.iteritems():
         if res['kavlan'] >= 10:
