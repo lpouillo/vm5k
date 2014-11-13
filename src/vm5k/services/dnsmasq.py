@@ -7,7 +7,7 @@ from math import ceil, log
 from execo import logger, SshProcess, Put, Remote, Host, TaktukRemote, \
     Process, TaktukPut
 from execo.log import style
-from execo_g5k import get_g5k_sites, get_host_site
+from execo_g5k import get_host_site
 
 
 def add_vms(vms, server):
@@ -18,7 +18,7 @@ def add_vms(vms, server):
     f.write('\n' + '\n'.join([vm['ip'] + ' \t ' + vm['id'] for vm in vms]))
     f.close()
     Put([server], [vms_list], remote_location='/etc/').run()
-    SshProcess('[ -f /etc/hosts.bak ] && cp /etc/hosts.bak /etc/hosts || ' + \
+    SshProcess('[ -f /etc/hosts.bak ] && cp /etc/hosts.bak /etc/hosts || ' +
                ' cp /etc/hosts /etc/hosts.bak', server).run()
     Remote('cat /etc/' + vms_list.split('/')[-1] + ' >> /etc/hosts',
            [server]).run()
@@ -40,9 +40,9 @@ def get_server_ip(host):
 def get_server_iface(server):
     """Get the default network interface of the serve """
     logger.debug('Retrieving default interface from %s',
-                style.host(server.address))
+                 style.host(server.address))
     get_if = SshProcess('ip route |grep default |cut -d " " -f 5',
-                server).run()
+                        server).run()
     return get_if.stdout.strip()
 
 
@@ -51,8 +51,8 @@ def resolv_conf(server, clients, sites):
     """
     fd, resolv = mkstemp(dir='/tmp/', prefix='resolv_')
     f = fdopen(fd, 'w')
-    f.write('domain grid5000.fr\nsearch grid5000.fr ' + \
-            ' '.join([site + '.grid5000.fr' for site in sites]) + \
+    f.write('domain grid5000.fr\nsearch grid5000.fr ' +
+            ' '.join([site + '.grid5000.fr' for site in sites]) +
             '\nnameserver ' + get_server_ip(server))
     f.close()
     TaktukPut(clients, [resolv], remote_location='/etc/').run()
@@ -62,37 +62,42 @@ def resolv_conf(server, clients, sites):
 
 
 def dhcp_conf(server, vms, sites):
-    """Generate the dnsmasq.conf with dhcp parameters and put it on the server"""
+    """Generate the dnsmasq.conf with dhcp parameters and
+    put it on the server"""
     logger.debug('Creating dnsmasq.conf')
-    ip_mac = [ (vm['ip'], vm['mac']) for vm in vms ]
+    ip_mac = [(vm['ip'], vm['mac']) for vm in vms]
     dhcp_lease = 'dhcp-lease-max=10000\n'
     dhcp_range = 'dhcp-range='+ip_mac[0][0]+','+ip_mac[len(vms)-1][0]+',12h\n'
     dhcp_router = 'dhcp-option=option:router,'+get_server_ip(server)+'\n'
-    dhcp_hosts = ''+'\n'.join( [ 'dhcp-host='+':'+ip_mac[i][1]+','+vms[i]['id']+','+ip_mac[i][0]
-                                for i in range(len(vms)) ])
-    dhcp_option = 'dhcp-option=option:domain-search,grid5000.fr,'+\
-            ','.join( [site + '.grid5000.fr' for site in sites])+'\n'
-    fd, dnsmasq = mkstemp(dir = '/tmp/', prefix='dnsmasq_')
+    dhcp_hosts = ''+'\n'.join(['dhcp-host=' + ':'+ip_mac[i][1] + ',' +
+                               vms[i]['id']+','+ip_mac[i][0]
+                               for i in range(len(vms))])
+    dhcp_option = 'dhcp-option=option:domain-search,grid5000.fr,' + \
+        ','.join([site + '.grid5000.fr' for site in sites]) + '\n'
+    fd, dnsmasq = mkstemp(dir='/tmp/', prefix='dnsmasq_')
     f = fdopen(fd, 'w')
     f.write(dhcp_lease+dhcp_range+dhcp_router+dhcp_hosts+'\n'+dhcp_option)
     f.close()
     Put([server], [dnsmasq], remote_location='/etc/').run()
-    SshProcess('cd /etc && cp '+dnsmasq.split('/')[-1]+' dnsmasq.conf', server).run()
+    SshProcess('cd /etc && cp '+dnsmasq.split('/')[-1]+' dnsmasq.conf',
+               server).run()
     Process('rm '+dnsmasq).run()
 
 
 def sysctl_conf(server, vms):
-    """Change the default value of net.ipv4.neigh.default.gc_thresh* to handle large number of IP"""
+    """Change the default value of net.ipv4.neigh.default.gc_thresh*
+    to handle large number of IP"""
     val = int(2**ceil(log(len(vms), 2)))
-    conf = "\nnet.ipv4.neigh.default.gc_thresh3 = "+str(3*val)+\
-          "\nnet.ipv4.neigh.default.gc_thresh2 = "+str(2*val)+\
-          "\nnet.ipv4.neigh.default.gc_thresh1 = "+str(val)
-    fd, sysctl = mkstemp(dir = '/tmp/', prefix='sysctl_')
+    conf = "\nnet.ipv4.neigh.default.gc_thresh3 = "+str(3*val) + \
+        "\nnet.ipv4.neigh.default.gc_thresh2 = "+str(2*val) + \
+        "\nnet.ipv4.neigh.default.gc_thresh1 = "+str(val)
+    fd, sysctl = mkstemp(dir='/tmp/', prefix='sysctl_')
     f = fdopen(fd, 'w')
     f.write(conf)
     f.close()
     Put([server], [sysctl], remote_location='/etc/').run()
-    SshProcess('cd /etc && cat '+sysctl.split('/')[-1]+' >> sysctl.conf && sysctl -p', server).run()
+    SshProcess('cd /etc && cat '+sysctl.split('/')[-1] +
+               ' >> sysctl.conf && sysctl -p', server).run()
     Process('rm '+sysctl).run()
 
 
@@ -114,14 +119,17 @@ def dnsmasq_server(server, clients=None, vms=None, dhcp=True):
     if 'open' in test_running.stdout:
         logger.info('DNS server already running, updating configuration')
     else:
-        cmd = 'export DEBIAN_MASTER=noninteractive ; apt-get update ; apt-get -y purge dnsmasq-base ; '+\
-             'apt-get install -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confnew" '+\
-             '-y dnsmasq; echo 1 > /proc/sys/net/ipv4/ip_forward '
+        cmd = 'killall dnsmasq; export DEBIAN_MASTER=noninteractive ; ' + \
+            'apt-get update ; apt-get -y purge dnsmasq-base ; ' + \
+            'apt-get install -o Dpkg::Options::="--force-confdef" ' + \
+            '-o Dpkg::Options::="--force-confnew" ' + \
+            '-y dnsmasq; echo 1 > /proc/sys/net/ipv4/ip_forward '
         SshProcess(cmd, server).run()
     sites = list(set([get_host_site(client) for client in clients
                       if get_host_site(client)]))
     add_vms(vms, server)
     if clients:
+        TaktukRemote('killall dnsmasq', clients).run()
         resolv_conf(server, clients, sites)
 
     if dhcp:
@@ -129,9 +137,6 @@ def dnsmasq_server(server, clients=None, vms=None, dhcp=True):
         dhcp_conf(server, vms, sites)
 
     logger.debug('Restarting service ...')
-    cmd = 'service dnsmasq stop ; rm /var/lib/misc/dnsmasq.leases ; service dnsmasq start',
+    cmd = 'service dnsmasq stop ; rm /var/lib/misc/dnsmasq.leases ; ' + \
+        'service dnsmasq start',
     SshProcess(cmd, server).run()
-
-
-
-

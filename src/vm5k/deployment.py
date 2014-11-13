@@ -447,8 +447,9 @@ class vm5k_deployment():
             while (not if_up) and nmap_tries < 20:
                 sleep(20)
                 nmap_tries += 1
-                nmap = Process('nmap ' + \
-                    ' '.join([host for host in nobr_hosts]) + ' -p 22').run()
+                nmap = Process('nmap ' +
+                               ' '.join([host for host in nobr_hosts]) +
+                               ' -p 22').run()
                 for line in nmap.stdout.split('\n'):
                     if 'Nmap done' in line:
                         if_up = line.split()[2] == line.split()[5].replace('(',

@@ -228,7 +228,7 @@ def destroy_vms(hosts):
 def cmd_disk_real(vm):
     """Return a command to create a new disk from the backing_file"""
     return 'qemu-img convert /tmp/' + vm['backing_file'].split('/')[-1] + \
-         ' -O qcow2 /tmp/' + vm['id'] + '.qcow2 ;'
+        ' -O qcow2 /tmp/' + vm['id'] + '.qcow2 ;'
 
 
 def cmd_disk_qcow2(vm):
@@ -272,8 +272,9 @@ def create_disks_all_hosts(vms, hosts):
     f.close()
 
     return SequentialActions([ChainPut(hosts, [vms_disks]),
-                TaktukRemote('sh ' + vms_disks.split('/')[-1], hosts),
-                Local('rm ' + vms_disks)])
+                              TaktukRemote('sh ' + vms_disks.split('/')[-1], 
+                                           hosts),
+                              Local('rm ' + vms_disks)])
 
 
 def install_vms(vms):
@@ -282,12 +283,12 @@ def install_vms(vms):
     hosts_cmds = {}
     for vm in vms:
         cmd = 'virt-install -d --import --connect qemu:///system ' + \
-        '--nographics --noautoconsole --noreboot --name=' + vm['id'] + ' '\
-        '--network network=default,mac=' + vm['mac'] + ' --ram=' + \
-        str(vm['mem']) + ' --disk path=/tmp/' + vm['id'] + \
-        '.qcow2,device=disk,bus=virtio,format=qcow2,size=' + \
-        str(vm['hdd']) + ',cache=none ' + \
-        '--vcpus=' + str(vm['n_cpu']) + ' --cpuset=' + vm['cpuset'] + ' ; '
+            '--nographics --noautoconsole --noreboot --name=' + vm['id'] + ' '\
+            '--network network=default,mac=' + vm['mac'] + ' --ram=' + \
+            str(vm['mem']) + ' --disk path=/tmp/' + vm['id'] + \
+            '.qcow2,device=disk,bus=virtio,format=qcow2,size=' + \
+            str(vm['hdd']) + ',cache=none ' + \
+            '--vcpus=' + str(vm['n_cpu']) + ' --cpuset=' + vm['cpuset'] + ' ; '
         hosts_cmds[vm['host']] = cmd if not vm['host'] in hosts_cmds \
             else hosts_cmds[vm['host']] + cmd
 
