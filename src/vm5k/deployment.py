@@ -592,7 +592,7 @@ class vm5k_deployment():
         else:
             # multi site in prod network
             self.ip_mac = {site: resource['ip_mac']
-                            for site, resource in resources.iteritems()}
+                           for site, resource in resources.iteritems()}
         if isinstance(self.ip_mac, list) and len(self.ip_mac) == 0:
             logger.error('No ip_range given in the resources')
             exit()
