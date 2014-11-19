@@ -244,8 +244,8 @@ class vm5k_deployment():
                                 vlan=self.kavlan)
         # Activate kadeploy output log if log level is debug
         if logger.getEffectiveLevel() <= 10:
-            stdout = sys.stdout
-            stderr = sys.stderr
+            stdout = [sys.stdout]
+            stderr = [sys.stderr]
         else:
             stdout = None
             stderr = None
