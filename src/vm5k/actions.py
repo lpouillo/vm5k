@@ -129,7 +129,7 @@ def distribute_vms(vms, hosts, distribution='round-robin'):
     :param hosts: a list of hosts
 
     :param distribution: a string defining the distribution type:
-    'round-robin', 'concentrated', 'n_by_hosts', 'random
+     'round-robin', 'concentrated', 'n_by_hosts', 'random
 
     """
     logger.debug('Initial virtual machines distribution \n%s',
@@ -349,7 +349,7 @@ def wait_vms_have_started(vms, restart=True):
         start = str(int(i * n_vm_scan))
         end = str(int((i + 1) * n_vm_scan))
         cmds.append("awk 'NR>=" + start + " && NR<" + end +
-                    "' " + tmpfile.split('/')[-1] + " > nmap_file ; " 
+                    "' " + tmpfile.split('/')[-1] + " > nmap_file ; "
                     + "nmap -v -oG - -i nmap_file -p 22")
     logger.debug('%s', pformat(cmds))
     nmap = TaktukRemote('{{cmds}}', hosts)
@@ -383,7 +383,7 @@ def wait_vms_have_started(vms, restart=True):
         if nmap_tries == 1:
             activate_vms([vm for vm in vms if vm['state'] == 'KO'])
         if not all_up:
-            logger.info(str(nmap_tries) + ': ' + str(len(started_vms)) + '/' +\
+            logger.info(str(nmap_tries) + ': ' + str(len(started_vms)) + '/' +
                         str(len(vms)))
         nmap.reset()
 
@@ -429,11 +429,7 @@ def migrate_vm(vm, host):
     return TaktukRemote(cmd, [src])
 
 
-def rm_qcow2_disks( hosts):
+def rm_qcow2_disks(hosts):
     """Removing qcow2 disks located in /tmp"""
     logger.debug('Removing existing disks')
     TaktukRemote('rm -f /tmp/*.qcow2', hosts).run()
-
-
-
-

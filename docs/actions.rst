@@ -25,7 +25,7 @@ VM state
 
 .. autofunction:: vm5k.actions.create_disks
 
-.. autofunction:: vm5k.actions.create_disks_on_hosts
+.. autofunction:: vm5k.actions.create_disks_all_hosts
 
 .. autofunction:: vm5k.actions.install_vms
 
