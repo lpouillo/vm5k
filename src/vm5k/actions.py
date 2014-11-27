@@ -210,7 +210,7 @@ def list_vm(hosts, not_running=False):
     return hosts_vms
 
 
-def destroy_vms(hosts):
+def destroy_vms(hosts, undefine=False):
     """Destroy all the VM on the hosts"""
     cmds = []
     hosts_with_vms = []
@@ -218,8 +218,10 @@ def destroy_vms(hosts):
 
     for host, vms in hosts_vms.iteritems():
         if len(vms) > 0:
-            cmds.append('; '.join('virsh destroy ' + vm['id'] + \
-                        '; virsh undefine ' + vm['id'] for vm in vms))
+            cmds.append('; '.join('virsh destroy ' + vm['id'] for vm in vms))
+            if undefine:
+                cmds.append('; '.join('virsh undefine ' + vm['id']
+                                      for vm in vms))
             hosts_with_vms.append(host)
     if len(cmds) > 0:
         TaktukRemote('{{cmds}}', hosts_with_vms).run()

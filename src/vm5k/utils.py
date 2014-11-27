@@ -41,7 +41,7 @@ def hosts_list(hosts, separator=' '):
             hosts[i] = host.address
 
     return separator.join([style.host(host.split('.')[0])
-                            for host in sorted(hosts)])
+                           for host in sorted(hosts)])
 
 
 def get_oar_job_vm5k_resources(jobs):
