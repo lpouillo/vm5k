@@ -218,9 +218,12 @@ def destroy_vms(hosts, undefine=False):
 
     for host, vms in hosts_vms.iteritems():
         if len(vms) > 0:
-            cmds.append('; '.join('virsh destroy ' + vm['id'] for vm in vms))
-            if undefine:
-                cmds.append('; '.join('virsh undefine ' + vm['id']
+            if not undefine:
+                cmds.append('; '.join('virsh destroy ' + vm['id']
+                                      for vm in vms))
+            else:
+                cmds.append('; '.join('virsh destroy' + vm['id'] +
+                                      'virsh undefine ' + vm['id']
                                       for vm in vms))
             hosts_with_vms.append(host)
     if len(cmds) > 0:

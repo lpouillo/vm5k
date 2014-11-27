@@ -192,7 +192,7 @@ class vm5k_deployment():
         """Destroy the existing VMS, create the virtual disks, install the vms
         start them and wait until they have rebooted"""
         logger.info('Destroying existing virtual machines')
-        destroy_vms(self.hosts)
+        destroy_vms(self.hosts, undefine=True)
         if clean_disks:
             self._remove_existing_disks()
         logger.info('Creating the virtual disks ')
