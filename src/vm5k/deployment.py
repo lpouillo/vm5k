@@ -28,7 +28,6 @@ from execo.config import TAKTUK, CHAINPUT
 from execo_g5k import deploy, Deployment
 from execo_g5k.api_utils import get_host_cluster, \
     get_cluster_site, get_host_site, canonical_host_name
-from execo_g5k.topology import g5k_graph, treemap
 from execo_g5k.utils import get_kavlan_host_name
 from vm5k.config import default_vm
 from vm5k.actions import create_disks, install_vms, start_vms, \
