@@ -222,7 +222,7 @@ def destroy_vms(hosts, undefine=False):
                 cmds.append('; '.join('virsh destroy ' + vm['id']
                                       for vm in vms))
             else:
-                cmds.append('; '.join('virsh destroy' + vm['id'] + '; '
+                cmds.append('; '.join('virsh destroy ' + vm['id'] + '; '
                                       'virsh undefine ' + vm['id']
                                       for vm in vms))
             hosts_with_vms.append(host)
