@@ -27,8 +27,6 @@ Connect on a Grid'5000 frontend and type the following commands::
 
   export http_proxy="http://proxy:3128"
   export https_proxy="https://proxy:3128"
-  easy_install --user matplotlib
-  easy_install --user networkx
   easy_install --user execo
   easy_install --user vm5k
 
