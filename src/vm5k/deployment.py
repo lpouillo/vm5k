@@ -417,6 +417,9 @@ class vm5k_deployment():
                 logger.debug('Bridge %s is present on host %s',
                              style.emph('name'), style.host(host))
 
+        nobr_hosts = map(lambda x: x.address if isinstance(x, Host) else x, 
+                         nobr_hosts)
+
         if len(nobr_hosts) > 0:
             logger.debug('Creating bridge on %s', hosts_list(nobr_hosts))
             script = 'export br_if=`ip route |grep default |cut -f 5 -d " "`; \n' + \
