@@ -29,10 +29,8 @@ def get_munin_stats(server, destination_directory='.'):
     """Retrieve the munin statistics """
 
 
-
 def _munin_clients(server, clients, plugins):
     """ """
-
 
 
 def _munin_server(server, clients):
@@ -54,11 +52,11 @@ def _munin_server(server, clients):
     inst_munin_server = SshProcess(cmd, server).run()
 
     logger.debug('Creating configuration files for server')
-    fd, server_conf = mkstemp(dir = '/tmp/', prefix='munin-nodes_')
+    fd, server_conf = mkstemp(dir='/tmp/', prefix='munin-nodes_')
     f = fdopen(fd, 'w')
     for host in clients:
         get_ip = Process('host '+host.address).run()
-        ip =  get_ip.stdout.strip().split(' ')[3]
+        ip = get_ip.stdout.strip().split(' ')[3]
         f.write('['+host.address+']\n    address '+ip+'\n   use_node_name yes\n\n')
     f.close()
 
@@ -67,10 +65,9 @@ def _munin_server(server, clients):
     Process('rm '+server_conf).run()
 
 
-
 def add_munin_plugins(hosts, plugins):
     """Create a symbolic link to activate plugins  """
-    cmd = '; '.join([ 'ln -s /usr/share/munin/plugins/ /etc/munin/plugins'+plugin for plugin in plugins])
+    cmd = '; '.join([ 'ln -s /usr/share/munin/plugins/ /etc/munin/plugins' + plugin for plugin in plugins])
     TaktukRemote(cmd, hosts)
 
 

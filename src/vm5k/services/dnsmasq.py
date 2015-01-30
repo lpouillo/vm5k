@@ -67,19 +67,19 @@ def dhcp_conf(server, vms, sites):
     logger.debug('Creating dnsmasq.conf')
     ip_mac = [(vm['ip'], vm['mac']) for vm in vms]
     dhcp_lease = 'dhcp-lease-max=10000\n'
-    dhcp_range = 'dhcp-range='+ip_mac[0][0]+','+ip_mac[len(vms)-1][0]+',12h\n'
-    dhcp_router = 'dhcp-option=option:router,'+get_server_ip(server)+'\n'
-    dhcp_hosts = ''+'\n'.join(['dhcp-host=' + ':'+ip_mac[i][1] + ',' +
-                               vms[i]['id']+','+ip_mac[i][0]
+    dhcp_range = 'dhcp-range=' + ip_mac[0][0] + ',' + ip_mac[len(vms) - 1][0] + ',12h\n'
+    dhcp_router = 'dhcp-option=option:router,' + get_server_ip(server) + '\n'
+    dhcp_hosts = '' + '\n'.join(['dhcp-host=' + ':' + ip_mac[i][1] + ',' +
+                               vms[i]['id'] + ',' + ip_mac[i][0]
                                for i in range(len(vms))])
     dhcp_option = 'dhcp-option=option:domain-search,grid5000.fr,' + \
         ','.join([site + '.grid5000.fr' for site in sites]) + '\n'
     fd, dnsmasq = mkstemp(dir='/tmp/', prefix='dnsmasq_')
     f = fdopen(fd, 'w')
-    f.write(dhcp_lease+dhcp_range+dhcp_router+dhcp_hosts+'\n'+dhcp_option)
+    f.write(dhcp_lease + dhcp_range + dhcp_router + dhcp_hosts + '\n' + dhcp_option)
     f.close()
     Put([server], [dnsmasq], remote_location='/etc/').run()
-    SshProcess('cd /etc && cp '+dnsmasq.split('/')[-1]+' dnsmasq.conf',
+    SshProcess('cd /etc && cp ' + dnsmasq.split('/')[-1]+' dnsmasq.conf',
                server).run()
     Process('rm ' + dnsmasq).run()
 
@@ -87,16 +87,16 @@ def dhcp_conf(server, vms, sites):
 def sysctl_conf(server, vms):
     """Change the default value of net.ipv4.neigh.default.gc_thresh*
     to handle large number of IP"""
-    val = int(2**ceil(log(len(vms), 2)))
-    conf = "\nnet.ipv4.neigh.default.gc_thresh3 = "+str(3*val) + \
-        "\nnet.ipv4.neigh.default.gc_thresh2 = "+str(2*val) + \
-        "\nnet.ipv4.neigh.default.gc_thresh1 = "+str(val)
+    val = int(2 ** ceil(log(len(vms), 2)))
+    conf = "\nnet.ipv4.neigh.default.gc_thresh3 = " + str(3*val) + \
+        "\nnet.ipv4.neigh.default.gc_thresh2 = " + str(2*val) + \
+        "\nnet.ipv4.neigh.default.gc_thresh1 = " + str(val)
     fd, sysctl = mkstemp(dir='/tmp/', prefix='sysctl_')
     f = fdopen(fd, 'w')
     f.write(conf)
     f.close()
     Put([server], [sysctl], remote_location='/etc/').run()
-    SshProcess('cd /etc && cat '+sysctl.split('/')[-1] +
+    SshProcess('cd /etc && cat ' + sysctl.split('/')[-1] +
                ' >> sysctl.conf && sysctl -p', server).run()
     Process('rm '+sysctl).run()
 
@@ -125,8 +125,9 @@ def dnsmasq_server(server, clients=None, vms=None, dhcp=True):
             '-o Dpkg::Options::="--force-confnew" ' + \
             '-y dnsmasq; echo 1 > /proc/sys/net/ipv4/ip_forward '
         SshProcess(cmd, server).run()
+
     sites = list(set([get_host_site(client) for client in clients
-                      if get_host_site(client)]))
+                      if get_host_site(client)] + [get_host_site(server)]))
     add_vms(vms, server)
     if clients:
         kill_dnsmasq = TaktukRemote('killall dnsmasq', clients)
