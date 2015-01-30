@@ -23,6 +23,7 @@ from execo import SshProcess, TaktukPut, logger, TaktukRemote, Process, \
     SequentialActions, ChainPut, Local
 from execo.log import style
 from execo.time_utils import sleep
+from execo_g5k import get_host_site
 import tempfile
 from math import ceil
 from execo.exception import ActionsFailed
@@ -316,17 +317,17 @@ def activate_vms(vms, dest='lyon.grid5000.fr'):
     """Connect locally on every host and on all VMS to ping a host
     and update ARP tables"""
     logger.info('Executing ping from virtual machines on hosts')
-    cmd = "VMS=`virsh list | grep vm | awk '{print $2}'`; " + \
+    cmd = "VMS=`virsh list | grep -v State | grep -v -e '----' | awk '{print $2}'`; " + \
         "for VM in $VMS; do " + \
-        " 0</dev/null ssh $VM \"ping -c 3 " + dest + "\"; " + \
+        " ssh $VM \"ping -c 3 " + dest + " \"; " + \
         "done"
+    logger.debug('Launching ping probes to update ARP tables with %s', cmd)
     activate = TaktukRemote(cmd, list(set([vm['host'] for vm in vms])))
     for p in activate.processes:
         p.ignore_exit_code = p.nolog_exit_code = True
         if logger.getEffectiveLevel() <= 10:
             p.stdout_handlers.append(sys.stdout)
     activate.run()
-
     return activate.ok
 
 
