@@ -191,7 +191,7 @@ def get_CPU_RAM_FLOPS(hosts):
 def get_fastest_host(hosts):
         """ Use the G5K api to have the fastest node"""
         attr = get_CPU_RAM_FLOPS(hosts)
-        max_flops = 0
+        max_flops = -1  
         for host in hosts:
             if isinstance(host, Host):
                 host = host.address
