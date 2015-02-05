@@ -148,7 +148,7 @@ You may also want to use your virtual machines disk::
  vm5k --n_vm 50 --walltime 2:00:00 --vm_backing_file path_to_my_qcow2_file_on_g5k
  
 For more complex situtation, i.e. using different backing_file for the VMs, you need to use the XML 
-`Topology file <http://vm5k.readthedocs.org/en/latest/vm5k.html#use-a-topology-file>`_
+:ref:`topology_file`.
 
 
 Deploy in an isolated vlan 
@@ -167,6 +167,7 @@ reims due to `bug 4634 <https://intranet.grid5000.fr/bugzilla/show_bug.cgi?id=46
 
 Use a topology file 
 ^^^^^^^^^^^^^^^^^^^
+.. _topology_file:
 
 To have the finest control on the deployment topology, you can use an input file that described the 
 topology and VMs
