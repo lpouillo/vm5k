@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Vm5k.  If not, see <http://www.gnu.org/licenses/>
 
+
+import copy
 from pprint import pformat
 from xml.dom import minidom
 from random import randint
@@ -31,17 +33,17 @@ from execo_g5k.api_utils import get_host_cluster, get_g5k_clusters, \
     get_g5k_sites, get_site_clusters
 
 from xml.etree.ElementTree import tostring
-from __builtin__ import isinstance
 
 
 def hosts_list(hosts, separator=' '):
     """Return a formatted string from a list of hosts"""
-    for i, host in enumerate(hosts):
+    tmp_hosts = copy.deepcopy(hosts)
+    for i, host in enumerate(tmp_hosts):
         if isinstance(host, Host):
-            hosts[i] = host.address
+            tmp_hosts[i] = host.address
 
     return separator.join([style.host(host.split('.')[0])
-                           for host in sorted(hosts)])
+                           for host in sorted(tmp_hosts)])
 
 
 def get_oar_job_vm5k_resources(jobs):
