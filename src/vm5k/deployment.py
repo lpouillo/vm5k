@@ -353,12 +353,12 @@ class vm5k_deployment():
     def _libvirt_check_service(self):
         """ """
         logger.info('Checking libvirt service name')
-        cmd = """if [ ! -e /etc/init.d/libvirtd ];
-                then if [ -e /etc/init.d/libvirt-bin ];
-                    then ln -s /etc/init.d/libvirt-bin /etc/init.d/libvirtd;
-                    else exit 1;
-                    fi
-                fi"""
+        cmd = "if [ ! -e /etc/init.d/libvirtd ]; " + \
+            "  then if [ -e /etc/init.d/libvirt-bin ]; " + \
+            "       then ln -s /etc/init.d/libvirt-bin /etc/init.d/libvirtd; " + \
+            "       else exit 1; " + \
+            "        fi " + \
+            "fi"
         check_libvirt = self.fact.get_remote(cmd, self.hosts).run()
         self._actions_hosts(check_libvirt)
 
