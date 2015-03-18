@@ -176,7 +176,7 @@ def distribute_vms(vms, hosts, distribution='round-robin'):
                     remaining = attr[host].copy()
 
     elif distribution == 'n_by_hosts':
-        n_by_host = int(len(vms)/len(hosts))
+        n_by_host = int(len(vms) / len(hosts))
         i_vm = 0
         for host in hosts:
             for i in range(n_by_host):

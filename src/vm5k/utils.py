@@ -191,7 +191,7 @@ def get_CPU_RAM_FLOPS(hosts):
 def get_fastest_host(hosts):
         """ Use the G5K api to have the fastest node"""
         attr = get_CPU_RAM_FLOPS(hosts)
-        max_flops = -1  
+        max_flops = -1
         for host in hosts:
             if isinstance(host, Host):
                 host = host.address
@@ -231,8 +231,8 @@ def get_vms_slot(vms, elements, slots, excluded_elements=None):
 
     if 'grid5000' in elements:
         clusters = [cluster for cluster in get_g5k_clusters()
-                         if cluster not in excluded_elements
-                          and get_cluster_site not in excluded_elements]
+                    if cluster not in excluded_elements
+                    and get_cluster_site not in excluded_elements]
     else:
         clusters = [element for element in elements
                     if element in get_g5k_clusters()
