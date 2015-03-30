@@ -36,7 +36,7 @@ class VMBootMeasurement(vm5k_engine_para):
             'vm_boot_policy': ['all_at_once','one_then_others'],
             'number_of_collocated_vms' : range(0,3),
             'load_injector': ['cpu','memory','mixed'],
-            'iteration': range(1,6),
+            'iteration': range(1,3),
             'nosharing': [0,1]}
 
         logger.debug(parameters)
@@ -52,7 +52,7 @@ required to attribute a number of IP/MAC for a parameter combination """
     def workflow(self, comb, hosts, ip_mac):
         """Perform a boot measurements on the VM """
         host = hosts[0]
-
+	comb['host'] = host.split('.')[0];
         logger.debug('hosts %s', host)
         logger.debug('ip_mac %s', ip_mac)
 
