@@ -180,7 +180,7 @@ class vm5k_deployment():
         with a bridged network for the virtual machines, and restart service.
         """
         self._enable_bridge()
-        self._libvirt_check_service()
+#        self._libvirt_check_service()
         self._libvirt_uniquify()
         self._libvirt_bridged_network(bridge)
         logger.info('Restarting %s', style.emph('libvirt'))
