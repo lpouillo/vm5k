@@ -205,7 +205,7 @@ class VMBootMeasurement(vm5k_engine_para):
                 vm['host'] = hosts[0]
 
             # Create disks, install vms and boot by core
-            logger.info(thread_name + ': Creating disks')
+            logger.info(thread_name + 'Creating disks')
 
             create = create_disks(vms).run()
             if not create.ok:
@@ -220,7 +220,7 @@ class VMBootMeasurement(vm5k_engine_para):
                              slugify(comb))
                 exit()
 
-            logger.info(thread_name + ' Starting VMS ' +
+            logger.info(thread_name + 'Starting VMS ' +
                         ', '.join([vm['id'] for vm in sorted(vms)]))
 
             logger.debug(thread_name + 'Sucessfully clear fs cache')
