@@ -214,7 +214,7 @@ else:
 
 # Start message
 print_step('VM5K: deployment of VMs on Grid\'5000 *')
-logger.info('Version ' + version)
+logger.info('Version ' + __version__)
 
 # Set demo values for n_vm and walltime
 if args.n_vm is None and args.infile is None:
@@ -383,7 +383,7 @@ else:
                           check_deploy=not args.forcedeploy)
     if args.packages_management:
         print_step('Managing packages')
-        vm5k.packages_management(upgrade=args.upgrade,
+        vm5k.packages_management(upgrade=args.packages_upgrade,
                                  other_packages=args.other_packages,
                                  launch_disk_copy=True,
                                  apt_cacher=args.aptcacher)
