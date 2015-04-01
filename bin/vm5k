@@ -30,7 +30,7 @@ from vm5k import vm5k_deployment, define_vms, get_oar_job_vm5k_resources, \
 ##############################################################################
 # INITIALIZATION
 ##############################################################################
-version = '0.6.1'
+__version__ = '0.7-dev'
 execution_time = {}
 timer = Timer()
 
@@ -74,7 +74,7 @@ run.add_argument("-h", "--help",
                  help="show this help message and exit")
 run.add_argument('--version',
                  action='version',
-                 version='%(prog)s ' + version)
+                 version='%(prog)s ' + __version__)
 
 optio = run.add_mutually_exclusive_group()
 optio.add_argument("-v", "--verbose",
@@ -148,6 +148,10 @@ optdeploy.add_argument('--nodeploy',
                        'configured')
 hosts.add_argument('--no-packages-management',
                    dest='packages_management',
+                   action='store_false',
+                   help='disable package management')
+hosts.add_argument('--no-packages-upgrade',
+                   dest='packages_upgrade',
                    action='store_false',
                    help='disable package management')
 hosts.add_argument('--other-packages',
@@ -379,7 +383,7 @@ else:
                           check_deploy=not args.forcedeploy)
     if args.packages_management:
         print_step('Managing packages')
-        vm5k.packages_management(upgrade=True,
+        vm5k.packages_management(upgrade=args.upgrade,
                                  other_packages=args.other_packages,
                                  launch_disk_copy=True,
                                  apt_cacher=args.aptcacher)
