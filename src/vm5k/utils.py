@@ -27,10 +27,13 @@ from execo import logger, Host
 from execo.log import style
 from execo_g5k import get_oar_job_nodes, get_oargrid_job_oar_jobs, \
     get_oar_job_subnets, get_oar_job_kavlan, wait_oar_job_start, \
-    wait_oargrid_job_start, distribute_hosts
+    wait_oargrid_job_start, distribute_hosts, get_planning, \
+    OarSubmission
+from execo.time_utils import get_seconds
 from execo_g5k.api_utils import get_host_cluster, get_g5k_clusters, \
     get_host_attributes, get_resource_attributes, get_cluster_site, \
-    get_g5k_sites, get_site_clusters
+    get_g5k_sites, get_site_clusters, get_host_longname, get_host_site
+from execo_g5k.planning import _slots_limits
 
 from xml.etree.ElementTree import tostring
 
@@ -186,6 +189,48 @@ def get_CPU_RAM_FLOPS(hosts):
 
     logger.debug(hosts_list(hosts_attr))
     return hosts_attr
+
+
+def get_hosts_jobs(hosts, walltime, out_of_chart=False):
+    """Find the first slot when the hosts are available and return a
+     list of jobs_specs
+
+    :param hosts: list of hosts
+
+    :param walltime: duration of reservation
+    """
+    hosts = map(lambda x: x.address if isinstance(x, Host) else x, hosts)
+    planning = get_planning(elements=hosts, out_of_chart=out_of_chart)
+    limits = _slots_limits(planning)
+    walltime = get_seconds(walltime)
+    for limit in limits:
+        all_host_free = True
+        for site_planning in planning.itervalues():
+            for cluster, cluster_planning in site_planning.iteritems():
+                if cluster in get_g5k_clusters():
+                    for host_planning in cluster_planning.itervalues():
+                        host_free = False
+                        for free_slot in host_planning['free']:
+                            if free_slot[0] <= limit and free_slot[1] >= limit + walltime:
+                                host_free = True
+                        if not host_free:
+                            all_host_free = False
+        if all_host_free:
+            startdate = limit
+            break
+    else:
+        return None
+
+    jobs_specs = []
+    for site in planning.keys():
+        site_hosts = map(get_host_longname,
+                         filter(lambda h: get_host_site(h) == site,
+                                hosts))
+        sub_res = "{host in ('" + "','".join(site_hosts) + "')}/nodes=" + str(len(site_hosts))
+        jobs_specs.append((OarSubmission(resources=sub_res,
+                                         reservation_date=startdate), site))
+
+    return jobs_specs
 
 
 def get_fastest_host(hosts):
