@@ -431,7 +431,7 @@ class VMBootMeasurement(vm5k_engine_para):
 
     def setup_hosts(self):
         """ """
-
+        disks = ['/home/lpouilloux/synced/images/benchs_vms.qcow2']
         logger.info('Initialize vm5k_deployment')
         setup = vm5k_deployment(resources=self.resources,
             env_name=self.options.env_name, env_file=self.options.env_file)
@@ -440,16 +440,14 @@ class VMBootMeasurement(vm5k_engine_para):
                                 fileget_tool=SCP)
         logger.info('Deploy hosts')
         setup.hosts_deployment()
+        setup._start_disk_copy(disks)
         logger.info('Install packages')
         setup.packages_management(other_packages='sysstat')
         logger.info('Configure libvirt')
         setup.configure_libvirt()
         logger.info('Create backing file')
-        setup._create_backing_file(disks=['/home/lpouilloux/synced/images/benchs_vms.qcow2'])
+        setup._create_backing_file(disks=disks)
 
-        f = open(self.result_dir + '/hosts')
-        f.write(h + "\n" for h in setup.hosts)
-        f.close()
 
 if __name__ == "__main__":
     engine = VMBootMeasurement()
