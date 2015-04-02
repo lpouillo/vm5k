@@ -219,6 +219,7 @@ def get_hosts_jobs(hosts, walltime, out_of_chart=False):
             startdate = limit
             break
     else:
+        logger.error('Unable to find a slot for %s', hosts)
         return None
 
     jobs_specs = []
