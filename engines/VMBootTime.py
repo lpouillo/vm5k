@@ -325,12 +325,12 @@ class VMBootMeasurement(vm5k_engine_para):
                         vms_sda_stat.append(p.stdout.strip())
 
                     get_ssh_up = TaktukRemote('grep listening /var/log/auth.log'
-                                              ' |grep 0.0.0.0|awk \'{print $1" "$2"'
+                                              ' |grep 0.0.0.0|awk \'{print $1" "$2" '
                                               '"$3}\' | tail -n 1',
                                               [vm['ip'] for vm in others_vms]).run()
 
                     for p in get_ssh_up.processes:
-                        ssh_up = time.mktime(datetime.datetime.strptime('2014 ' + \
+                        ssh_up = time.mktime(datetime.datetime.strptime(datetime.date.today().year + \
                                 p.stdout.strip(), "%Y %b %d %H:%M:%S").timetuple())
                         boot_duration[p.host.address] = str(ssh_up - boot_time[p.host.address])
 
