@@ -452,7 +452,7 @@ class VMBootMeasurement(vm5k_engine_para):
         setup.configure_libvirt()
         logger.info('Rebooting hosts')
         Remote('reboot', setup.hosts).run()
-        sleep(100)
+        sleep(120)
         logger.info('Create backing file')
         setup._create_backing_file(disks=disks)
 
