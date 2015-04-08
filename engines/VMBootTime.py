@@ -39,7 +39,7 @@ class VMBootMeasurement(vm5k_engine_para):
             'load_injector': ['cpu', 'memory', 'mixed'],
             'iteration': range(1, 3),
             'nosharing': [0, 1]}
-
+  
         logger.debug(parameters)
 
         return parameters
@@ -48,7 +48,7 @@ class VMBootMeasurement(vm5k_engine_para):
         """Calculate the number of virtual machines in the combination,
         required to attribute a number of IP/MAC for a parameter combination
         """
-        n_vm = comb['n_vm'] + comb['n_vm'] * comb['number_of_collocated_vms']
+        n_vm = comb['n_vm'] + comb['number_of_collocated_vms']
         return n_vm
 
     def workflow(self, comb, hosts, ip_mac):
@@ -56,7 +56,8 @@ class VMBootMeasurement(vm5k_engine_para):
         host = hosts[0]
         logger.debug('hosts %s', host)
         logger.debug('ip_mac %s', ip_mac)
-
+        print hosts
+        print ip_mac
         thread_name = style.Thread(host.split('.')[0]) + ': '
         comb_ok = False
 
@@ -455,7 +456,6 @@ class VMBootMeasurement(vm5k_engine_para):
         sleep(120)
         logger.info('Create backing file')
         setup._create_backing_file(disks=disks)
-
 
 if __name__ == "__main__":
     engine = VMBootMeasurement()
