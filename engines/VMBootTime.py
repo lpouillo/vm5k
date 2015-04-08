@@ -260,7 +260,7 @@ class VMBootMeasurement(vm5k_engine_para):
 
                 boot_duration = {}
                 for p in get_ssh_up.processes:
-                    ssh_up = time.mktime(datetime.datetime.strptime('2014 ' + \
+                    ssh_up = time.mktime(datetime.datetime.strptime(str(datetime.date.today().year)+' ' + \
                                                                     p.stdout.strip(), "%Y %b %d %H:%M:%S").timetuple())
                     boot_duration[p.host.address] = str(ssh_up - boot_time[p.host.address])
 
@@ -330,7 +330,7 @@ class VMBootMeasurement(vm5k_engine_para):
                                               [vm['ip'] for vm in others_vms]).run()
 
                     for p in get_ssh_up.processes:
-                        ssh_up = time.mktime(datetime.datetime.strptime(datetime.date.today().year + \
+                        ssh_up = time.mktime(datetime.datetime.strptime(str(datetime.date.today().year) + ' '+ \
                                 p.stdout.strip(), "%Y %b %d %H:%M:%S").timetuple())
                         boot_duration[p.host.address] = str(ssh_up - boot_time[p.host.address])
 
