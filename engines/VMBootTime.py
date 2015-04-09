@@ -4,8 +4,7 @@ from vm5k.engine import *
 import string
 import random
 import datetime
-from vm5k.utils import get_hosts_jobs
-from execo_g5k import find_free_slot
+from vm5k.utils import get_hosts_jobs, wait_hosts_up
 
 
 class VMBootMeasurement(vm5k_engine_para):
@@ -39,7 +38,7 @@ class VMBootMeasurement(vm5k_engine_para):
             'load_injector': ['cpu', 'memory', 'mixed'],
             'iteration': range(1, 3),
             'nosharing': [0, 1]}
-  
+
         logger.debug(parameters)
 
         return parameters
@@ -48,24 +47,24 @@ class VMBootMeasurement(vm5k_engine_para):
         """Calculate the number of virtual machines in the combination,
         required to attribute a number of IP/MAC for a parameter combination
         """
-        n_vm = comb['n_vm'] + comb['number_of_collocated_vms']
+        n_vm = comb['n_vm'] * (1 + comb['number_of_collocated_vms'])
         return n_vm
 
     def workflow(self, comb, hosts, ip_mac):
         """Perform a boot measurements on the VM """
+        logger.setLevel('DEBUG')
         host = hosts[0]
         logger.debug('hosts %s', host)
         logger.debug('ip_mac %s', ip_mac)
-        print hosts
-        print ip_mac
-        thread_name = style.Thread(host.split('.')[0]) + ': '
-        comb_ok = False
 
+        thread_name = style.Thread(host.split('.')[0]) + ': '
+
+        comb_ok = False
         mpstat = None
 
         try:
             logger.info(thread_name)
-            logger.info(style.step(' Performing combination \n') +
+            logger.info(style.step(' Performing combination') + '\n' +
                         slugify(comb))
 
             logger.info(thread_name + 'Destroying all vms on hosts')
@@ -396,6 +395,7 @@ class VMBootMeasurement(vm5k_engine_para):
                                ' has been canceled')
             logger.info(style.step('%s Remaining'),
                         len(self.sweeper.get_remaining()))
+            logger.setLevel('INFO')
 
     def cache_bench(self, vms):
         """Prepare a benchmark command with cachebench"""
@@ -453,9 +453,12 @@ class VMBootMeasurement(vm5k_engine_para):
         setup.configure_libvirt()
         logger.info('Rebooting hosts')
         Remote('reboot', setup.hosts).run()
-        sleep(120)
+        logger.setLevel('DEBUG')
+        wait_hosts_up(setup.hosts)
+        logger.setLevel('INFO')
         logger.info('Create backing file')
         setup._create_backing_file(disks=disks)
+
 
 if __name__ == "__main__":
     engine = VMBootMeasurement()
