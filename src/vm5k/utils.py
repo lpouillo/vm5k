@@ -18,12 +18,14 @@
 
 
 import copy
+from os import fdopen
+from tempfile import mkstemp
 from pprint import pformat
 from xml.dom import minidom
 from random import randint
 from itertools import cycle
 from math import floor
-from execo import logger, Host
+from execo import logger, Host, Process, Timer
 from execo.log import style
 from execo_g5k import get_oar_job_nodes, get_oargrid_job_oar_jobs, \
     get_oar_job_subnets, get_oar_job_kavlan, wait_oar_job_start, \
@@ -48,6 +50,30 @@ def hosts_list(hosts, separator=' '):
     return separator.join([style.host(host.split('.')[0])
                            for host in sorted(tmp_hosts)])
 
+
+def wait_hosts_up(hosts, timeout=300):
+    """ """
+    down_hosts = map(lambda x: x.address if isinstance(x, Host) else x,
+                     hosts)
+    fd, hosts_file = mkstemp(dir='/tmp/', prefix='hosts_')
+    f = fdopen(fd, 'w')
+    f.write('\n' + '\n'.join(down_hosts))
+    f.close()
+    timer = Timer()
+    while len(down_hosts) > 0 and timer.elapsed() < timeout:
+        nmap = Process("nmap -v -oG - -i %s -p 22 |grep Status" %
+                       (hosts_file, )).run()
+        logger.debug('timer: %s \nnmap output: \n%s', timer.elapsed(),
+                     nmap.stdout)
+        for line in nmap.stdout.strip().split('\n'):
+            split_line = line.split(' ')
+            host = split_line[2]
+            if host in down_hosts:
+                logger.info('%s is up', host)
+                down_hosts.remove(host)
+    Process('rm ' + hosts_file).run()
+
+    return len(down_hosts) == 0
 
 def get_oar_job_vm5k_resources(jobs):
     """Retrieve the hosts list and (ip, mac) list from a list of oar_job and
