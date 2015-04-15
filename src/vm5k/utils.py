@@ -25,7 +25,7 @@ from xml.dom import minidom
 from random import randint
 from itertools import cycle
 from math import floor
-from execo import logger, Host, Process, Timer
+from execo import logger, Host, Process, Timer, Remote, sleep
 from execo.log import style
 from execo_g5k import get_oar_job_nodes, get_oargrid_job_oar_jobs, \
     get_oar_job_subnets, get_oar_job_kavlan, wait_oar_job_start, \
@@ -51,6 +51,43 @@ def hosts_list(hosts, separator=' '):
                            for host in sorted(tmp_hosts)])
 
 
+def reboot_hosts(hosts, timeout=300):
+    """ """
+    reboot = Remote('reboot', hosts).run()
+    if not reboot.ok:
+        return False
+    wait_hosts_down(hosts, timeout)
+    wait_hosts_up(hosts, timeout)
+
+
+def wait_hosts_down(hosts, timeout=300):
+    """ """
+    up_hosts = map(lambda x: x.address if isinstance(x, Host) else x,
+                   hosts)
+    fd, hosts_file = mkstemp(dir='/tmp/', prefix='hosts_')
+    f = fdopen(fd, 'w')
+    f.write('\n' + '\n'.join(up_hosts))
+    f.close()
+    timer = Timer()
+    while len(up_hosts) > 0 and timer.elapsed() < timeout:
+        nmap = Process("nmap -v -oG - -i %s -p 22 |grep Host|grep Status" %
+                       (hosts_file, ), shell=True).run()
+        logger.debug('timer: %s \nnmap output: \n%s', timer.elapsed(),
+                     nmap.stdout.strip())
+        for line in nmap.stdout.strip().split('\n'):
+            if 'Down' in line:
+                ip = line.split()[1]
+                get_host = Process('host ' + ip + '| cut -f 5 -d " "',
+                                   shell=True).run()
+                host = get_host.stdout.strip()[0:-1]
+                if host in up_hosts:
+                    logger.detail(host + ' is down')
+                    up_hosts.remove(host)
+    Process('rm ' + hosts_file).run()
+
+    return len(up_hosts) == 0
+
+
 def wait_hosts_up(hosts, timeout=300):
     """ """
     down_hosts = map(lambda x: x.address if isinstance(x, Host) else x,
@@ -61,19 +98,20 @@ def wait_hosts_up(hosts, timeout=300):
     f.close()
     timer = Timer()
     while len(down_hosts) > 0 and timer.elapsed() < timeout:
-        nmap = Process("nmap -v -oG - -i %s -p 22 |grep Status" %
-                       (hosts_file, )).run()
+        nmap = Process("nmap -v -oG - -i %s -p 22 |grep Host|grep Status" %
+                       (hosts_file, ), shell=True).run()
         logger.debug('timer: %s \nnmap output: \n%s', timer.elapsed(),
-                     nmap.stdout)
+                     nmap.stdout.strip())
         for line in nmap.stdout.strip().split('\n'):
-            split_line = line.split(' ')
-            host = split_line[2]
+            s = line.split()[2]
+            host = s[s.find("(") + 1:s.find(")")]
             if host in down_hosts:
-                logger.info('%s is up', host)
+                logger.detail('%s is up', host)
                 down_hosts.remove(host)
     Process('rm ' + hosts_file).run()
-
+    sleep(3)
     return len(down_hosts) == 0
+
 
 def get_oar_job_vm5k_resources(jobs):
     """Retrieve the hosts list and (ip, mac) list from a list of oar_job and
