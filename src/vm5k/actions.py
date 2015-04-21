@@ -340,10 +340,7 @@ def wait_vms_have_started(vms, restart=True):
         f.write(vm['ip'] + '\n')
     f.close()
     # getting the list of host
-    hosts = []
-    for vm in vms:
-        if vm['host'] not in hosts:
-            hosts.append(vm['host'])
+    hosts = list(set([vm['host'] for vm in vms]))
     hosts.sort()
     # Pushing file on all hosts
     TaktukPut(hosts, [tmpfile]).run()
