@@ -86,6 +86,9 @@ class vm5k_engine(Engine):
         self.options_parser.add_option("-o", dest="outofchart",
                     help="Run the engine outside days",
                     action="store_true")
+        self.options_parser.add_option("--no-hosts-setup",
+                                       action="store_true",
+                                       help="use hosts in current state")
         self.options_parser.add_argument("cluster",
                         "The cluster on which to run the experiment")
 
@@ -246,7 +249,8 @@ class vm5k_engine_para(vm5k_engine):
                 # Retrieving the hosts and subnets parameters
                 self.get_resources()
                 # Hosts deployment and configuration
-                self.setup_hosts()
+                if not self.options.no_hosts_setup:
+                    self.setup_hosts()
                 if len(self.hosts) == 0:
                     break
 
