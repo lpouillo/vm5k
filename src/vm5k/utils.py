@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Vm5k.  If not, see <http://www.gnu.org/licenses/>
 
-
+import re
 import copy
 from os import fdopen
 from tempfile import mkstemp
@@ -34,11 +34,23 @@ from execo_g5k import get_oar_job_nodes, get_oargrid_job_oar_jobs, \
 from execo.time_utils import get_seconds
 from execo_g5k.api_utils import get_host_cluster, get_g5k_clusters, \
     get_host_attributes, get_resource_attributes, get_cluster_site, \
-    get_g5k_sites, get_site_clusters, get_host_longname, get_host_site
+    get_g5k_sites, get_site_clusters, get_host_site
 from execo_g5k.planning import _slots_limits
 
 from xml.etree.ElementTree import tostring
 
+__host_longname_regex = re.compile("^([^.]*)(\.([^.]+))?")
+def get_host_longname(host):
+    """Convert, if needed, the host name to a grid5000 fully qualified name"""
+    if isinstance(host, Host):
+        host = host.address
+    mo = __host_longname_regex.match(host)
+    host_shortname = mo.group(1)
+    if mo.group(3):
+        host_site = mo.group(3)
+    else:
+        host_site = get_host_site(host_shortname)
+    return host_shortname + "." + host_site + ".grid5000.fr"
 
 def hosts_list(hosts, separator=' '):
     """Return a formatted string from a list of hosts"""
