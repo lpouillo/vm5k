@@ -180,7 +180,7 @@ class vm5k_deployment():
         with a bridged network for the virtual machines, and restart service.
         """
         self._enable_bridge()
-#        self._libvirt_check_service()
+        self._libvirt_check_service()
         self._libvirt_uniquify()
         self._libvirt_bridged_network(bridge)
         logger.info('Restarting %s', style.emph('libvirt'))
@@ -482,14 +482,14 @@ class vm5k_deployment():
         # Create sources.list file
         fd, tmpsource = mkstemp(dir='/tmp/', prefix='sources.list_')
         f = fdopen(fd, 'w')
-        f.write('deb http://ftp.debian.org/debian stable main contrib non-free\n' + \
+        f.write('deb http://ftp.debian.org/debian wheezy main contrib non-free\n' + \
                 'deb http://ftp.debian.org/debian wheezy-backports main contrib non-free\n' + \
                 'deb http://security.debian.org/ wheezy/updates main contrib non-free\n')
         f.close()
         # Create preferences file
         fd, tmppref = mkstemp(dir='/tmp/', prefix='preferences_')
         f = fdopen(fd, 'w')
-        f.write('Package: * \nPin: release a=stable \nPin-Priority: 900\n\n' + \
+        f.write('Package: * \nPin: release a=wheezy \nPin-Priority: 900\n\n' + \
                 'Package: * \nPin: release a=wheezy-backports \nPin-Priority: 875\n\n')
         f.close()
         # Create apt.conf file
@@ -524,7 +524,7 @@ class vm5k_deployment():
         base_packages = 'uuid-runtime bash-completion taktuk locate htop init-system-helpers netcat-traditional'
         logger.info('Installing base packages \n%s', style.emph(base_packages))
         cmd = 'export DEBIAN_MASTER=noninteractive ; apt-get update && apt-get ' + \
-            'install -y --force-yes ' + base_packages
+            'install -y --force-yes --no-install-recommends ' + base_packages
         install_base = self.fact.get_remote(cmd, self.hosts).run()
         self._actions_hosts(install_base)
         if launch_disk_copy:
@@ -810,6 +810,7 @@ class vm5k_deployment():
         if len(self.hosts) == 0:
             logger.error('No hosts available, because %s are KO',
                          hosts_list(hosts_ko))
+            exit()
 
         if self.vms:
             distribute_vms(self.vms, self.hosts, self.distribution)
