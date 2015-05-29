@@ -150,9 +150,9 @@ hosts.add_argument('--no-packages-management',
                    dest='packages_management',
                    action='store_false',
                    help='disable package management')
-hosts.add_argument('--no-packages-upgrade',
+hosts.add_argument('--packages-upgrade',
                    dest='packages_upgrade',
-                   action='store_false',
+                   action='store_true',
                    help='disable package management')
 hosts.add_argument('--other-packages',
                    dest='other_packages',
