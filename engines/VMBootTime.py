@@ -3,8 +3,9 @@ from vm5k.engine import *
 #from itertools import product, repeat
 import string
 import random
-import datetime
-from vm5k.utils import get_hosts_jobs, wait_hosts_up
+import os
+from vm5k.utils import get_hosts_jobs, reboot_hosts
+from execo import logger as exlog
 
 
 class VMBootMeasurement(vm5k_engine_para):
@@ -26,20 +27,20 @@ class VMBootMeasurement(vm5k_engine_para):
 
     def define_parameters(self):
         """Define the parameters you want to explore"""
-        #self.cpu_topology = get_cpu_topology(cluster, xpdir=self.result_dir)
         parameters = {
-            'n_mem': range(1, self.options.n_mem + 1),
-            'n_cpu': range(1, self.options.n_cpu + 1),
-            'n_vm': range(1, self.options.n_vm + 1),
-            'vm_policy': ['one_vm_per_core', 'vm_one_core'],
-            'image_policy': ['one', 'one_per_vm'],
-            'vm_boot_policy': ['all_at_once', 'one_then_others'],
-            'number_of_collocated_vms': range(0, 3),
-            'load_injector': ['cpu', 'memory', 'mixed'],
-            'iteration': range(1, 3),
-            'nosharing': [0, 1]}
+            'n_vm':           range(1, self.options.n_vm + 1),
+            'n_co_vms':       range(0, 3),
+            'n_mem':          range(1, self.options.n_mem + 1),
+            'n_cpu':          range(1, self.options.n_cpu + 1),
+            'cpu_sharing':    [True, False],
+            'cpu_policy':     ['one_core', 'one_by_core'],
+            'image_policy':   ['one', 'one_per_vm'],
+            'boot_policy':    ['all_at_once', 'one_then_others'],
+            'load_injector':  ['cpu', 'memory', 'mixed'],
+            'iteration':      range(1, 3)}
 
-        logger.debug(parameters)
+        logger.info('Exploring the following parameters \n%s',
+                    pformat(parameters))
 
         return parameters
 
@@ -47,12 +48,10 @@ class VMBootMeasurement(vm5k_engine_para):
         """Calculate the number of virtual machines in the combination,
         required to attribute a number of IP/MAC for a parameter combination
         """
-        n_vm = comb['n_vm'] * (1 + comb['number_of_collocated_vms'])
-        return n_vm
+        return comb['n_vm'] * (1 + comb['n_co_vms'])
 
     def workflow(self, comb, hosts, ip_mac):
         """Perform a boot measurements on the VM """
-        logger.setLevel('DEBUG')
         host = hosts[0]
         logger.debug('hosts %s', host)
         logger.debug('ip_mac %s', ip_mac)
@@ -60,7 +59,6 @@ class VMBootMeasurement(vm5k_engine_para):
         thread_name = style.Thread(host.split('.')[0]) + ': '
 
         comb_ok = False
-        mpstat = None
 
         try:
             logger.info(thread_name)
@@ -69,322 +67,69 @@ class VMBootMeasurement(vm5k_engine_para):
 
             logger.info(thread_name + 'Destroying all vms on hosts')
             destroy_vms(hosts, undefine=True)
-            sleep(30)
 
-            cpusets = []
-            collocated_cpusets = []
+            self.umount_mount_tmp(host)
 
-            if comb['vm_policy'] == 'one_vm_per_core':
-                for i in range(comb['n_vm']):
-                    cpusets.append(','.join(str(i)
-                                            for j in range(comb['n_cpu'])))
-            else:
-                for i in range(comb['n_vm']):
-                    cpusets.append(str(0))
+            vms = self.create_vms(comb, host, ip_mac)
+            logger.info('VMs are ready to be started')
 
-            backing_file = '/home/lpouilloux/synced/images/benchs_vms.qcow2'
-            real_file = True if comb['image_policy'] == 'one_per_vm' else False
+            xpvms = filter(lambda v: 'covm' not in v['id'], vms)
+            covms = filter(lambda v: 'covm' in v['id'], vms)
 
-            umount = SshProcess('sync; echo 3 > /proc/sys/vm/drop_caches; '
-                                'umount /tmp; sleep 5; mount /tmp',
-                                hosts[0], shell=True).run()
-
-            retry = 10
-
-            while (not umount.finished_ok) and (retry > 0):
-                lsof = SshProcess('lsof /tmp; virsh list', hosts[0],
-                                  ignore_exit_code=True,
-                                  nolog_exit_code=True).run()
-                logger.info(host + ' : lsof /tmp : %s', lsof.stdout.strip())
-                sleep(5)
-                umount.reset()
-                umount.run()
-                retry -= 1
-
-            if not umount.finished_ok:
-                logger.error(thread_name + 'Failed to unmount /tmp for  %s (%s)',
-                             slugify(comb), str(retry))
-                logger.error(thread_name + 'mount/umount error : %s %s',
-                             umount.stdout.strip(),
-                             umount.stderr.strip())
-                exit()
-
-            if comb['number_of_collocated_vms'] > 0:
-                if comb['nosharing'] == 1:
-                    vms_ids = ['collocated-vm-' + str(i)
-                               for i in range(comb['number_of_collocated_vms'])]
-                    collocated_ip_mac = ip_mac[0:comb['number_of_collocated_vms']]
-                    ip_mac = ip_mac[comb['number_of_collocated_vms']:]
-                    for k in range(comb['number_of_collocated_vms']):
-                        collocated_cpusets.append(str(comb['n_vm'] - 1 + k))
-                else:
-                    if comb['vm_policy'] == 'one_vm_per_core':
-                        vms_ids = ['collocated-vm-' + str(i)
-                                   for i in range(comb['n_vm'] * comb['number_of_collocated_vms'])]
-                        collocated_ip_mac = ip_mac[0:comb['n_vm'] * comb['number_of_collocated_vms']]
-                        ip_mac = ip_mac[comb['n_vm'] * comb['number_of_collocated_vms']:]
-                        for i in range(comb['n_vm']):
-                            for k in range(comb['number_of_collocated_vms']):
-                                collocated_cpusets.append(','.join(str(i)
-                                                                   for j in range(comb['n_cpu'])))
-                    else:
-                        vms_ids = ['collocated-vm-' + str(i)
-                                   for i in range(comb['number_of_collocated_vms'])]
-
-                        collocated_ip_mac = ip_mac[0:comb['number_of_collocated_vms']]
-                        ip_mac = ip_mac[comb['number_of_collocated_vms']:]
-
-                        for k in range(comb['number_of_collocated_vms']):
-                            collocated_cpusets.append(str(0))
-
-                # Define and start collocated VMS
-                collocated_vms = define_vms(vms_ids,
-                                            ip_mac=collocated_ip_mac,
-                                            host=hosts[0],
-                                            n_cpu=comb['n_cpu'],
-                                            cpusets=collocated_cpusets,
-                                            mem=comb['n_mem'] * 1024,
-                                            backing_file=backing_file,
-                                            real_file=real_file)
-
-                for vm in collocated_vms:
-                    vm['host'] = hosts[0]
-
-                # Create disks, install vms and boot by core
-                logger.info(thread_name + 'Creating disks for collocated VMs ( '+
-                            str(len(collocated_ip_mac))+' / '+str(len(collocated_vms))+' )')
-
-                create = create_disks(collocated_vms).run()
-                if not create.ok:
-                    logger.error(thread_name + 'Unable to create the VMS ' +
-                                 'disks %s for collocated VMs', slugify(comb))
-                    exit()
-
-                logger.info(thread_name + 'Installing VMS for collocated VMs')
-                install = install_vms(collocated_vms).run()
-                if not install.ok:
-                    logger.error(thread_name + 'Unable to install the VMS  %s ' +
-                                 'for collocated VMs', slugify(comb))
-                    exit()
-
-                logger.info(thread_name + 'Starting collocated VMS '
-                            + ', '.join([vm['id'] for vm in sorted(collocated_vms)]))
-
-                start_vms(collocated_vms).run()
-                booted = wait_vms_have_started(collocated_vms)
+            # Starting collocated VMs
+            if len(covms) > 0:
+                logger.info('Starting covms \n%s',
+                            "\n".join([vm['id'] + ': ' + vm['ip']
+                                      for vm in covms]))
+                start_vms(covms).run()
+                booted = wait_vms_have_started(covms)
                 if not booted:
-                    logger.error(thread_name + 'Unable to boot all the collocated '
-                                 + 'VMS for %s', slugify(comb))
+                    logger.error('Unable to boot all the coVMS for %s',
+                                     slugify(comb))
                     exit()
 
-                sleep(30)
-
+                # Inject load in covms
                 if comb['load_injector'] == 'cpu':
-                    injector = self.kflops(collocated_vms).start()
+                    injector = self.kflops(covms).start()
                 elif comb['load_injector'] == 'mem':
-                    injector = self.cache_bench(collocated_vms).start()
+                    injector = self.cache_bench(covms).start()
                 else:
                     mem = []
                     cpu = []
-                    for v in collocated_vms:
+                    for v in covms:
                         random.choice((mem, cpu)).append(v)
-                    injector = []
-                    injector.append(self.kflops(cpu).start())
-                    injector.append(self.cache_bench(mem).start())
+                        injector = []
+                        injector.append(self.kflops(cpu).start())
+                        injector.append(self.cache_bench(mem).start())
+                logger.info('Sleep 10 seconds to wait for stress to reach its maximum')
+                sleep(10)
+                logger.info('covms are up and run stress %s',
+                            comb['load_injector'])
 
-            # Define the virtual machines for the combination
-            vms = define_vms(['vm-' + str(i) for i in range(comb['n_vm'])],
-                             ip_mac=ip_mac,
-                             host=hosts[0],
-                             n_cpu=comb['n_cpu'],
-                             cpusets=cpusets,
-                             mem=comb['n_mem'] * 1024,
-                             backing_file=backing_file,
-                             real_file=real_file)
-            for vm in vms:
-                vm['host'] = hosts[0]
-
-            # Create disks, install vms and boot by core
-            logger.info(thread_name + 'Creating disks')
-
-            create = create_disks(vms).run()
-            if not create.ok:
-                logger.error(thread_name + 'Unable to create the VMS disks %s',
-                             slugify(comb))
-                exit()
-
-            logger.info(thread_name + 'Installing VMS')
-            install = install_vms(vms).run()
-            if not install.ok:
-                logger.error(thread_name + 'Unable to install the VMS  %s',
-                             slugify(comb))
-                exit()
-
-            logger.info(thread_name + 'Starting VMS ' +
-                        ', '.join([vm['id'] for vm in sorted(vms)]))
-
-            logger.debug(thread_name + 'Sucessfully clear fs cache')
-
-            mpstat = SshProcess('mpstat 5 -P ALL > /tmp/mpstats',
-                                hosts[0]).start()
-
-            now = time.time()
-
-            vms_sda_stat = []
-
-            if comb['vm_boot_policy'] == 'all_at_once':
-                start_vms(vms).run()
-                booted = wait_vms_have_started(vms)
-                if not booted:
-                    logger.error(thread_name + 'Unable to boot all the VMS for %s',
-                                 slugify(comb))
-                    exit()
-
-                sleep(30)
-                get_uptime = TaktukRemote('cat /proc/uptime',
-                                          [vm['ip'] for vm in vms]).run()
-                boot_time = {}
-                for p in get_uptime.processes:
-                    boot_time[p.host.address] = now - float(p.stdout.strip().split(' ')[0])
-
-                get_sda_stat = TaktukRemote('cat /sys/block/vda/stat',
-                                            [vm['ip'] for vm in vms]).run()
-
-                for p in get_sda_stat.processes:
-                    vms_sda_stat.append(p.stdout.strip())
-
-                get_ssh_up = TaktukRemote('grep listening /var/log/auth.log' +
-                                          ' |grep 0.0.0.0|awk \'{print $1" ' + 
-                                          '"$2" "$3}\' | tail -n 1',
-                                          [vm['ip'] for vm in vms]).run()
-
-                boot_duration = {}
-                for p in get_ssh_up.processes:
-                    ssh_up = time.mktime(datetime.datetime.strptime(str(datetime.date.today().year)+' ' + \
-                                                                    p.stdout.strip(), "%Y %b %d %H:%M:%S").timetuple())
-                    boot_duration[p.host.address] = str(ssh_up - boot_time[p.host.address])
-
-                #uptime = string.join(boot_duration, ",")
+            # Boot XP vms
+            logger.info('Booting xpvms %s\n%s', comb['boot_policy'],
+                        "\n".join([vm['id'] + ': ' + vm['ip']
+                                   for vm in xpvms]))
+            if comb['boot_policy'] == 'all_at_once':
+                start_vms(xpvms)
+                booted = wait_vms_have_started(xpvms)
             else:
-                first_vm = [vms[0]]
-
-                others_vms = vms[1:]
-
-                start_vms(first_vm).run()
+                first_vm = [xpvms[0]]
+                start_vms(first_vm)
                 booted = wait_vms_have_started(first_vm)
-                if not booted:
-                    logger.error(thread_name + 'Unable to boot all the first VMS for %s',
-                                 slugify(comb))
-                    exit()
+                if len(xpvms) > 1:
+                    other_vms = xpvms[1:]
+                    start_vms(other_vms)
+                    booted = wait_vms_have_started(other_vms)
 
-                sleep(30)
-
-                get_uptime = TaktukRemote('cat /proc/uptime', [vm['ip']
-                                    for vm in first_vm]).run()
-                boot_time = {}
-                for p in get_uptime.processes:
-                    boot_time[p.host.address] = now - float(p.stdout.strip().split(' ')[0])
-
-                get_sda_stat = TaktukRemote('cat /sys/block/vda/stat',
-                                [vm['ip'] for vm in first_vm]).run()
-
-                for p in get_sda_stat.processes:
-                    vms_sda_stat.append(p.stdout.strip())
-
-                get_ssh_up = TaktukRemote('grep listening /var/log/auth.log' + \
-                            ' |grep 0.0.0.0|awk \'{print $1" "$2" "$3}\' | tail -n 1',
-                            [vm['ip'] for vm in first_vm]).run()
-
-                boot_duration = {}
-                for p in get_ssh_up.processes:
-                    ssh_up = time.mktime(datetime.datetime.strptime('2014 ' + \
-                            p.stdout.strip(), "%Y %b %d %H:%M:%S").timetuple())
-                    boot_duration[p.host.address] = str(ssh_up - boot_time[p.host.address])
-
-                if len(others_vms) != 0:
-                    now = time.time()
-
-                    start_vms(others_vms).run()
-                    booted = wait_vms_have_started(others_vms)
-                    if not booted:
-                        logger.error(thread_name + 'Unable to boot all the other VMS for %s',
-                                     slugify(comb))
-                        exit()
-
-                    sleep(30)
-                    get_uptime = TaktukRemote('cat /proc/uptime',
-                                              [vm['ip'] for vm in others_vms]).run()
-                    boot_time = {}
-                    for p in get_uptime.processes:
-                        boot_time[p.host.address] = now - float(p.stdout.strip().split(' ')[0])
-
-                    get_sda_stat = TaktukRemote('cat /sys/block/vda/stat',
-                                                [vm['ip'] for vm in others_vms]).run()
-
-                    for p in get_sda_stat.processes:
-                        vms_sda_stat.append(p.stdout.strip())
-
-                    get_ssh_up = TaktukRemote('grep listening /var/log/auth.log'
-                                              ' |grep 0.0.0.0|awk \'{print $1" "$2" '
-                                              '"$3}\' | tail -n 1',
-                                              [vm['ip'] for vm in others_vms]).run()
-
-                    for p in get_ssh_up.processes:
-                        ssh_up = time.mktime(datetime.datetime.strptime(str(datetime.date.today().year) + ' '+ \
-                                p.stdout.strip(), "%Y %b %d %H:%M:%S").timetuple())
-                        boot_duration[p.host.address] = str(ssh_up - boot_time[p.host.address])
-
-            mpstat.kill()
-
-            # Get load on host
-            get_load = TaktukRemote('cat /proc/loadavg',
-                                    [hosts[0]]).run()
-
-            load_host = []
-
-            for p in get_load.processes:
-                load_host.append(p.stdout.strip())
-
-            load_data = string.join(load_host, ",")
-            # Gathering results
-            comb_dir = self.result_dir + '/' + slugify(comb) + '/'
-            try:
-                mkdir(comb_dir)
-            except:
-                logger.warning(thread_name + '%s already exists, removing '
-                               'existing files', comb_dir)
-                for f in listdir(comb_dir):
-                    remove(comb_dir + f)
-
-            logger.info(thread_name + 'Writing boot time in result files')
-
-            text_file = open(comb_dir + "boot_time.txt", "w")
-            for vm in vms:
-                text_file.write(boot_duration[vm['ip']] + ',' + vm['cpuset']
-                                + '\n')
-            text_file.write(load_data + '\n')
-            text_file.close()
-
-            text_file = open(comb_dir + "vms_sda_stat.txt", "w")
-            for sda_stat in vms_sda_stat:
-                text_file.write(sda_stat + '\n')
-            text_file.close()
-
-            get_mpstat_output = Get([hosts[0]], ['/tmp/mpstats'],
-                                    local_location=comb_dir).run()
-            for p in get_mpstat_output.processes:
-                if not p.ok:
-                    logger.error(thread_name + ' Unable to retrieve the files'
-                                 'for combination %s', slugify(comb))
-                    exit()
+            # Retrieves measurements on XPVms
+            boot_duration = self.get_boot_duration(xpvms)
+            if not self.save_results(host, comb, xpvms, boot_duration):
+                exit()
 
             comb_ok = True
 
         finally:
-            if mpstat is not None:
-                if not mpstat.ended:
-                    mpstat.kill()
-
             if comb_ok:
                 self.sweeper.done(comb)
                 logger.info(thread_name + slugify(comb) +
@@ -395,7 +140,6 @@ class VMBootMeasurement(vm5k_engine_para):
                                ' has been canceled')
             logger.info(style.step('%s Remaining'),
                         len(self.sweeper.get_remaining()))
-            logger.setLevel('INFO')
 
     def cache_bench(self, vms):
         """Prepare a benchmark command with cachebench"""
@@ -407,6 +151,112 @@ class VMBootMeasurement(vm5k_engine_para):
                               vms_ip)
 
         return stress
+
+    def get_boot_duration(self, vms):
+        """Boot duration is defined as the time f """
+        boot_duration = {}
+        cmd = 'grep "link up" /var/log/messages |grep eth0| tail -n 1 ' + \
+            '| awk \'{print $7}\''
+        get_boottime = TaktukRemote(cmd, [vm['ip'] for vm in vms]).run()
+        for p in get_boottime.processes:
+            boot_duration[p.host.address] = p.stdout.strip()[0:-1]
+        return boot_duration
+
+    def save_results(self, host, comb, vms, boot_duration):
+        # Gathering results
+        comb_dir = self.result_dir + '/' + slugify(comb) + '/'
+        if not os.path.exists(comb_dir):
+            os.mkdir(comb_dir)
+        else:
+            logger.warning('%s already exists, removing '
+                           'existing files', comb_dir)
+            for f in listdir(comb_dir):
+                remove(comb_dir + f)
+
+        logger.info('Writing boot time in result files')
+        print boot_duration
+        text_file = open(comb_dir + "boot_time.txt", "w")
+        for vm in vms:
+            text_file.write(boot_duration[vm['ip']] + ',' + vm['cpuset']
+                            + '\n')
+        text_file.close()
+
+        return True
+
+    def create_vms(self, comb, host, ip_mac):
+        """ """
+        # set the ID of the virtual machine
+        vms_ids = ['vm-' + str(i) for i in range(comb['n_vm'])] + \
+            ['covm-' + str(i) for i in range(comb['n_co_vms'] * comb['n_vm'])]
+        # set the disk
+        backing_file = '/home/lpouilloux/synced/images/benchs_vms.qcow2'
+        real_file = comb['image_policy'] == 'one_per_vm'
+        # set the CPU
+        n_cpu = comb['n_cpu']
+        if comb['cpu_policy'] == 'one_by_core':
+            cpusets = [','.join(str(i) for j in range(comb['n_cpu']))
+                       for i in range(comb['n_vm'])]
+            if comb['cpu_sharing']:
+                cpusets += [','.join(str(i) for j in range(comb['n_cpu']))
+                            for i in range(comb['n_vm'])] * comb['n_co_vms']
+            else:
+                cpusets += [str(comb['n_vm'] + k)
+                            for k in range(comb['n_co_vms'] * comb['n_vm'])]
+        else:
+            cpusets = [str(0)] * comb['n_vm']
+            if comb['cpu_sharing']:
+                cpusets += [str(0)] * comb['n_co_vms'] * comb['n_vm']
+            else:
+                cpusets += [str(1)] * comb['n_co_vms'] * comb['n_vm']
+        # set the memory
+        mem = comb['n_mem'] * 1024
+
+        # define all the virtual machines
+        vms = define_vms(vms_ids,
+                         host=host,
+                         ip_mac=ip_mac,
+                         n_cpu=n_cpu,
+                         cpusets=cpusets,
+                         mem=mem,
+                         backing_file=backing_file,
+                         real_file=real_file)
+
+        logger.info('Creating disks')
+        create = create_disks(vms).run()
+        if not create.ok:
+            logger.error('Unable to create the VMS disks for %s ',
+                         slugify(comb))
+            exit()
+        logger.info('Installing VMS')
+        install = install_vms(vms).run()
+        if not install.ok:
+            logger.error('Unable to install the VMS for %s ',
+                         slugify(comb))
+            exit()
+
+        return vms
+
+    def umount_mount_tmp(self, host, retry=10):
+        umount = SshProcess('sync; echo 3 > /proc/sys/vm/drop_caches; '
+                                'umount /tmp; sleep 5; mount /tmp',
+                                host, shell=True).run()
+
+        while (not umount.finished_ok) and (retry > 0):
+            lsof = SshProcess('lsof /tmp; virsh list', host,
+                              ignore_exit_code=True,
+                              nolog_exit_code=True).run()
+            logger.info(host + ' : lsof /tmp : %s', lsof.stdout.strip())
+            sleep(5)
+            umount.reset()
+            umount.run()
+            retry -= 1
+
+        if not umount.finished_ok:
+            logger.error('Failed to unmount /tmp for %s', host)
+            logger.error('mount/umount error : %s %s',
+                         umount.stdout.strip(),
+                         umount.stderr.strip())
+            exit()
 
     def kflops(self, vms):
         """Prepare a benchmark command with kflops"""
@@ -431,7 +281,6 @@ class VMBootMeasurement(vm5k_engine_para):
         startdate = sub.reservation_date
         self.oar_job_id, self.frontend = oarsub(jobs_specs)[0]
         logger.info('Startdate: %s, host: %s', format_date(startdate),
-
                     self.options.host)
 
     def setup_hosts(self):
@@ -452,10 +301,7 @@ class VMBootMeasurement(vm5k_engine_para):
         logger.info('Configure libvirt')
         setup.configure_libvirt()
         logger.info('Rebooting hosts')
-        Remote('reboot', setup.hosts).run()
-        logger.setLevel('DEBUG')
-        wait_hosts_up(setup.hosts)
-        logger.setLevel('INFO')
+        reboot_hosts(setup.hosts)
         logger.info('Create backing file')
         setup._create_backing_file(disks=disks)
 
