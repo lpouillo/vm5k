@@ -356,9 +356,9 @@ class vm5k_deployment():
         cmd = "if [ ! -e /etc/init.d/libvirtd ]; " + \
             "  then if [ -e /etc/init.d/libvirt-bin ]; " + \
             "       then ln -s /etc/init.d/libvirt-bin /etc/init.d/libvirtd; " + \
-            "       else exit 1; " + \
-            "        fi " + \
-            "fi"
+            "       else echo 1; " + \
+            "        fi; " + \
+            "else echo 0; fi"
         check_libvirt = self.fact.get_remote(cmd, self.hosts).run()
         self._actions_hosts(check_libvirt)
 
