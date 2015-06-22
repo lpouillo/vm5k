@@ -2,24 +2,24 @@
   <site id="luxembourg">
     <cluster id="granduc">
       <host id="granduc-2">
-        <vm mem="2048" hdd="4" id="vm-33" cpu="1"/>
-        <vm mem="2048" hdd="4" id="vm-34" cpu="1"/>
-        <vm mem="2048" hdd="4" id="vm-35" cpu="1"/>
-      </host>
-      <host id="granduc-9">
-        <vm mem="2048" hdd="4" id="vm-54" cpu="1"/>
-      </host>
-      <host id="granduc-5">
-        <vm mem="2048" hdd="4" id="vm-33" cpu="1"/>
-        <vm mem="2048" hdd="4" id="vm-34" cpu="1"/>
-        <vm mem="2048" hdd="4" id="vm-35" cpu="1"/>
-        <vm mem="2048" hdd="4" id="vm-33" cpu="1"/>
-        <vm mem="2048" hdd="4" id="vm-34" cpu="1"/>
+        <vm mem="2048" hdd="4" id="vm-11" cpu="1"/>
+        <vm mem="2048" hdd="4" id="vm-12" cpu="1"/>
+        <vm mem="2048" hdd="4" id="vm-13" cpu="1"/>
       </host>
       <host id="granduc-3">
-        <vm mem="2048" hdd="4" id="vm-36" cpu="1"/>
-        <vm mem="2048" hdd="4" id="vm-37" cpu="1"/>
-        <vm mem="2048" hdd="4" id="vm-38" cpu="1"/>
+        <vm mem="2048" hdd="4" id="vm-14" cpu="1"/>
+        <vm mem="2048" hdd="4" id="vm-15" cpu="1"/>
+        <vm mem="2048" hdd="4" id="vm-16" cpu="1"/>
+      </host>
+      <host id="granduc-5">
+        <vm mem="2048" hdd="4" id="vm-17" cpu="1"/>
+        <vm mem="2048" hdd="4" id="vm-18" cpu="1"/>
+        <vm mem="2048" hdd="4" id="vm-19" cpu="1"/>
+        <vm mem="2048" hdd="4" id="vm-20" cpu="1"/>
+        <vm mem="2048" hdd="4" id="vm-21" cpu="1"/>
+      </host>
+      <host id="granduc-9">
+        <vm mem="2048" hdd="4" id="vm-22" cpu="1"/>
       </host>
     </cluster>
   </site>
@@ -32,12 +32,12 @@
     </cluster>
     <cluster id="orion">
       <host id="orion-1">
-        <vm mem="2048" hdd="4" id="vm-38" cpu="1"/>
-        <vm mem="2048" hdd="4" id="vm-39" cpu="1"/>
+        <vm mem="2048" hdd="4" id="vm-32" cpu="1"/>
+        <vm mem="2048" hdd="4" id="vm-33" cpu="1"/>
       </host>
       <host id="orion-2">
-        <vm mem="2048" hdd="4" id="vm-30" cpu="1"/>
-        <vm mem="2048" hdd="4" id="vm-31" cpu="1"/>
+        <vm mem="2048" hdd="4" id="vm-34" cpu="1"/>
+        <vm mem="2048" hdd="4" id="vm-35" cpu="1"/>
       </host>
     </cluster>
   </site>
