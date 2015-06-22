@@ -9,7 +9,7 @@
       <host id="granduc-9">
         <vm mem="2048" hdd="4" id="vm-54" cpu="1"/>
       </host>
-      <host id="granduc-2">
+      <host id="granduc-5">
         <vm mem="2048" hdd="4" id="vm-33" cpu="1"/>
         <vm mem="2048" hdd="4" id="vm-34" cpu="1"/>
         <vm mem="2048" hdd="4" id="vm-35" cpu="1"/>
