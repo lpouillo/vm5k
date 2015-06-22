@@ -163,9 +163,9 @@ use it in vm5k with::
  vm5k --n_vm 600 -r grid5000:100 -w 2:00:00 -k -b reims
  
 When using global kavlan, i.e. a isolated VLAN on multiple sites, you must blacklist 
-reims due to `bug 4634 <https://intranet.grid5000.fr/bugzilla/show_bug.cgi?id=4634`_ 
 
 Use a topology file 
+reims due to `bug 4634 <https://intranet.grid5000.fr/bugzilla/show_bug.cgi?id=4634>`_
 ^^^^^^^^^^^^^^^^^^^
 .. _topology_file:
 
