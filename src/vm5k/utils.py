@@ -200,19 +200,27 @@ def get_kavlan_ip_mac(kavlan, site):
            [ip for ip in get_ipv4_range(tuple([int(part)
             for part in network.split('.')]), int(mask_size))
            if ip[3] not in [0, 254, 255] and ip[2] >= min_2]]
+    macs = get_mac_addresses(len(ips))
+
+    return zip(ips, macs)
+
+
+def get_mac_addresses(n):
+    """ """
     macs = []
-    for i in range(len(ips)):
-        mac = ':'.join(map(lambda x: "%02x" % x, [0x00, 0x020, 0x4e,
+    for i in range(n):
+        mac = _random_mac()
+        while mac in macs:
+            mac = _random_mac()
+        macs.append(mac)
+    return macs
+
+
+def _random_mac():
+    return ':'.join(map(lambda x: "%02x" % x, [0x00, 0x020, 0x4e,
                                                   randint(0x00, 0xff),
                                                   randint(0x00, 0xff),
                                                   randint(0x00, 0xff)]))
-        while mac in macs:
-            mac = ':'.join(map(lambda x: "%02x" % x, [0x00, 0x020, 0x4e,
-                                                      randint(0x00, 0xff),
-                                                      randint(0x00, 0xff),
-                                                      randint(0x00, 0xff)]))
-        macs.append(mac)
-    return zip(ips, macs)
 
 
 def get_ipv4_range(network, mask_size):
