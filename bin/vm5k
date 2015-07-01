@@ -196,10 +196,8 @@ service.add_argument('--aptcacher',
 args = parser.parse_args()
 
 # Create output directory and save execution log
-try:
+if not os.path.exists(args.outdir):
     os.mkdir(args.outdir)
-except os.error:
-    pass
 copy_outputs(args.outdir + '/vm5k.log', args.outdir + '/vm5k.log')
 
 # Set log level
