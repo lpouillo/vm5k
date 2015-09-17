@@ -44,9 +44,9 @@ def show_vms(vms):
                            for vm in vms]))
 
 
-def define_vms(vms_id, template=None, ip_mac=None, state=None, host=None,
-               n_cpu=None, cpusets=None, mem=None, hdd=None, backing_file=None,
-               real_file=None):
+def define_vms(vms_id, template=None, ip_mac=None, tap=None, state=None,
+               host=None, n_cpu=None, cpusets=None, mem=None, hdd=None,
+               backing_file=None, real_file=None):
     """Create a list of virtual machines, where VM parameter is a dict
     similar to
     {'id': None, 'host': None, 'ip': None, 'mac': None,
@@ -111,10 +111,12 @@ def define_vms(vms_id, template=None, ip_mac=None, state=None, host=None,
 
     ip_mac = [(None, None)] * n_vm if ip_mac is None else ip_mac
 
+    tap = [tap] * n_vm if not isinstance(tap, list) else tap
+
     vms = [{'id': vms_id[i], 'mem': mem[i], 'n_cpu': n_cpu[i],
             'cpuset': cpusets[i], 'hdd': hdd[i], 'host': host[i],
             'backing_file': backing_file[i], 'real_file': real_file[i],
-            'state': state[i],
+            'state': state[i], 'tap': tap[i],
             'ip': ip_mac[i][0], 'mac': ip_mac[i][1]} for i in range(n_vm)]
 
     logger.debug('VM parameters have been defined:\n%s',
@@ -294,7 +296,10 @@ def install_vms(vms):
             str(vm['mem']) + ' --disk path=/tmp/' + vm['id'] + \
             '.qcow2,device=disk,bus=virtio,format=qcow2,size=' + \
             str(vm['hdd']) + ',cache=none ' + \
-            '--vcpus=' + str(vm['n_cpu']) + ' --cpuset=' + vm['cpuset'] + ' ; '
+            '--vcpus=' + str(vm['n_cpu']) + ' --cpuset=' + vm['cpuset']
+        if vm['tap']:
+            cmd += '--network tap,script=no,ifname=' + vm['tap']
+        cmd += ' ; '
         hosts_cmds[vm['host']] = cmd if not vm['host'] in hosts_cmds \
             else hosts_cmds[vm['host']] + cmd
 
