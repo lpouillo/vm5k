@@ -38,29 +38,7 @@ from execo_g5k.api_utils import get_host_cluster, get_g5k_clusters, \
 from execo_g5k.planning import _slots_limits
 
 from xml.etree.ElementTree import tostring
-
-__host_longname_regex = re.compile("^([^.]*)(\.([^.]+))?")
-def get_host_longname(host):
-    """Convert, if needed, the host name to a grid5000 fully qualified name"""
-    if isinstance(host, Host):
-        host = host.address
-    mo = __host_longname_regex.match(host)
-    host_shortname = mo.group(1)
-    if mo.group(3):
-        host_site = mo.group(3)
-    else:
-        host_site = get_host_site(host_shortname)
-    return host_shortname + "." + host_site + ".grid5000.fr"
-
-def hosts_list(hosts, separator=' '):
-    """Return a formatted string from a list of hosts"""
-    tmp_hosts = copy.deepcopy(hosts)
-    for i, host in enumerate(tmp_hosts):
-        if isinstance(host, Host):
-            tmp_hosts[i] = host.address
-
-    return separator.join([style.host(host.split('.')[0])
-                           for host in sorted(tmp_hosts)])
+from execo_g5k.utils import get_ipv4_range, get_mac_addresses, hosts_list
 
 
 def reboot_hosts(hosts, timeout=300):
@@ -74,13 +52,13 @@ def reboot_hosts(hosts, timeout=300):
 
 def wait_hosts_down(hosts, timeout=300):
     """ """
+    timer = Timer()
     up_hosts = map(lambda x: x.address if isinstance(x, Host) else x,
                    hosts)
     fd, hosts_file = mkstemp(dir='/tmp/', prefix='hosts_')
-    f = fdopen(fd, 'w')
-    f.write('\n' + '\n'.join(up_hosts))
-    f.close()
-    timer = Timer()
+    with fdopen(fd, 'w') as f:
+        f.write('\n' + '\n'.join(up_hosts))
+
     while len(up_hosts) > 0 and timer.elapsed() < timeout:
         nmap = Process("nmap -v -oG - -i %s -p 22 |grep Host|grep Status" %
                        (hosts_file, ), shell=True).run()
@@ -130,8 +108,8 @@ def get_oar_job_vm5k_resources(jobs):
     return the resources dict needed by vm5k_deployment """
     resources = {}
     for oar_job_id, site in jobs:
-        logger.info('Retrieving resources from %s:%s',
-                    style.emph(site), oar_job_id)
+        logger.detail('Retrieving resources from %s:%s',
+                      style.emph(site), oar_job_id)
         oar_job_id = int(oar_job_id)
         wait_oar_job_start(oar_job_id, site)
         logger.debug('Retrieving hosts')
@@ -203,40 +181,6 @@ def get_kavlan_ip_mac(kavlan, site):
     macs = get_mac_addresses(len(ips))
 
     return zip(ips, macs)
-
-
-def get_mac_addresses(n):
-    """ """
-    macs = []
-    for i in range(n):
-        mac = _random_mac()
-        while mac in macs:
-            mac = _random_mac()
-        macs.append(mac)
-    return macs
-
-
-def _random_mac():
-    return ':'.join(map(lambda x: "%02x" % x, [0x00, 0x020, 0x4e,
-                                                  randint(0x00, 0xff),
-                                                  randint(0x00, 0xff),
-                                                  randint(0x00, 0xff)]))
-
-
-def get_ipv4_range(network, mask_size):
-    """Get the ipv4 range from a network and a mask_size"""
-    net = (network[0] << 24
-           | network[1] << 16
-           | network[2] << 8
-           | network[3])
-    mask = ~(2 ** (32 - mask_size) - 1)
-    ip_start = net & mask
-    ip_end = net | ~mask
-    return [((ip & 0xff000000) >> 24,
-            (ip & 0xff0000) >> 16,
-            (ip & 0xff00) >> 8,
-            ip & 0xff)
-            for ip in xrange(ip_start, ip_end + 1)]
 
 
 def print_step(step_desc=None):
