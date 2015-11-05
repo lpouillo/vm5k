@@ -593,6 +593,8 @@ class vm5k_deployment():
             if len(filter(lambda v: v['host'] is None, self.vms)) > 0:
                 self.distribution = distribution if distribution \
                     else 'round-robin'
+            else: 
+                self.distribution = None
         else:
             xml = parse(infile)
             if self._check_xml_elements(xml, resources):
