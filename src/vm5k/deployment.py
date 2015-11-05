@@ -22,20 +22,22 @@ from time import localtime, strftime
 from tempfile import mkstemp
 from execo import logger, Process, SshProcess, SequentialActions, Host, \
     Local, sleep, TaktukPut, Timer
-from execo.action import ActionFactory, ParallelActions
+from execo.action import ActionFactory, ParallelActions, Remote
 from execo.log import style
-from execo.config import TAKTUK, CHAINPUT
+from execo.config import TAKTUK, CHAINPUT, default_connection_params
 from execo_g5k import deploy, Deployment
 from execo_g5k.api_utils import get_host_cluster, \
-    get_cluster_site, get_host_site, canonical_host_name
-from execo_g5k.utils import get_kavlan_host_name
+    get_cluster_site, get_host_site, canonical_host_name, get_g5k_hosts
+from execo_g5k.utils import get_kavlan_host_name, hosts_list
 from vm5k.config import default_vm
 from vm5k.actions import create_disks, install_vms, start_vms, \
-    wait_vms_have_started, destroy_vms, create_disks_all_hosts, distribute_vms
+    wait_vms_have_started, destroy_vms, create_disks_all_hosts, distribute_vms,\
+    activate_vms
 from vm5k.utils import prettify, print_step, get_fastest_host, \
-    hosts_list, get_CPU_RAM_FLOPS
+    get_CPU_RAM_FLOPS
 from vm5k.services import dnsmasq_server, setup_aptcacher_server, configure_apt_proxy
 
+default_connection_params['user'] = 'root'
 
 class vm5k_deployment():
     """ Base class to control a deployment of hosts and virtual machines on
@@ -47,9 +49,10 @@ class vm5k_deployment():
     virtual machines, using the value of the object.
     """
 
-    def __init__(self, infile=None, resources=None, env_name=None,
-                 env_file=None, vms=None, distribution=None,
-                 outdir=None):
+    def __init__(self, infile=None, resources=None, hosts=None,
+                 ip_mac=None, vlan=None,
+                 env_name=None, env_file=None, vms=None,
+                 distribution=None, outdir=None):
         """:param infile: an XML file that describe the topology of the
         deployment
 
@@ -68,12 +71,11 @@ class vm5k_deployment():
 
         :params outdir: directory to store the deployment files
         """
-        print_step('Initializing vm5k_deployment')
         # set a factory for the deployment that use taktuk and chainput
         self.fact = ActionFactory(remote_tool=TAKTUK,
                                   fileput_tool=CHAINPUT,
                                   fileget_tool=TAKTUK)
-        self.kavlan = None
+        self.kavlan = None if not vlan else vlan
         self.kavlan_site = None
         if env_name is not None:
             self.env_file = None
@@ -99,12 +101,10 @@ class vm5k_deployment():
         self.copy_actions = None
 
         self.state = Element('vm5k')
-        self._define_elements(infile, resources, vms, distribution)
+        self._define_elements(infile, resources, hosts, vms, ip_mac,
+                              distribution)
 
-        network = 'IP range from KaVLAN' if self.kavlan \
-            else 'IP range from g5k-subnet'
-        logger.info('%s\n%s %s \n%s %s \n%s %s \n%s %s',
-                    network,
+        logger.info('%s %s %s %s %s %s %s %s',
                     len(self.sites), style.emph('sites'),
                     len(self.clusters), style.user1('clusters'),
                     len(self.hosts), style.host('hosts'),
@@ -137,6 +137,7 @@ class vm5k_deployment():
                          conf_ssh=True):
         """Deploy the hosts using kadeploy, configure ssh for taktuk execution
         and launch backing file disk copy"""
+
         self._launch_kadeploy(max_tries, check_deploy)
         if conf_ssh:
             self._configure_ssh()
@@ -173,6 +174,7 @@ class vm5k_deployment():
                     style.host(service_node.split('.')[0]))
         clients = list(self.hosts)
         clients.remove(service_node)
+
         dnsmasq_server(service_node, clients, self.vms, dhcp)
 
     def configure_libvirt(self, bridge='br0', libvirt_conf=None):
@@ -209,6 +211,7 @@ class vm5k_deployment():
         start_vms(self.vms).run()
         logger.info('Waiting for VM to boot ...')
         wait_vms_have_started(self.vms, self.hosts[0])
+        activate_vms(self.vms)
         self._update_vms_xml()
         if apt_cacher:
             configure_apt_proxy(self.vms)
@@ -293,11 +296,11 @@ class vm5k_deployment():
         for bf in disks:
             logger.info('Treating ' + style.emph(bf))
             logger.debug("Checking frontend disk vs host disk")
-            raw_disk = '/root/' + bf.split('/')[-1]
-            f_disk = Process('md5sum -t ' + bf).run()
+            raw_disk = '/tmp/orig_' + bf.split('/')[-1]
+            f_disk = Process('md5sum -b ' + bf).run()
             disk_hash = f_disk.stdout.split(' ')[0]
             cmd = 'if [ -f ' + raw_disk + ' ]; ' + \
-                'then md5sum  -t ' + raw_disk + '; fi'
+                'then md5sum  -b ' + raw_disk + '; fi'
             h_disk = self.fact.get_remote(cmd, self.hosts).run()
             disk_ok = True
             for p in h_disk.processes:
@@ -309,11 +312,12 @@ class vm5k_deployment():
                 logger.info("Disk " + style.emph(bf) +
                             " is already present, skipping copy")
             else:
-                disks_copy.append(self.fact.get_fileput(self.hosts, [bf]))
+                disks_copy.append(self.fact.get_fileput(self.hosts, [bf],
+                                                        remote_location="/tmp"))
         if len(disks_copy) > 0:
             self.copy_actions = ParallelActions(disks_copy).start()
         else:
-            self.copy_actions = Local('ls').run()
+            self.copy_actions = Remote('ls', self.hosts[0]).run()
 
     def _create_backing_file(self, disks=None):
         """ """
@@ -322,10 +326,20 @@ class vm5k_deployment():
         if not self.copy_actions.ended:
             logger.info("Waiting for the end of the disks copy")
             self.copy_actions.wait()
+        if isinstance(self.copy_actions, ParallelActions):
+            mv_actions = []
+            for act in self.copy_actions.actions:
+                fname = act.local_files[0].split('/')[-1]
+                mv_actions.append(self.fact.get_remote("mv /tmp/" + fname +
+                                                       " /tmp/orig_" + fname,
+                                                       self.hosts))
+
+            mv = ParallelActions(mv_actions).run()
+
         if not disks:
             disks = self.backing_files
         for bf in disks:
-            raw_disk = '/root/' + bf.split('/')[-1]
+            raw_disk = '/tmp/orig_' + bf.split('/')[-1]
             to_disk = '/tmp/' + bf.split('/')[-1]
             self.fact.get_remote('cp ' + raw_disk + ' ' + to_disk, self.hosts).run()
             logger.info('Copying ssh key on ' + to_disk + ' ...')
@@ -352,7 +366,7 @@ class vm5k_deployment():
 
     def _libvirt_check_service(self):
         """ """
-        logger.info('Checking libvirt service name')
+        logger.detail('Checking libvirt service name')
         cmd = "if [ ! -e /etc/init.d/libvirtd ]; " + \
             "  then if [ -e /etc/init.d/libvirt-bin ]; " + \
             "       then ln -s /etc/init.d/libvirt-bin /etc/init.d/libvirtd; " + \
@@ -363,7 +377,7 @@ class vm5k_deployment():
         self._actions_hosts(check_libvirt)
 
     def _libvirt_uniquify(self):
-        logger.info('Making libvirt host unique')
+        logger.detail('Making libvirt host unique')
         cmd = 'uuid=`uuidgen` ' + \
             '&& sed -i "s/.*host_uuid.*/host_uuid=\\"${uuid}\\"/g" ' + \
             '/etc/libvirt/libvirtd.conf ' + \
@@ -372,7 +386,7 @@ class vm5k_deployment():
         self.fact.get_remote(cmd, self.hosts).run()
 
     def _libvirt_bridged_network(self, bridge):
-        logger.info('Configuring libvirt network')
+        logger.detail('Configuring libvirt network')
         # Creating an XML file describing the network
         root = Element('network')
         name = SubElement(root, 'name')
@@ -395,12 +409,13 @@ class vm5k_deployment():
             'virsh net-start default; virsh net-autostart default;',
             self.hosts)
         netconf = SequentialActions([destroy, put, start]).run()
+
         self._actions_hosts(netconf)
 
     # Hosts configuration
     def _enable_bridge(self, name='br0'):
         """We need a bridge to have automatic DHCP configuration for the VM."""
-        logger.info('Configuring the bridge')
+        logger.detail('Configuring the bridge')
         hosts_br = self._get_bridge(self.hosts)
         nobr_hosts = []
         for host, br in hosts_br.iteritems():
@@ -439,7 +454,7 @@ class vm5k_deployment():
             f.write(script)
             f.close()
 
-            TaktukPut(nobr_hosts, [br_script]).run()
+            self.fact.get_fileput(nobr_hosts, [br_script]).run()
             self.fact.get_remote('nohup sh ' + br_script.split('/')[-1],
                                  nobr_hosts).run()
 
@@ -457,7 +472,7 @@ class vm5k_deployment():
                         if_up = line.split()[2] == line.split()[5].replace('(',
                                                                            '')
             logger.debug('Network has been restarted')
-        logger.info('All hosts have the bridge %s', style.emph(name))
+        logger.detail('All hosts have the bridge %s', style.emph(name))
 
     def _get_bridge(self, hosts):
         """ """
@@ -478,7 +493,7 @@ class vm5k_deployment():
 
     def _configure_apt(self):
         """Create the sources.list file """
-        logger.info('Configuring APT')
+        logger.detail('Configuring APT')
         # Create sources.list file
         fd, tmpsource = mkstemp(dir='/tmp/', prefix='sources.list_')
         f = fdopen(fd, 'w')
@@ -553,15 +568,31 @@ class vm5k_deployment():
         self._actions_hosts(install_extra)
 
     # State related methods
-    def _define_elements(self, infile=None, resources=None, vms=None,
+    def _define_elements(self, infile=None, resources=None,
+                         hosts=None, vms=None, ip_mac=None,
                          distribution=None):
         """Create the list of sites, clusters, hosts, vms and check
         correspondance between infile and resources"""
-        self._get_ip_mac(resources)
-        self._get_resources_elements(resources)
+
+        if not ip_mac:
+            self._get_ip_mac(resources)
+        else:
+            self.ip_mac = ip_mac
+
+        if not hosts:
+            self._get_resources_elements(resources)
+        else:
+            self.hosts = hosts if not self.kavlan else \
+                map(lambda h: get_kavlan_host_name(h, self.kavlan),
+                    hosts)
+            self.sites = []
+            self.clusters = []
+
         if not infile:
             self.vms = vms
-            self.distribution = distribution if distribution else 'round-robin'
+            if len(filter(lambda v: v['host'] is None, self.vms)) > 0:
+                self.distribution = distribution if distribution \
+                    else 'round-robin'
         else:
             xml = parse(infile)
             if self._check_xml_elements(xml, resources):
@@ -571,8 +602,10 @@ class vm5k_deployment():
                 exit()
 
         self._add_xml_elements()
+
         if self.vms:
-            distribute_vms(self.vms, self.hosts, self.distribution)
+            if self.distribution:
+                distribute_vms(self.vms, self.hosts, self.distribution)
             self._set_vms_ip_mac()
             self._add_xml_vms()
         else:
@@ -706,8 +739,9 @@ class vm5k_deployment():
         else:
             i_vm = 0
             for vm in self.vms:
-                vm['ip'], vm['mac'] = self.ip_mac[i_vm]
-                i_vm += 1
+                if 'mac' not in vm:
+                    vm['ip'], vm['mac'] = self.ip_mac[i_vm]
+                    i_vm += 1
 
     def _add_xml_elements(self):
         """Add sites, clusters, hosts to self.state """
@@ -715,18 +749,25 @@ class vm5k_deployment():
         logger.debug('Initial state \n %s', prettify(_state))
         for site in self.sites:
             SubElement(_state, 'site', attrib={'id': site})
+        else:
+            el_site = SubElement(_state, 'site', attrib={'id': 'unknown'})
         logger.debug('Sites added \n %s', prettify(_state))
         for cluster in self.clusters:
             el_site = _state.find("./site[@id='" + get_cluster_site(cluster) \
                                   + "']")
             SubElement(el_site, 'cluster', attrib={'id': cluster})
+        else:
+            el_cluster = SubElement(el_site, 'cluster', attrib={'id': 'unknown'})
         logger.debug('Clusters added \n %s', prettify(_state))
         hosts_attr = get_CPU_RAM_FLOPS(self.hosts)
         for host in self.hosts:
-            el_cluster = _state.find(".//cluster/[@id='" + get_host_cluster(host) + "']")
+            if host in get_g5k_hosts(): 
+                el_cluster = _state.find(".//cluster/[@id='" +
+                                         get_host_cluster(host) + "']")
+
             SubElement(el_cluster, 'host', attrib={'id': host,
                                                    'state': 'Undeployed',
-                                                   'cpu': str(hosts_attr[host]['CPU'] * 100),
+                                                   'cpu': str(hosts_attr[host]['CPU']),
                                                    'mem': str(hosts_attr[host]['RAM'])})
         logger.debug('Hosts added \n %s', prettify(_state))
 
