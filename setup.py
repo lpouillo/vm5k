@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name='vm5k',
-    version='0.6.2',
+    version='0.7.0',
     author='Laurent Pouilloux',
     author_email='laurent.pouilloux@inria.fr',
     package_dir={'': 'src'},
