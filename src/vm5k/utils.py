@@ -121,6 +121,8 @@ def get_oar_job_vm5k_resources(jobs):
             logger.debug('Retrieving kavlan')
             kavlan = get_oar_job_kavlan(oar_job_id, site)
             if kavlan:
+                assert(len(kavlan) == 1)
+                kavlan = kavlan[0]
                 ip_mac = get_kavlan_ip_mac(kavlan, site)
         resources[site] = {'hosts': hosts,
                            'ip_mac': ip_mac[300:],
