@@ -209,11 +209,11 @@ def get_CPU_RAM_FLOPS(hosts):
         if cluster not in cluster_attr:
             attr = get_host_attributes(host)
             cluster_attr[cluster] = {
-                 'CPU': attr['architecture']['smt_size'],
+                 'CPU': attr['architecture']['nb_cores'],
                  'RAM': int(attr['main_memory']['ram_size'] / 10 ** 6),
                  'flops': attr['performance']['node_flops']}
         hosts_attr[host] = cluster_attr[cluster]
-        hosts_attr['TOTAL']['CPU'] += attr['architecture']['smt_size']
+        hosts_attr['TOTAL']['CPU'] += attr['architecture']['nb_cores']
         hosts_attr['TOTAL']['RAM'] += int(attr['main_memory']['ram_size'] \
                                           / 10 ** 6)
 
