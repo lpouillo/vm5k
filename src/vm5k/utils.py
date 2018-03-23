@@ -121,6 +121,8 @@ def get_oar_job_vm5k_resources(jobs):
             logger.debug('Retrieving kavlan')
             kavlan = get_oar_job_kavlan(oar_job_id, site)
             if kavlan:
+                assert(len(kavlan) == 1)
+                kavlan = kavlan[0]
                 ip_mac = get_kavlan_ip_mac(kavlan, site)
         resources[site] = {'hosts': hosts,
                            'ip_mac': ip_mac[300:],
@@ -207,11 +209,11 @@ def get_CPU_RAM_FLOPS(hosts):
         if cluster not in cluster_attr:
             attr = get_host_attributes(host)
             cluster_attr[cluster] = {
-                 'CPU': attr['architecture']['smt_size'],
+                 'CPU': attr['architecture']['nb_cores'],
                  'RAM': int(attr['main_memory']['ram_size'] / 10 ** 6),
                  'flops': attr['performance']['node_flops']}
         hosts_attr[host] = cluster_attr[cluster]
-        hosts_attr['TOTAL']['CPU'] += attr['architecture']['smt_size']
+        hosts_attr['TOTAL']['CPU'] += attr['architecture']['nb_cores']
         hosts_attr['TOTAL']['RAM'] += int(attr['main_memory']['ram_size'] \
                                           / 10 ** 6)
 

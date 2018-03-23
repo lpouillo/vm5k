@@ -741,9 +741,8 @@ class vm5k_deployment():
         else:
             i_vm = 0
             for vm in self.vms:
-                if 'mac' not in vm:
-                    vm['ip'], vm['mac'] = self.ip_mac[i_vm]
-                    i_vm += 1
+                vm['ip'], vm['mac'] = self.ip_mac[i_vm]
+                i_vm += 1
 
     def _add_xml_elements(self):
         """Add sites, clusters, hosts to self.state """
